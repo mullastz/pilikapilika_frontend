@@ -4,7 +4,7 @@
     {
       "src": "package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "dist/PilikaPilika_Frontend" }
+      "config": { "distDir": "dist/pilikapilika-frontend" }
     }
   ],
   "routes": [
