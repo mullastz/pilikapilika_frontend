@@ -1,0 +1,130 @@
+<div class="bg-[#f5f5f5] dark:bg-[#0a0a0a] min-h-screen transition-colors duration-300">
+
+    <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-5xl mx-auto">
+
+        <!-- CARD -->
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-4 sm:p-6">
+
+            <!-- HEADER -->
+            <div class="flex items-center gap-3 mb-6">
+
+                <button 
+                    (click)="goBack()"
+                    class="w-8 h-8 rounded-full bg-white/10 dark:bg-[#111] flex items-center justify-center shadow hover:scale-110 transition"
+                >
+                    <i class="fa-solid fa-arrow-left text-orange-500"></i>
+                </button>
+
+                <h1 class="text-lg sm:text-xl font-bold dark:text-white">
+                    Help Center
+                </h1>
+
+            </div>
+
+            <!-- FAQ -->
+            <h2 class="text-base sm:text-lg font-semibold mb-4 dark:text-white">
+                Frequently Asked Questions
+            </h2>
+
+            <div class="flex flex-col gap-3">
+
+                <div *ngFor="let item of faqs; let i = index"
+                     class="bg-gray-100 dark:bg-[#111] rounded-xl p-4 cursor-pointer"
+                     (click)="toggle(i)">
+
+                    <div class="flex justify-between items-center">
+
+                        <h3 class="text-sm sm:text-base font-medium dark:text-white">
+                            {{item.question}}
+                        </h3>
+
+                        <i class="fa-solid"
+                           [class.fa-chevron-down]="activeIndex !== i"
+                           [class.fa-chevron-up]="activeIndex === i">
+                        </i>
+
+                    </div>
+
+                    <p *ngIf="activeIndex === i"
+                       class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-3">
+                        {{item.answer}}
+                    </p>
+
+                </div>
+
+            </div>
+
+            <!-- CONTACT -->
+            <div class="mt-8">
+
+                <h2 class="text-base sm:text-lg font-semibold mb-4 dark:text-white">
+                    Need more help?
+                </h2>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                    <!-- CHAT -->
+                    <div class="flex items-center gap-3 bg-orange-100 dark:bg-[#111] p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
+
+                        <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                            <i class="fa-solid fa-comments"></i>
+                        </div>
+
+                        <div>
+                            <p class="font-medium text-sm dark:text-white">Live Chat</p>
+                            <p class="text-xs text-gray-500">Chat with support</p>
+                        </div>
+
+                    </div>
+
+                    <!-- EMAIL -->
+                    <div class="flex items-center gap-3 bg-orange-100 dark:bg-[#111] p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
+
+                        <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                            <i class="fa-solid fa-envelope"></i>
+                        </div>
+
+                        <div>
+                            <p class="font-medium text-sm dark:text-white">Email Us</p>
+                            <p class="text-xs text-gray-500">support@pilikapilika.com</p>
+                        </div>
+
+                    </div>
+
+                    <!-- CALL -->
+                    <div class="flex items-center gap-3 bg-orange-100 dark:bg-[#111] p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
+
+                        <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                            <i class="fa-solid fa-phone"></i>
+                        </div>
+
+                        <div>
+                            <p class="font-medium text-sm dark:text-white">Call Us</p>
+                            <p class="text-xs text-gray-500">+255 700 000 000</p>
+                        </div>
+
+                    </div>
+
+                    <!-- WHATSAPP -->
+                    <div class="flex items-center gap-3 bg-orange-100 dark:bg-[#111] p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
+
+                        <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                            <i class="fa-brands fa-whatsapp"></i>
+                        </div>
+
+                        <div>
+                            <p class="font-medium text-sm dark:text-white">WhatsApp</p>
+                            <p class="text-xs text-gray-500">Quick support</p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

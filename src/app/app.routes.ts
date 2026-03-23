@@ -1,0 +1,24 @@
+import { Routes } from '@angular/router';
+import { SignUp } from './feature/auth/sign-up/sign-up';
+import { LandingPage } from './feature/landing-page/landing-page';
+import { ProfileManagement } from './feature/profile-management/profile-management';
+import { ManageAccount } from './feature/manage-account/manage-account';
+import { Shipping } from './feature/shipping/shipping';
+import { History } from './feature/history/history';
+import { HelpCenter } from './feature/help-center/help-center';
+import { AgentPage } from './feature/agent-page/agent-page';
+
+
+
+export const routes: Routes = [
+  { path: 'sign-up', component: SignUp },
+  { path: '', component: LandingPage },
+  { path: 'profile-management', component: ProfileManagement },
+  { path: 'account/manage', component: ManageAccount },
+  { path: 'account/history', component: History },
+  { path: 'account/shipping', component: Shipping },
+  { path: 'account/help', component: HelpCenter },
+  { path: 'agent/:id', component: AgentPage },
+
+
+];

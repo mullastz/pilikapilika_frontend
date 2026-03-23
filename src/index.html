@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PilikaPilikaFrontend</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <script>
+    (function () {
+      const media = window.matchMedia('(prefers-color-scheme: dark)');
+
+      media.addEventListener('change', (e) => {
+          const saved = localStorage.getItem('theme');
+
+          // Only auto-switch if user hasn't manually chosen
+          if (!saved) {
+            const html = document.documentElement;
+
+            if (e.matches) {
+              html.classList.add('dark');
+            } else {
+              html.classList.remove('dark');
+            }
+          }
+        });
+    })();
+  </script>
+</head>
+<body>
+  <app-root></app-root>
+</body>
+</html>

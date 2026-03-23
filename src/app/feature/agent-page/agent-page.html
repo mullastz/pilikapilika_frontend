@@ -1,0 +1,159 @@
+<div class="bg-[#f5f5f5] dark:bg-[#0a0a0a] min-h-screen transition-colors duration-300">
+
+  <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-5xl mx-auto">
+
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow overflow-hidden">
+
+      <!-- HEADER -->
+      <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+
+        <div class="flex items-center gap-3 mb-4">
+          <button (click)="goBack()"
+            class="w-8 h-8 rounded-full bg-white/10 dark:bg-[#111] flex items-center justify-center shadow hover:scale-110 transition">
+            <i class="fa-solid fa-arrow-left text-orange-500"></i>
+          </button>
+
+          <h1 class="text-lg sm:text-xl font-bold dark:text-white">
+            Agent Profile
+          </h1>
+        </div>
+
+        <!-- PROFILE -->
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+
+          <img [src]="agent.image"
+               class="w-20 h-20 rounded-full border-2 border-orange-500 object-cover"/>
+
+          <div class="flex-1">
+
+            <h2 class="text-lg sm:text-xl font-semibold dark:text-white">
+              {{agent.name}}
+            </h2>
+
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              {{agent.location}}
+            </p>
+
+            <!-- RATING -->
+            <div class="flex items-center gap-1 mt-1 text-yellow-500 text-sm">
+              <i class="fa-solid fa-star" *ngFor="let s of [1,2,3,4,5]"></i>
+              <span class="text-gray-700 dark:text-gray-300 ml-1">
+                {{agent.rating}} ({{agent.reviews}} reviews)
+              </span>
+            </div>
+
+          </div>
+
+          <!-- CTA -->
+          <button class="bg-orange-500 text-white px-5 py-2 rounded-full hover:scale-105 transition shadow">
+            Book Now
+          </button>
+
+        </div>
+
+      </div>
+
+      <!-- BODY -->
+      <div class="p-4 sm:p-6 space-y-6">
+
+        <!-- BIO -->
+        <div>
+          <h3 class="font-semibold mb-2 dark:text-white">About</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            {{agent.bio}}
+          </p>
+        </div>
+
+        <!-- STATS -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+
+          <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
+            <p class="text-sm text-gray-500">Deliveries</p>
+            <p class="font-semibold dark:text-white">{{agent.deliveries}}</p>
+          </div>
+
+          <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
+            <p class="text-sm text-gray-500">Avg Time</p>
+            <p class="font-semibold dark:text-white">{{agent.deliveryTime}}</p>
+          </div>
+
+          <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
+            <p class="text-sm text-gray-500">Price</p>
+            <p class="font-semibold text-orange-500">{{agent.price}}</p>
+          </div>
+
+          <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
+            <p class="text-sm text-gray-500">Success Rate</p>
+            <p class="font-semibold dark:text-white">{{agent.successRate}}%</p>
+          </div>
+
+        </div>
+
+        <!-- SPECIALIZATIONS -->
+        <div>
+          <h3 class="font-semibold mb-2 dark:text-white">Specializations</h3>
+          <div class="flex flex-wrap gap-2">
+            <span *ngFor="let s of agent.specializations"
+              class="bg-orange-200 dark:bg-[#111] px-3 py-1 rounded-full text-xs dark:text-white">
+              {{s}}
+            </span>
+          </div>
+        </div>
+
+        <!-- TRANSPORT METHODS -->
+        <div>
+          <h3 class="font-semibold mb-2 dark:text-white">Transport Methods</h3>
+          <div class="flex gap-4">
+
+            <div *ngFor="let t of agent.transport"
+                 class="flex flex-col items-center text-sm">
+
+              <div class="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                <i [class]="t.icon"></i>
+              </div>
+
+              <span class="mt-1 dark:text-white">{{t.label}}</span>
+
+            </div>
+
+          </div>
+        </div>
+
+        <!-- REVIEWS -->
+        <div>
+          <h3 class="font-semibold mb-3 dark:text-white">Reviews</h3>
+
+          <div class="flex flex-col gap-3">
+
+            <div *ngFor="let r of agent.recentReviews"
+                 class="bg-gray-100 dark:bg-[#111] p-3 rounded-xl">
+
+              <div class="flex items-center justify-between mb-1">
+
+                <p class="text-sm font-medium dark:text-white">
+                  {{r.name}}
+                </p>
+
+                <div class="text-yellow-500 text-xs">
+                  ★ {{r.rating}}
+                </div>
+
+              </div>
+
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                {{r.comment}}
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

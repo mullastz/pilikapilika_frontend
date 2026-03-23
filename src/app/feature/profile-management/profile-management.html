@@ -1,0 +1,132 @@
+<div class="bg-[#f5f5f5] dark:bg-[#0a0a0a] min-h-screen transition-colors duration-300">
+
+    <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-5xl mx-auto">
+
+        <!-- ACCOUNT CARD -->
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-4 sm:p-6 transition-colors">
+            <!-- TOP HEADER (BACK + TITLE) -->
+            <div class="flex items-center gap-3 mb-4">
+
+                <!-- BACK BUTTON -->
+                <button 
+                    (click)="goBack()"
+                    class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/10 dark:bg-[#1a1a1a] backdrop-blur-md shadow hover:scale-110 transition flex items-center justify-center"
+                    aria-label="Go back"
+                >
+                    <i class="fa-solid fa-arrow-left text-orange-500 text-sm sm:text-base"></i>
+                </button>
+
+                <!-- TITLE -->
+                <h1 class="text-base sm:text-lg font-bold dark:text-white">
+                    Profile Settings
+                </h1>
+
+            </div>
+            <!-- TOP SECTION -->
+            <div class="flex items-center justify-between">
+
+                <!-- USER INFO -->
+                <div class="flex items-center gap-3 sm:gap-4">
+
+                    <!-- PROFILE IMAGE -->
+                    <img 
+                        src="assets/landingpage_images/profile1.webp" 
+                        class="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-orange-500"
+                    />
+
+                    <!-- NAME + LOCATION -->
+                    <div>
+                        <h2 class="font-semibold text-base sm:text-lg dark:text-white">
+                            Suleiman Salum
+                        </h2>
+                        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                            Arusha, Tanzania
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- LOGOUT BUTTON -->
+                <button 
+                    class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center transition"
+                    aria-label="Logout"
+                >
+                    <i class="fa-solid fa-right-from-bracket text-red-500 text-lg"></i>
+                </button>
+
+            </div>
+
+            <!-- DIVIDER -->
+            <div class="my-4 sm:my-6 border-t border-gray-200 dark:border-gray-700"></div>
+
+            <!-- MY ACCOUNT TITLE -->
+            <h3 class="text-lg sm:text-xl font-bold mb-4 sm:mb-6 dark:text-white">
+                My Account
+            </h3>
+
+            <!-- MENU LIST -->
+            <div class="flex flex-col gap-3 sm:gap-4">
+
+                <!-- ITEM -->
+                <div (click)="goTo('manage')" class="flex items-center justify-between bg-orange-200 dark:bg-[#111] p-3 sm:p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
+
+                    <div class="flex items-center gap-3">
+                        <div  class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-lg">
+                            <i class="fa-solid fa-user-gear"></i>
+                        </div>
+                        <span class="text-sm sm:text-base dark:text-white">Manage Account</span>
+                    </div>
+
+                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
+
+                </div>
+
+                <!-- ITEM -->
+                <div (click)="goTo('shipping')" class="flex items-center justify-between bg-orange-200 dark:bg-[#111] p-3 sm:p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
+
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-lg">
+                            <i class="fa-solid fa-truck-fast"></i>
+                        </div>
+                        <span class="text-sm sm:text-base dark:text-white">My Shipping</span>
+                    </div>
+
+                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
+
+                </div>
+
+                <!-- ITEM -->
+                <div (click)="goTo('history')" class="flex items-center justify-between bg-orange-200 dark:bg-[#111] p-3 sm:p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
+
+                    <div class="flex items-center gap-3">
+                        <div  class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-lg">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                        <span class="text-sm sm:text-base dark:text-white">History</span>
+                    </div>
+
+                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
+
+                </div>
+
+                <!-- ITEM -->
+                <div (click)="goTo('help')" class="flex items-center justify-between bg-orange-200 dark:bg-[#111] p-3 sm:p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
+
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-lg">
+                            <i class="fa-solid fa-circle-question"></i>
+                        </div>
+                        <span class="text-sm sm:text-base dark:text-white">Help Center</span>
+                    </div>
+
+                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

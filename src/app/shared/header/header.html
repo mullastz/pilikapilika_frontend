@@ -1,0 +1,25 @@
+<!-- Navbar -->
+<div class="absolute top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 flex items-center justify-between bg-white/10 backdrop-blur-lg px-3 sm:px-6 py-2 sm:py-3 rounded-full border border-white/20">
+    
+    <h1 class="text-orange-400 font-bold text-lg sm:text-xl">Pilikapilika</h1>
+
+    <div class="flex items-center gap-2 sm:gap-4">
+
+        <!-- Theme Toggle -->
+        <button (click)="toggleTheme()" 
+                class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition"
+                [attr.aria-label]="isDark ? 'Switch to light mode' : 'Switch to dark mode'">
+            
+            <i class="fa-solid" [class.fa-sun]="isDark" [class.fa-moon]="!isDark"></i>
+        </button>
+
+        <button class="bg-orange-500 hover:scale-110 transition text-white px-3 sm:px-5 py-1.5 sm:py-2 rounded-full shadow text-sm sm:text-base">
+            Get Started
+        </button>
+
+        <div class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-white text-lg sm:text-xl">
+            <i class="fa-solid fa-bars"></i>
+        </div>
+
+    </div>
+</div>
