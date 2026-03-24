@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { SignUp } from './feature/auth/sign-up/sign-up';
+import { SignIn } from './feature/auth/sign-in/sign-in';
 import { LandingPage } from './feature/landing-page/landing-page';
 import { ProfileManagement } from './feature/profile-management/profile-management';
 import { ManageAccount } from './feature/manage-account/manage-account';
@@ -12,6 +13,7 @@ import { AgentPage } from './feature/agent-page/agent-page';
 
 export const routes: Routes = [
   { path: 'sign-up', component: SignUp },
+  { path: 'sign-in', component: SignIn },
   { path: '', component: LandingPage },
   { path: 'profile-management', component: ProfileManagement },
   { path: 'account/manage', component: ManageAccount },

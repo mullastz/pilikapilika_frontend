@@ -19,7 +19,7 @@
             Ship with confidence every time.
             </p>
 
-            <button class="bg-orange-500 px-4 sm:px-6 py-2 rounded-full hover:scale-110 transition text-sm sm:text-base">
+            <button class="bg-orange-500 px-20 sm:px-20 py-2 rounded-full hover:scale-110 transition text-sm sm:text-base">
             See all
             </button>
         </div>
@@ -31,7 +31,7 @@
     <section class="px-4 sm:px-6 py-4 sm:py-6">
     <div class="flex justify-between items-center mb-4 sm:mb-6">
         <h3 class="text-lg sm:text-xl text-center font-bold dark:text-white transition-colors">Activities</h3>
-        <button class="bg-orange-500 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full hover:scale-110 transition text-sm sm:text-base">
+        <button class="bg-orange-500 text-white px-15 sm:px-20 py-1.5 sm:py-2 rounded-full hover:scale-110 transition text-sm sm:text-base">
         See all
         </button>
     </div>
@@ -54,9 +54,26 @@
 
     <!-- AGENTS CAROUSEL -->
     <section class="px-4 sm:px-6 py-4 sm:py-6">
-        <h3 class="text-lg sm:text-xl text-center font-bold mb-4 dark:text-white transition-colors">Popular Agents</h3>
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg sm:text-xl font-bold mb-4 dark:text-white transition-colors">Popular Agents</h3>
 
-        <div class="flex gap-3 sm:gap-4 overflow-x-auto pb-4 no-scrollbar">
+                <!-- Scroll Buttons - Visible only on Desktop -->
+            <div class="hidden lg:flex items-center gap-3">
+            <button 
+                (click)="scrollLeft('agentsContainer')"
+                class="w-9 h-9 flex items-center justify-center bg-white dark:bg-[#1a1a1a] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl shadow transition-all active:scale-95">
+                <i class="fa-solid fa-chevron-left text-gray-700 dark:text-gray-300"></i>
+            </button>
+            
+            <button 
+                (click)="scrollRight('agentsContainer')"
+                class="w-9 h-9 flex items-center justify-center bg-white dark:bg-[#1a1a1a] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl shadow transition-all active:scale-95">
+                <i class="fa-solid fa-chevron-right text-gray-700 dark:text-gray-300"></i>
+            </button>
+            </div>
+        </div>
+
+        <div #agentsContainer class="flex gap-3 sm:gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth">
         <div *ngFor="let agent of agents" 
             class="min-w-35 sm:min-w-55 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-3 sm:p-4 transition-colors">
 
@@ -183,9 +200,26 @@
 
     <!-- MOST RATED -->
     <section class="px-4 sm:px-6 py-4 sm:py-6">
-        <h3 class="text-lg sm:text-xl text-center font-bold mb-4 dark:text-white transition-colors">Most Rated Agents</h3>
+        <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg sm:text-xl font-bold mb-4 dark:text-white transition-colors">Most Rated Agents</h3>
 
-        <div class="flex gap-3 sm:gap-4 overflow-x-auto pb-4 no-scrollbar">
+                <!-- Scroll Buttons - Visible only on Desktop -->
+            <div class="hidden lg:flex items-center gap-3">
+            <button 
+                (click)="scrollLeft('topAgentsContainer')"
+                class="w-9 h-9 flex items-center justify-center bg-white dark:bg-[#1a1a1a] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl shadow transition-all active:scale-95">
+                <i class="fa-solid fa-chevron-left text-gray-700 dark:text-gray-300"></i>
+            </button>
+            
+            <button 
+                (click)="scrollRight('topAgentsContainer')"
+                class="w-9 h-9 flex items-center justify-center bg-white dark:bg-[#1a1a1a] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl shadow transition-all active:scale-95">
+                <i class="fa-solid fa-chevron-right text-gray-700 dark:text-gray-300"></i>
+            </button>
+            </div>
+        </div>
+
+        <div #topAgentsContainer class="flex gap-3 sm:gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth">
         <div *ngFor="let agent of topAgents" 
             class="min-w-35 sm:min-w-55 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-3 sm:p-4 transition-colors">
 
@@ -313,11 +347,11 @@
         <!-- Buttons -->
         <div class="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
 
-        <button class="bg-orange-500 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full hover:scale-105 transition shadow text-sm sm:text-base">
+        <button routerLink="/sign-up" class="bg-orange-500 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full hover:scale-105 transition shadow text-sm sm:text-base">
             Get Started
         </button>
 
-        <button class="border border-orange-500 text-orange-500 px-6 sm:px-8 py-2.5 sm:py-3 rounded-full hover:bg-orange-50 dark:hover:bg-orange-500/10 transition text-sm sm:text-base">
+        <button routerLink="/sign-up" class="border border-orange-500 text-orange-500 px-6 sm:px-8 py-2.5 sm:py-3 rounded-full hover:bg-orange-50 dark:hover:bg-orange-500/10 transition text-sm sm:text-base">
             Become an Agent
         </button>
 

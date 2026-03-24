@@ -1,11 +1,11 @@
 import { Component, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-sign-up',
-  imports: [ CommonModule, ReactiveFormsModule ],
+  imports: [ CommonModule, ReactiveFormsModule, RouterLink ],
   templateUrl: './sign-up.html',
   styleUrl: './sign-up.css',
 })
@@ -15,7 +15,7 @@ export class SignUp {
   showPassword = signal(false);
   showConfirmPassword = signal(false);
 
-  constructor(private fb: FormBuilder, private router: Router) {
+  constructor(private fb: FormBuilder, private router: Router, private location: Location) {
     this.signupForm = this.fb.group({
       fullName: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
@@ -59,9 +59,7 @@ export class SignUp {
   }
 
   goBack() {
-    // Can use location.back() or router.navigate(['..'])
-    window.history.back();
-    // or: this.router.navigate(['/']); // adjust as needed
+    this.location.back();
   }
 
   togglePasswordVisibility(field: 'password' | 'confirm') {
