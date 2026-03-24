@@ -1,0 +1,11 @@
+/* For the shaped card on desktop */
+.clip-signup-card {
+  clip-path: polygon(0 0, 100% 0, 85% 100%, 0 100%);
+}
+
+/* Optional: make it smoother on different screen sizes or add fallback */
+@media (max-width: 1024px) {
+  .clip-signup-card {
+    clip-path: none; /* disable curve on smaller screens if needed */
+  }
+}

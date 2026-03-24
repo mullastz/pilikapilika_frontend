@@ -1,17 +1,20 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Footer } from '../../shared/footer/footer';
 import { Header } from '../../shared/header/header';
 import { Router } from '@angular/router';
 
+import { RouterLink } from '@angular/router';
 @Component({
   selector: 'app-landing-page',
-  imports: [ CommonModule, Footer, Header ],
+  imports: [ CommonModule, Footer, Header, RouterLink ],
   templateUrl: './landing-page.html',
   styleUrl: './landing-page.css'
 })
 
 export class LandingPage {
+  @ViewChild('agentsContainer') agentsContainer!: ElementRef;
+  @ViewChild('topAgentsContainer') topAgentsContainer!: ElementRef;
 
 constructor(private router: Router) {}
 
@@ -112,4 +115,30 @@ testimonials = [
     avatar: 'assets/landingpage_images/profile1.webp'
   },
 ];
+
+scrollLeft(containerId: string) {
+  const container = containerId === 'topAgentsContainer' 
+    ? this.topAgentsContainer 
+    : this.agentsContainer;
+
+  if (container?.nativeElement) {
+    container.nativeElement.scrollBy({
+      left: -320,
+      behavior: 'smooth'
+    });
+  }
+}
+
+scrollRight(containerId: string) {
+  const container = containerId === 'topAgentsContainer' 
+    ? this.topAgentsContainer 
+    : this.agentsContainer;
+
+  if (container?.nativeElement) {
+    container.nativeElement.scrollBy({
+      left: 320,
+      behavior: 'smooth'
+    });
+  }
+}
 }
