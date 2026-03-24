@@ -37,7 +37,7 @@
     </div>
 
     <div class="grid grid-cols-5 gap-2 sm:gap-4 text-center">
-        <div *ngFor="let item of activities" class="flex flex-col items-center hover:scale-110 transition">
+        <div *ngFor="let item of activities" (click)="goTo(item.route)" class="flex flex-col items-center hover:scale-110 transition cursor-pointer">
         
         <!-- KEEP THIS WRAPPER (this gives you the circle) -->
         <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-orange-500 flex items-center justify-center text-white text-lg sm:text-xl shadow">

@@ -1,0 +1,148 @@
+<div class="bg-[#f5f5f5] dark:bg-[#0a0a0a] min-h-screen transition-colors duration-300">
+
+  <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-5xl mx-auto">
+
+    <!-- CARD -->
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-4 sm:p-6">
+
+      <!-- HEADER -->
+      <div class="flex items-center gap-3 mb-6">
+        <button (click)="goBack()"
+          class="w-8 h-8 rounded-full bg-white/10 dark:bg-[#111] flex items-center justify-center shadow hover:scale-110 transition">
+          <i class="fa-solid fa-arrow-left text-orange-500"></i>
+        </button>
+
+        <h1 class="text-lg sm:text-xl font-bold dark:text-white">
+          Search
+        </h1>
+      </div>
+
+      <!-- SEARCH BAR -->
+      <div class="relative mb-6">
+        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          placeholder="Search agents by name, location, or specialization..."
+          class="w-full pl-12 pr-4 py-3 bg-gray-100 dark:bg-[#111] rounded-xl text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+        />
+        <button
+          *ngIf="searchQuery"
+          (click)="searchQuery = ''"
+          class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-orange-500 transition"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- FILTER PILLS -->
+      <div class="mb-6">
+        <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3">Filters</h3>
+        <div class="flex flex-wrap gap-2">
+          <button
+            *ngFor="let filter of filters"
+            (click)="selectFilter(filter)"
+            class="px-4 py-2 rounded-full text-xs font-medium transition"
+            [ngClass]="{
+              'bg-orange-500 text-white': selectedFilter === filter || (filter === 'All' && !selectedFilter),
+              'bg-orange-100 dark:bg-[#111] text-gray-700 dark:text-gray-300 hover:bg-orange-200 dark:hover:bg-[#222]': selectedFilter !== filter && !(filter === 'All' && !selectedFilter)
+            }"
+          >
+            {{filter}}
+          </button>
+        </div>
+      </div>
+
+      <!-- SEARCH RESULTS -->
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold dark:text-white">
+            Results ({{filteredResults.length}})
+          </h3>
+          <span *ngIf="selectedFilter" class="text-xs text-orange-500">
+            Filtered by: {{selectedFilter}}
+          </span>
+        </div>
+
+        <!-- RESULTS LIST -->
+        <div class="flex flex-col gap-4">
+
+          <div
+            *ngFor="let agent of filteredResults"
+            class="bg-gray-100 dark:bg-[#111] rounded-xl p-4 hover:scale-[1.01] transition cursor-pointer"
+          >
+            <div class="flex items-start gap-4">
+
+              <!-- AGENT IMAGE -->
+              <img
+                [src]="agent.image"
+                class="w-16 h-16 rounded-full border-2 border-orange-500 object-cover shrink-0"
+              />
+
+              <!-- AGENT INFO -->
+              <div class="flex-1 min-w-0">
+
+                <div class="flex items-start justify-between mb-1">
+                  <h3 class="font-semibold dark:text-white text-sm sm:text-base truncate">
+                    {{agent.name}}
+                  </h3>
+                  <span class="text-orange-500 font-semibold text-sm">
+                    {{agent.price}}
+                  </span>
+                </div>
+
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  <i class="fa-solid fa-location-dot mr-1"></i>
+                  {{agent.location}}
+                </p>
+
+                <!-- RATING -->
+                <div class="flex items-center gap-1 text-yellow-500 text-xs mb-2">
+                  <i class="fa-solid fa-star"></i>
+                  <span class="text-gray-700 dark:text-gray-300">
+                    {{agent.rating}} ({{agent.reviews}} reviews)
+                  </span>
+                </div>
+
+                <!-- SPECIALIZATIONS -->
+                <div class="flex flex-wrap gap-1">
+                  <span
+                    *ngFor="let spec of agent.specializations"
+                    class="bg-orange-200 dark:bg-[#222] px-2 py-1 rounded-full text-xs dark:text-white"
+                  >
+                    {{spec}}
+                  </span>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- NO RESULTS -->
+          <div
+            *ngIf="filteredResults.length === 0"
+            class="text-center py-12"
+          >
+            <i class="fa-solid fa-magnifying-glass text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
+            <p class="text-gray-500 dark:text-gray-400">
+              No agents found matching your search.
+            </p>
+            <button
+              (click)="clearSearch()"
+              class="mt-4 text-orange-500 text-sm hover:underline"
+            >
+              Clear search
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

@@ -2,6 +2,8 @@ import { Component, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Footer } from '../../shared/footer/footer';
 import { Header } from '../../shared/header/header';
+import { Router } from '@angular/router';
+
 import { RouterLink } from '@angular/router';
 @Component({
   selector: 'app-landing-page',
@@ -14,12 +16,18 @@ export class LandingPage {
   @ViewChild('agentsContainer') agentsContainer!: ElementRef;
   @ViewChild('topAgentsContainer') topAgentsContainer!: ElementRef;
 
+constructor(private router: Router) {}
+
+goTo(route: string) {
+  this.router.navigate([route]);
+}
+
 activities = [
-  { icon: 'fa-solid fa-user', label: 'Become Agent' },
-  { icon: 'fa-solid fa-qrcode', label: 'Generate QRcode' },
-  { icon: 'fa-solid fa-magnifying-glass', label: 'Search Agent' },
-  { icon: 'fa-solid fa-location-crosshairs', label: 'Track Shipping' },
-  { icon: 'fa-solid fa-handshake', label: 'Negotiate' },
+  { icon: 'fa-solid fa-user', label: 'Become Agent', route: '/sign-up' },
+  { icon: 'fa-solid fa-qrcode', label: 'Generate QRcode', route: '/' },
+  { icon: 'fa-solid fa-magnifying-glass', label: 'Search Agent', route: '/search' },
+  { icon: 'fa-solid fa-location-crosshairs', label: 'Track Shipping', route: '/account/shipping' },
+  { icon: 'fa-solid fa-handshake', label: 'Negotiate', route: '/search' }, // same page
 ];
 
 agents = [

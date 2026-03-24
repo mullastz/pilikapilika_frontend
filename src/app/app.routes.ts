@@ -10,6 +10,8 @@ import { HelpCenter } from './feature/help-center/help-center';
 import { AgentPage } from './feature/agent-page/agent-page';
 import { TrackShipping } from './feature/track-shipping/track-shipping';
 
+import { Messages } from './feature/messages/messages';
+import { Search } from './feature/search/search';
 
 
 export const routes: Routes = [
@@ -24,5 +26,7 @@ export const routes: Routes = [
   { path: 'agent/:id', component: AgentPage },
   { path: 'track-shipping/:id', component: TrackShipping },
 
+  { path: 'messages', component: Messages },
+  { path: 'search', component: Search },
 
 ];
