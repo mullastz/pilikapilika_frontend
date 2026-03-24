@@ -8,6 +8,7 @@ import { Shipping } from './feature/shipping/shipping';
 import { History } from './feature/history/history';
 import { HelpCenter } from './feature/help-center/help-center';
 import { AgentPage } from './feature/agent-page/agent-page';
+import { TrackShipping } from './feature/track-shipping/track-shipping';
 
 
 
@@ -21,6 +22,7 @@ export const routes: Routes = [
   { path: 'account/shipping', component: Shipping },
   { path: 'account/help', component: HelpCenter },
   { path: 'agent/:id', component: AgentPage },
+  { path: 'track-shipping/:id', component: TrackShipping },
 
 
 ];

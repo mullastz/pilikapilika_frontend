@@ -123,30 +123,30 @@
         <div>
           <h3 class="font-semibold mb-3 dark:text-white">Reviews</h3>
 
-          <div class="flex flex-col gap-3">
+         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div *ngFor="let t of agent.testimonials"
+                class="bg-white dark:bg-[#1a1a1a] text-black dark:text-white rounded-2xl p-4 sm:p-5 shadow-lg hover:-translate-y-1 transition-colors">
 
-            <div *ngFor="let r of agent.recentReviews"
-                 class="bg-gray-100 dark:bg-[#111] p-3 rounded-xl">
-
-              <div class="flex items-center justify-between mb-1">
-
-                <p class="text-sm font-medium dark:text-white">
-                  {{r.name}}
-                </p>
-
-                <div class="text-yellow-500 text-xs">
-                  ★ {{r.rating}}
-                </div>
-
-              </div>
-
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{r.comment}}
-              </p>
-
+            <div class="text-orange-500 mb-2 text-sm">
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
             </div>
 
-          </div>
+            <p class="text-xs sm:text-sm mb-4 dark:text-gray-300">{{t.message}}</p>
+
+            <div class="flex items-center gap-3">
+                <img [src]="t.avatar" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full"/>
+                <div>
+                <p class="font-medium text-sm sm:text-base">{{t.name}}</p>
+                <p class="text-xs text-gray-500">{{t.city}}</p>
+                </div>
+            </div>
+
+            </div>
+        </div>
 
         </div>
 
@@ -157,3 +157,5 @@
   </div>
 
 </div>
+
+  <app-footer></app-footer>

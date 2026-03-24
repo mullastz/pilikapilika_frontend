@@ -1,11 +1,12 @@
 import { Component } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
+import { Footer } from '../../shared/footer/footer';
 
 @Component({
   selector: 'app-agent-page',
   standalone: true,
-  imports: [ CommonModule ],
+  imports: [ CommonModule, Footer ],
   templateUrl: './agent-page.html',
   styleUrl: './agent-page.css',
 })
@@ -51,32 +52,43 @@ export class AgentPage {
         { icon: 'fa-solid fa-truck', label: 'Local Delivery' }
       ],
 
-      recentReviews: [
+     testimonials : [
         {
-          name: 'Michael K.',
-          rating: 5,
-          comment: 'Very fast delivery and great communication. Highly recommended!'
+          name: 'Andra',
+          city: 'Dar-es-salaam',
+          message: 'The tracking updates gave me full confidence.',
+          avatar: 'assets/landingpage_images/profile1.webp'
         },
         {
-          name: 'Sarah T.',
-          rating: 4.5,
-          comment: 'Good pricing and reliable service. Will use again.'
-        },
+          name: 'Andra',
+          city: 'Dar-es-salaam',
+          message: 'The tracking updates gave me full confidence.',
+          avatar: 'assets/landingpage_images/profile1.webp'
+        },  
         {
-          name: 'David L.',
-          rating: 5,
-          comment: 'Handled my bulk order professionally. Everything arrived on time.'
-        },
+          name: 'Andra',
+          city: 'Dar-es-salaam',
+          message: 'The tracking updates gave me full confidence.',
+          avatar: 'assets/landingpage_images/profile1.webp'
+        },  
         {
-          name: 'Amina R.',
-          rating: 4,
-          comment: 'Smooth process overall, just slight delay but well communicated.'
-        },
+          name: 'Andra',
+          city: 'Dar-es-salaam',
+          message: 'The tracking updates gave me full confidence.',
+          avatar: 'assets/landingpage_images/profile1.webp'
+        },  
         {
-          name: 'John P.',
-          rating: 5,
-          comment: 'Excellent agent! Helped me source quality electronics at a great price.'
-        }
+          name: 'Andra',
+          city: 'Dar-es-salaam',
+          message: 'The tracking updates gave me full confidence.',
+          avatar: 'assets/landingpage_images/profile1.webp'
+        },  
+        {
+          name: 'Andra',
+          city: 'Dar-es-salaam',
+          message: 'The tracking updates gave me full confidence.',
+          avatar: 'assets/landingpage_images/profile1.webp'
+        },
       ]
     };
   }
