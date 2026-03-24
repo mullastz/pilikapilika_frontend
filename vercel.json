@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "buildCommand": "bash ./vercel-build.sh",
   "routes": [
     { "handle": "filesystem" },
     { "src": "/.*", "dest": "/index.html" }
