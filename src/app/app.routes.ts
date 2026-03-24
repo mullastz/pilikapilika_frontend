@@ -7,7 +7,8 @@ import { Shipping } from './feature/shipping/shipping';
 import { History } from './feature/history/history';
 import { HelpCenter } from './feature/help-center/help-center';
 import { AgentPage } from './feature/agent-page/agent-page';
-
+import { Messages } from './feature/messages/messages';
+import { Search } from './feature/search/search';
 
 
 export const routes: Routes = [
@@ -19,6 +20,7 @@ export const routes: Routes = [
   { path: 'account/shipping', component: Shipping },
   { path: 'account/help', component: HelpCenter },
   { path: 'agent/:id', component: AgentPage },
-
+  { path: 'messages', component: Messages },
+  { path: 'search', component: Search },
 
 ];

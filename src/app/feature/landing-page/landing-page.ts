@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Footer } from '../../shared/footer/footer';
 import { Header } from '../../shared/header/header';
+import { Router } from '@angular/router';
+
 @Component({
   selector: 'app-landing-page',
   imports: [ CommonModule, Footer, Header ],
@@ -11,12 +13,18 @@ import { Header } from '../../shared/header/header';
 
 export class LandingPage {
 
+constructor(private router: Router) {}
+
+goTo(route: string) {
+  this.router.navigate([route]);
+}
+
 activities = [
-  { icon: 'fa-solid fa-user', label: 'Become Agent' },
-  { icon: 'fa-solid fa-qrcode', label: 'Generate QRcode' },
-  { icon: 'fa-solid fa-magnifying-glass', label: 'Search Agent' },
-  { icon: 'fa-solid fa-location-crosshairs', label: 'Track Shipping' },
-  { icon: 'fa-solid fa-handshake', label: 'Negotiate' },
+  { icon: 'fa-solid fa-user', label: 'Become Agent', route: '/sign-up' },
+  { icon: 'fa-solid fa-qrcode', label: 'Generate QRcode', route: '/' },
+  { icon: 'fa-solid fa-magnifying-glass', label: 'Search Agent', route: '/search' },
+  { icon: 'fa-solid fa-location-crosshairs', label: 'Track Shipping', route: '/account/shipping' },
+  { icon: 'fa-solid fa-handshake', label: 'Negotiate', route: '/search' }, // same page
 ];
 
 agents = [
