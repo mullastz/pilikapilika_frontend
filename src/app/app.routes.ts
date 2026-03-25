@@ -25,7 +25,6 @@ export const routes: Routes = [
   { path: 'account/help', component: HelpCenter },
   { path: 'agent/:id', component: AgentPage },
   { path: 'track-shipping/:id', component: TrackShipping },
-
   { path: 'messages', component: Messages },
   { path: 'search', component: Search },
 
