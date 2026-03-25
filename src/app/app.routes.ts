@@ -12,6 +12,7 @@ import { TrackShipping } from './feature/track-shipping/track-shipping';
 
 import { Messages } from './feature/messages/messages';
 import { Search } from './feature/search/search';
+import { QrGenerator } from './feature/qr-generator/qr-generator';
 
 
 export const routes: Routes = [
@@ -27,5 +28,6 @@ export const routes: Routes = [
   { path: 'track-shipping/:id', component: TrackShipping },
   { path: 'messages', component: Messages },
   { path: 'search', component: Search },
+  { path: 'qr-generator', component: QrGenerator },
 
 ];

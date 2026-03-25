@@ -21,6 +21,7 @@
     "@fortawesome/fontawesome-free": "^7.2.0",
     "@fortawesome/free-brands-svg-icons": "^7.2.0",
     "@fortawesome/free-solid-svg-icons": "^7.2.0",
+    "angularx-qrcode": "^21.0.5",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
