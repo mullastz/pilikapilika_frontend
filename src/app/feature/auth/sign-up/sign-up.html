@@ -2,8 +2,6 @@
 <div class="min-h-screen lg:hidden bg-cover bg-center bg-no-repeat relative"
      style="background-image: url('/assets/Orange-material-design.avif');">
 
-  <!-- Dark overlay for better text readability -->
-
   <!-- Main content -->
   <div class="relative z-10 min-h-screen flex flex-col">
 
@@ -14,7 +12,7 @@
         <i class="fa-solid fa-arrow-left text-2xl"></i>
       </button>
 
-       <h1 class="text-3xl mt-5 font-bold text-white dark:text-white mb-8">
+      <h1 class="text-3xl mt-5 font-bold text-white dark:text-white mb-8">
         Create Your Account
       </h1>
     </div>
@@ -22,43 +20,74 @@
     <!-- Spacer to push card to bottom -->
     <div class="grow"></div>
 
-    <!-- Signup Card - rises from bottom, rounded top -->
-    <div class="bg-white dark:bg-[#0a0a0a] rounded-t-3xl px-6 pt-8 pb-10 shadow-2xl
-                h-[75vh] overflow-y-auto
-                md:h-auto md:rounded-3xl md:max-w-md md:mx-auto md:mt-12 md:shadow-xl">
+    <!-- Signup Card -->
+    <div class="bg-white dark:bg-[#0a0a0a] rounded-t-3xl px-6 pt-8 pb-10 shadow-2xl h-[80vh] overflow-y-auto">
 
-      <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="space-y-6">
+      <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="space-y-4">
 
-        <!-- Full Name -->
+        <!-- First Name -->
         <div class="relative">
-          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">
-            Full Name
-          </label>
+          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">First Name</label>
           <div class="relative">
-            <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
-            <input formControlName="fullName"
-                   type="text"
-                   class="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg
-                          focus:ring-1 focus:ring-primary focus:border-primary outline-[#FF7800] transition-all
-                          placeholder-gray-400 dark:placeholder-gray-500"
-                   placeholder="John Doe" />
+            <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+            <input formControlName="firstname" type="text"
+                   class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+                   placeholder="John" />
           </div>
-          @if (f['fullName'].touched && f['fullName'].hasError('required')) {
-            <p class="mt-1 text-sm text-red-600">Full name is required</p>
+          @if (f['firstname'].touched && f['firstname'].hasError('required')) {
+            <p class="mt-1 text-sm text-red-600">First name is required</p>
           }
+        </div>
+
+        <!-- Last Name -->
+        <div class="relative">
+          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">Last Name</label>
+          <div class="relative">
+            <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+            <input formControlName="lastname" type="text"
+                   class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+                   placeholder="Doe" />
+          </div>
+          @if (f['lastname'].touched && f['lastname'].hasError('required')) {
+            <p class="mt-1 text-sm text-red-600">Last name is required</p>
+          }
+        </div>
+
+        <!-- Username -->
+        <div class="relative">
+          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">Username</label>
+          <div class="relative">
+            <i class="fa-solid fa-at absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+            <input formControlName="username" type="text"
+                   class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+                   placeholder="johndoe" />
+          </div>
+          @if (f['username'].touched && f['username'].hasError('required')) {
+            <p class="mt-1 text-sm text-red-600">Username is required</p>
+          }
+        </div>
+
+        <!-- Gender -->
+        <div class="relative">
+          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">Gender</label>
+          <div class="relative">
+            <i class="fa-solid fa-venus-mars absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+            <select formControlName="gender"
+                    class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
         </div>
 
         <!-- Email -->
         <div class="relative">
-          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">
-            Email
-          </label>
+          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">Email</label>
           <div class="relative">
-            <i class="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
-            <input formControlName="email"
-                   type="email"
-                   class="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg
-                          focus:ring-1 focus:ring-primary focus:border-primary outline-[#FF7800] transition-all dark:placeholder-gray-500"
+            <i class="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+            <input formControlName="email" type="email"
+                   class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none"
                    placeholder="you@example.com" />
           </div>
           @if (f['email'].touched && f['email'].hasError('required')) {
@@ -71,57 +100,85 @@
 
         <!-- Phone -->
         <div class="relative">
-          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">
-            Phone Number
-          </label>
+          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">Phone Number</label>
           <div class="relative">
-            <i class="fa-solid fa-phone absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
-            <input formControlName="phone"
-                   type="tel"
-                   class="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg
-                          focus:ring-1 focus:ring-primary focus:border-primary outline-[#FF7800] transition-all dark:placeholder-gray-500"
+            <i class="fa-solid fa-phone absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+            <input formControlName="phone" type="tel"
+                   class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none"
                    placeholder="+255 712 345 678" />
           </div>
           @if (f['phone'].touched && f['phone'].hasError('required')) {
-            <p class="mt-1 text-sm text-red-600">Phone number is required</p>
-          }
-          @if (f['phone'].touched && f['phone'].hasError('pattern')) {
-            <p class="mt-1 text-sm text-red-600">Invalid phone format</p>
+            <p class="mt-1 text-sm text-red-600">Phone is required</p>
           }
         </div>
 
-        <!-- Location -->
+        <!-- Region Dropdown -->
         <div class="relative">
-          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">
-            Location
-          </label>
+          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">Region</label>
           <div class="relative">
-            <i class="fa-solid fa-map-marker-alt absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
-            <input formControlName="location"
-                   type="text"
-                   class="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg
-                          focus:ring-1 focus:ring-primary focus:border-primary outline-[#FF7800] transition-all dark:placeholder-gray-500"
-                   placeholder="Arusha, Tanzania" />
+            <i class="fa-solid fa-map absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+            <select formControlName="region_id"
+                    class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none">
+              <option [ngValue]="null">Select Region</option>
+              @for (region of regions(); track region.id) {
+                <option [ngValue]="region.id">{{ region.name }}</option>
+              }
+            </select>
+            @if (isLoadingRegions()) {
+              <i class="fa-solid fa-spinner fa-spin absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            }
           </div>
-          @if (f['location'].touched && f['location'].hasError('required')) {
-            <p class="mt-1 text-sm text-red-600">Location is required</p>
+          @if (f['region_id'].touched && f['region_id'].hasError('required')) {
+            <p class="mt-1 text-sm text-red-600">Region is required</p>
+          }
+        </div>
+
+        <!-- District Dropdown -->
+        <div class="relative">
+          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">District</label>
+          <div class="relative">
+            <i class="fa-solid fa-location-dot absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+            <select formControlName="district_id"
+                    [disabled]="!f['region_id'].value"
+                    class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none disabled:opacity-50">
+              <option [ngValue]="null">Select District</option>
+              @for (district of districts(); track district.id) {
+                <option [ngValue]="district.id">{{ district.name }}</option>
+              }
+            </select>
+            @if (isLoadingDistricts()) {
+              <i class="fa-solid fa-spinner fa-spin absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            }
+          </div>
+          @if (f['district_id'].touched && f['district_id'].hasError('required')) {
+            <p class="mt-1 text-sm text-red-600">District is required</p>
+          }
+        </div>
+
+        <!-- Ward -->
+        <div class="relative">
+          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">Ward</label>
+          <div class="relative">
+            <i class="fa-solid fa-map-pin absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+            <input formControlName="ward" type="text"
+                   class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+                   placeholder="Your ward/street" />
+          </div>
+          @if (f['ward'].touched && f['ward'].hasError('required')) {
+            <p class="mt-1 text-sm text-red-600">Ward is required</p>
           }
         </div>
 
         <!-- Password -->
         <div class="relative">
-          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">
-            Password
-          </label>
+          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">Password</label>
           <div class="relative">
-            <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
-            <input [type]="showPassword() ? 'text' : 'password'"
-                   formControlName="password"
-                   class="w-full pl-12 pr-12 py-3.5 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg
-                          focus:ring-1 focus:ring-primary focus:border-primary outline-[#FF7800] transition-all dark:placeholder-gray-500"
+            <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+            <input [type]="showPassword() ? 'text' : 'password'" formControlName="password"
+                   class="w-full pl-12 pr-12 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none"
                    placeholder="••••••••" />
             <button type="button" (click)="togglePasswordVisibility('password')"
-                    class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
               <i class="fa-solid" [ngClass]="showPassword() ? 'fa-eye' : 'fa-eye-slash'"></i>
             </button>
           </div>
@@ -135,57 +192,46 @@
 
         <!-- Confirm Password -->
         <div class="relative">
-          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">
-            Confirm Password
-          </label>
+          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">Confirm Password</label>
           <div class="relative">
-            <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
-            <input [type]="showConfirmPassword() ? 'text' : 'password'"
-                   formControlName="confirmPassword"
-                   class="w-full pl-12 pr-12 py-3.5 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg
-                          focus:ring-1 focus:ring-primary focus:border-primary outline-[#FF7800] transition-all dark:placeholder-gray-500"
+            <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+            <input [type]="showConfirmPassword() ? 'text' : 'password'" formControlName="confirmPassword"
+                   class="w-full pl-12 pr-12 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none"
                    placeholder="••••••••" />
             <button type="button" (click)="togglePasswordVisibility('confirm')"
-                    class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
               <i class="fa-solid" [ngClass]="showConfirmPassword() ? 'fa-eye' : 'fa-eye-slash'"></i>
             </button>
           </div>
-          @if (f['confirmPassword'].touched && f['confirmPassword'].hasError('required')) {
-            <p class="mt-1 text-sm text-red-600">Confirm password is required</p>
-          }
           @if (signupForm.hasError('mismatch') && (f['confirmPassword'].touched || f['password'].touched)) {
             <p class="mt-1 text-sm text-red-600">Passwords do not match</p>
           }
         </div>
 
         <!-- User Type Radio -->
-        <div class="flex justify-between gap-50 pt-2">
-          <label class="flex-1 flex items-center justify-center gap-3 cursor-pointer">
+        <div class="flex justify-between gap-4 pt-2">
+          <label class="flex-1 flex items-center justify-center gap-2 cursor-pointer">
             <input type="radio" formControlName="userType" value="client" class="hidden" />
-            <div class="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center
-                        transition-all"
-                 [ngClass]="{'border-primary bg-primary': f['userType'].value === 'client'}">
-              <div class="w-2.5 h-2.5 rounded-full bg-[#FF7800]" *ngIf="f['userType'].value === 'client'"></div>
+            <div class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center transition-all"
+                 [ngClass]="{'border-[#FF7800] bg-[#FF7800]': f['userType'].value === 'client'}">
+              <div class="w-2.5 h-2.5 rounded-full bg-white" *ngIf="f['userType'].value === 'client'"></div>
             </div>
             <span class="text-gray-700 dark:text-gray-300 font-medium">Client</span>
           </label>
 
-          <label class="flex-1 flex items-center justify-center gap-3 cursor-pointer">
+          <label class="flex-1 flex items-center justify-center gap-2 cursor-pointer">
             <input type="radio" formControlName="userType" value="agent" class="hidden" />
-            <div class="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center
-                        transition-all"
-                 [ngClass]="{'border-primary bg-primary': f['userType'].value === 'agent'}">
-              <div class="w-2.5 h-2.5 rounded-full bg-[#FF7800]" *ngIf="f['userType'].value === 'agent'"></div>
+            <div class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center transition-all"
+                 [ngClass]="{'border-[#FF7800] bg-[#FF7800]': f['userType'].value === 'agent'}">
+              <div class="w-2.5 h-2.5 rounded-full bg-white" *ngIf="f['userType'].value === 'agent'"></div>
             </div>
             <span class="text-gray-700 dark:text-gray-300 font-medium">Agent</span>
           </label>
         </div>
 
         <!-- Submit Button -->
-        <button type="submit"
-                [disabled]="signupForm.invalid || isLoading()"
-                class="w-full py-4 px-6 bg-primary text-white font-semibold rounded-full bg-[#FF7800] 
-                 disabled:cursor-not-allowed flex items-center justify-center gap-3 mt-6">
+        <button type="submit" [disabled]="signupForm.invalid || isLoading()"
+                class="w-full py-4 px-6 bg-[#FF7800] text-white font-semibold rounded-full disabled:cursor-not-allowed flex items-center justify-center gap-3 mt-4">
           <span *ngIf="!isLoading()">Sign Up</span>
           <span *ngIf="isLoading()">Creating account...</span>
           <i class="fa-solid fa-arrow-right" *ngIf="!isLoading()"></i>
@@ -196,9 +242,7 @@
       <!-- Already have account -->
       <div class="text-right mt-6 text-sm text-gray-600 dark:text-gray-400">
         Already have an account?
-        <a routerLink="/sign-in" class="text-primary text-[#FF7800] underline font-medium ml-1">
-          Sign In
-        </a>
+        <a routerLink="/sign-in" class="text-[#FF7800] underline font-medium ml-1">Sign In</a>
       </div>
 
     </div>
@@ -207,256 +251,289 @@
 </div>
 
 
- <!-- Desktop background shaped card (left side) - only this element for now -->
+<!-- Desktop view -->
 <div class="hidden lg:block relative w-full h-screen overflow-hidden bg-white dark:bg-[#0a0a0a]">
 
-  <!-- The irregular shaped area with your image -->
-   <div class="absolute inset-0 w-1/2 h-screen overflow-hidden">
-      <div class="absolute inset-0 bg-cover bg-center bg-no-repeat clip-signup-card
-                  rounded-tr-2xl rounded-br-3xl overflow-hidden"
-          style="background-image: url('/assets/Orange-material-design.avif');">
-      </div>
+  <!-- Left side background -->
+  <div class="absolute inset-0 w-1/2 h-screen overflow-hidden">
+    <div class="absolute inset-0 bg-cover bg-center bg-no-repeat clip-signup-card rounded-tr-2xl rounded-br-3xl"
+         style="background-image: url('/assets/Orange-material-design.avif');">
+    </div>
   </div>
 
-  <!-- Floating card (centered, doesn't touch edges, divided left/right) -->
-<div class="lg:flex fixed inset-0 items-center justify-center pointer-events-none z-10 p-12 xl:p-16">
+  <!-- Floating card -->
+  <div class="lg:flex fixed inset-0 items-center justify-center pointer-events-none z-10 p-12 xl:p-16">
+    <div class="pointer-events-auto w-full max-w-6xl h-[80vh] max-h-[85vh] bg-white dark:bg-[#0a0a0a] rounded-2xl shadow-2xl overflow-hidden flex">
 
-  <!-- Inner floating container (with padding/margin from edges) -->
-  <div class="pointer-events-auto w-full max-w-6xl h-[80vh] max-h-[85vh] bg-white dark:bg-[#0a0a0a] rounded-2xl shadow-2xl overflow-hidden flex">
+      <!-- Left side -->
+      <div class="relative left-5 mt-5 mb-5 w-1/2 shrink-0 overflow-hidden">
+        <div class="absolute inset-0 bg-cover bg-center bg-no-repeat clip-signup-card rounded-3xl"
+             style="background-image: url('/assets/Orange-material-design.avif');">
 
-    <!-- Left side: same shape + same image as background, not full height -->
-    <div class="relative left-5 mt-5 mb-5 w-1/2 shrink-0 overflow-hidden">
+          <button (click)="goBack()" class="text-white hover:text-gray-200 transition-colors p-4">
+            <i class="fa-solid fa-arrow-left text-2xl"></i>
+          </button>
 
-      <!-- Shaped left part with same clip-path + same rounded right corners -->
-      <div class="absolute inset-0 bg-cover bg-center bg-no-repeat clip-signup-card
-                  rounded-3xl"
-           style="background-image: url('/assets/Orange-material-design.avif');">
+          <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-8 z-10">
+            <h2 class="text-white text-3xl font-semibold mb-6">Already have an account?</h2>
+            <button routerLink="/sign-in" class="bg-orange-500 text-white px-8 py-2.5 rounded-full hover:scale-105 transition shadow">
+              Sign In
+            </button>
+          </div>
 
-      <button (click)="goBack()" 
-              class="text-white hover:text-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-primary rounded-full p-2">
-        <i class="fa-solid fa-arrow-left text-2xl"></i>
-      </button>
-
-      <!-- Centered content: "Already have an account?" + Sign In button -->
-      <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-8 z-10">
-        <h2 class="text-white text-3xl font-semibold tracking-tight mb-6">
-          Already have an account?
-        </h2>
-        <button 
-         routerLink="/sign-in" class="bg-orange-500 text-white px-25 py-2.5  rounded-full hover:scale-105 transition shadow text-sm sm:text-base">
-          Sign In
-        </button>
-      </div>
-
-            <!-- Bottom-left content: Get in touch with us + Social icons -->
           <div class="absolute bottom-8 left-5 z-10 text-white">
-            <h3 class="text-lg font-lobster font-medium mb-3">
-              Get in touch with us
-            </h3>
+            <h3 class="text-lg font-medium mb-3">Get in touch with us</h3>
             <div class="flex gap-4 text-2xl">
-              <i class="fa-brands fa-facebook hover:text-[#FF7800] cursor-pointer transition-colors"></i>
-              <i class="fa-brands fa-twitter hover:text-[#FF7800] cursor-pointer transition-colors"></i>
-              <i class="fa-brands fa-instagram hover:text-[#FF7800] cursor-pointer transition-colors"></i>
-              <i class="fa-brands fa-linkedin hover:text-[#FF7800] cursor-pointer transition-colors"></i>
+              <i class="fa-brands fa-facebook hover:text-[#FF7800] cursor-pointer"></i>
+              <i class="fa-brands fa-twitter hover:text-[#FF7800] cursor-pointer"></i>
+              <i class="fa-brands fa-instagram hover:text-[#FF7800] cursor-pointer"></i>
+              <i class="fa-brands fa-linkedin hover:text-[#FF7800] cursor-pointer"></i>
             </div>
           </div>
-      
+        </div>
+      </div>
+
+      <!-- Right side - Form -->
+      <div class="w-1/2 bg-white dark:bg-[#0a0a0a] flex flex-col h-full">
+        <div class="flex-1 flex flex-col px-12 xl:px-16 py-5 overflow-y-auto">
+
+          <!-- Logo -->
+          <div class="mb-6">
+            <h1 class="text-4xl font-bold text-[#FF7800]">Pilika Pilika</h1>
+          </div>
+
+          <!-- Heading -->
+          <h2 class="text-3xl font-semibold text-gray-900 dark:text-white mb-6">Create Your Account</h2>
+
+          <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="space-y-4 flex-1">
+
+            <!-- Names Row -->
+            <div class="grid grid-cols-2 gap-4">
+              <!-- First Name -->
+              <div class="relative">
+                <label class="block text-sm font-medium text-[#FF7800] mb-1">First Name</label>
+                <div class="relative">
+                  <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+                  <input formControlName="firstname" type="text"
+                         class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none"
+                         placeholder="John" />
+                </div>
+                @if (f['firstname'].touched && f['firstname'].hasError('required')) {
+                  <p class="mt-1 text-sm text-red-600">Required</p>
+                }
+              </div>
+
+              <!-- Last Name -->
+              <div class="relative">
+                <label class="block text-sm font-medium text-[#FF7800] mb-1">Last Name</label>
+                <div class="relative">
+                  <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+                  <input formControlName="lastname" type="text"
+                         class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none"
+                         placeholder="Doe" />
+                </div>
+                @if (f['lastname'].touched && f['lastname'].hasError('required')) {
+                  <p class="mt-1 text-sm text-red-600">Required</p>
+                }
+              </div>
+            </div>
+
+            <!-- Username -->
+            <div class="relative">
+              <label class="block text-sm font-medium text-[#FF7800] mb-1">Username</label>
+              <div class="relative">
+                <i class="fa-solid fa-at absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+                <input formControlName="username" type="text"
+                       class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none"
+                       placeholder="johndoe" />
+              </div>
+              @if (f['username'].touched && f['username'].hasError('required')) {
+                <p class="mt-1 text-sm text-red-600">Username is required</p>
+              }
+            </div>
+
+            <!-- Gender & Phone Row -->
+            <div class="grid grid-cols-2 gap-4">
+              <!-- Gender -->
+              <div class="relative">
+                <label class="block text-sm font-medium text-[#FF7800] mb-1">Gender</label>
+                <div class="relative">
+                  <i class="fa-solid fa-venus-mars absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+                  <select formControlName="gender"
+                          class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none">
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Phone -->
+              <div class="relative">
+                <label class="block text-sm font-medium text-[#FF7800] mb-1">Phone</label>
+                <div class="relative">
+                  <i class="fa-solid fa-phone absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+                  <input formControlName="phone" type="tel"
+                         class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none"
+                         placeholder="+255 712 345 678" />
+                </div>
+                @if (f['phone'].touched && f['phone'].hasError('required')) {
+                  <p class="mt-1 text-sm text-red-600">Required</p>
+                }
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="relative">
+              <label class="block text-sm font-medium text-[#FF7800] mb-1">Email</label>
+              <div class="relative">
+                <i class="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+                <input formControlName="email" type="email"
+                       class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none"
+                       placeholder="you@example.com" />
+              </div>
+              @if (f['email'].touched && f['email'].hasError('required')) {
+                <p class="mt-1 text-sm text-red-600">Email is required</p>
+              }
+              @if (f['email'].touched && f['email'].hasError('email')) {
+                <p class="mt-1 text-sm text-red-600">Invalid email</p>
+              }
+            </div>
+
+            <!-- Region & District Row -->
+            <div class="grid grid-cols-2 gap-4">
+              <!-- Region -->
+              <div class="relative">
+                <label class="block text-sm font-medium text-[#FF7800] mb-1">Region</label>
+                <div class="relative">
+                  <i class="fa-solid fa-map absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+                  <select formControlName="region_id"
+                          class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none">
+                    <option [ngValue]="null">Select Region</option>
+                    @for (region of regions(); track region.id) {
+                      <option [ngValue]="region.id">{{ region.name }}</option>
+                    }
+                  </select>
+                  @if (isLoadingRegions()) {
+                    <i class="fa-solid fa-spinner fa-spin absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                  }
+                </div>
+                @if (f['region_id'].touched && f['region_id'].hasError('required')) {
+                  <p class="mt-1 text-sm text-red-600">Required</p>
+                }
+              </div>
+
+              <!-- District -->
+              <div class="relative">
+                <label class="block text-sm font-medium text-[#FF7800] mb-1">District</label>
+                <div class="relative">
+                  <i class="fa-solid fa-location-dot absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+                  <select formControlName="district_id"
+                          [disabled]="!f['region_id'].value"
+                          class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none disabled:opacity-50">
+                    <option [ngValue]="null">Select District</option>
+                    @for (district of districts(); track district.id) {
+                      <option [ngValue]="district.id">{{ district.name }}</option>
+                    }
+                  </select>
+                  @if (isLoadingDistricts()) {
+                    <i class="fa-solid fa-spinner fa-spin absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                  }
+                </div>
+                @if (f['district_id'].touched && f['district_id'].hasError('required')) {
+                  <p class="mt-1 text-sm text-red-600">Required</p>
+                }
+              </div>
+            </div>
+
+            <!-- Ward -->
+            <div class="relative">
+              <label class="block text-sm font-medium text-[#FF7800] mb-1">Ward</label>
+              <div class="relative">
+                <i class="fa-solid fa-map-pin absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+                <input formControlName="ward" type="text"
+                       class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none"
+                       placeholder="Your ward/street" />
+              </div>
+              @if (f['ward'].touched && f['ward'].hasError('required')) {
+                <p class="mt-1 text-sm text-red-600">Ward is required</p>
+              }
+            </div>
+
+            <!-- Password -->
+            <div class="relative">
+              <label class="block text-sm font-medium text-[#FF7800] mb-1">Password</label>
+              <div class="relative">
+                <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+                <input [type]="showPassword() ? 'text' : 'password'" formControlName="password"
+                       class="w-full pl-12 pr-12 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none"
+                       placeholder="••••••••" />
+                <button type="button" (click)="togglePasswordVisibility('password')"
+                        class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                  <i class="fa-solid" [ngClass]="showPassword() ? 'fa-eye' : 'fa-eye-slash'"></i>
+                </button>
+              </div>
+              @if (f['password'].touched && f['password'].hasError('required')) {
+                <p class="mt-1 text-sm text-red-600">Password is required</p>
+              }
+              @if (f['password'].touched && f['password'].hasError('minlength')) {
+                <p class="mt-1 text-sm text-red-600">Min 8 characters</p>
+              }
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="relative">
+              <label class="block text-sm font-medium text-[#FF7800] mb-1">Confirm Password</label>
+              <div class="relative">
+                <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
+                <input [type]="showConfirmPassword() ? 'text' : 'password'" formControlName="confirmPassword"
+                       class="w-full pl-12 pr-12 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none"
+                       placeholder="••••••••" />
+                <button type="button" (click)="togglePasswordVisibility('confirm')"
+                        class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                  <i class="fa-solid" [ngClass]="showConfirmPassword() ? 'fa-eye' : 'fa-eye-slash'"></i>
+                </button>
+              </div>
+              @if (signupForm.hasError('mismatch') && (f['confirmPassword'].touched || f['password'].touched)) {
+                <p class="mt-1 text-sm text-red-600">Passwords do not match</p>
+              }
+            </div>
+
+            <!-- User Type Radio -->
+            <div class="flex justify-between gap-8 pt-2">
+              <label class="flex-1 flex items-center justify-center gap-3 cursor-pointer">
+                <input type="radio" formControlName="userType" value="client" class="hidden" />
+                <div class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center transition-all"
+                     [ngClass]="{'border-[#FF7800] bg-[#FF7800]': f['userType'].value === 'client'}">
+                  <div class="w-2.5 h-2.5 rounded-full bg-white" *ngIf="f['userType'].value === 'client'"></div>
+                </div>
+                <span class="text-gray-700 dark:text-gray-300 font-medium">Client</span>
+              </label>
+
+              <label class="flex-1 flex items-center justify-center gap-3 cursor-pointer">
+                <input type="radio" formControlName="userType" value="agent" class="hidden" />
+                <div class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center transition-all"
+                     [ngClass]="{'border-[#FF7800] bg-[#FF7800]': f['userType'].value === 'agent'}">
+                  <div class="w-2.5 h-2.5 rounded-full bg-white" *ngIf="f['userType'].value === 'agent'"></div>
+                </div>
+                <span class="text-gray-700 dark:text-gray-300 font-medium">Agent</span>
+              </label>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" [disabled]="signupForm.invalid || isLoading()"
+                    class="w-full py-3 px-6 bg-[#FF7800] text-white font-semibold rounded-full disabled:cursor-not-allowed mt-4 flex items-center justify-center gap-3">
+              <span *ngIf="!isLoading()">Sign Up</span>
+              <span *ngIf="isLoading()">Creating account...</span>
+              <i class="fa-solid fa-arrow-right" *ngIf="!isLoading()"></i>
+            </button>
+
+          </form>
+
+        </div>
       </div>
 
     </div>
-
-<!-- Right side - Updated with Logo + Heading -->
-    <div class="w-1/2 bg-white dark:bg-[#0a0a0a] flex flex-col h-full">
-      <div class="flex-1 flex flex-col px-12 xl:px-16 py-5 overflow-y-auto">
-        
-        <!-- Logo -->
-        <div class="mb-8">
-          <h1 class="text-4xl font-lobster font-bold text-primary text-[#FF7800] tracking-tight">
-            Pilika Pilika
-          </h1>
-        </div>
-
-        <!-- Heading -->
-        <h2 class="text-3xl font-semibold text-gray-900 dark:text-white mb-10">
-          Create Your Account
-        </h2>
-
-<!-- Signup Form -->
-    <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="space-y-5 flex-1">
-
-      <!-- Full Name -->
-      <div class="relative">
-        <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">
-          Full Name
-        </label>
-        <div class="relative">
-          <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
-          <input formControlName="fullName"
-                 type="text"
-                 class="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg
-                        focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all
-                        placeholder-gray-400 dark:placeholder-gray-500"
-                 placeholder="John Doe" />
-        </div>
-        @if (f['fullName'].touched && f['fullName'].hasError('required')) {
-          <p class="mt-1 text-sm text-red-600">Full name is required</p>
-        }
-      </div>
-
-      <!-- Email -->
-      <div class="relative">
-        <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">
-          Email
-        </label>
-        <div class="relative">
-          <i class="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
-          <input formControlName="email"
-                 type="email"
-                 class="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg
-                        focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all
-                        placeholder-gray-400 dark:placeholder-gray-500"
-                 placeholder="you@example.com" />
-        </div>
-        @if (f['email'].touched && f['email'].hasError('required')) {
-          <p class="mt-1 text-sm text-red-600">Email is required</p>
-        }
-        @if (f['email'].touched && f['email'].hasError('email')) {
-          <p class="mt-1 text-sm text-red-600">Please enter a valid email</p>
-        }
-      </div>
-
-      <!-- Phone -->
-      <div class="relative">
-        <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">
-          Phone Number
-        </label>
-        <div class="relative">
-          <i class="fa-solid fa-phone absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
-          <input formControlName="phone"
-                 type="tel"
-                 class="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg
-                        focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all
-                        placeholder-gray-400 dark:placeholder-gray-500"
-                 placeholder="+255 712 345 678" />
-        </div>
-        @if (f['phone'].touched && f['phone'].hasError('required')) {
-          <p class="mt-1 text-sm text-red-600">Phone number is required</p>
-        }
-        @if (f['phone'].touched && f['phone'].hasError('pattern')) {
-          <p class="mt-1 text-sm text-red-600">Invalid phone format</p>
-        }
-      </div>
-
-      <!-- Location -->
-      <div class="relative">
-        <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">
-          Location
-        </label>
-        <div class="relative">
-          <i class="fa-solid fa-map-marker-alt absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
-          <input formControlName="location"
-                 type="text"
-                 class="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg
-                        focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all
-                        placeholder-gray-400 dark:placeholder-gray-500"
-                 placeholder="Arusha, Tanzania" />
-        </div>
-        @if (f['location'].touched && f['location'].hasError('required')) {
-          <p class="mt-1 text-sm text-red-600">Location is required</p>
-        }
-      </div>
-
-      <!-- Password -->
-      <div class="relative">
-        <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">
-          Password
-        </label>
-        <div class="relative">
-          <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
-          <input [type]="showPassword() ? 'text' : 'password'"
-                 formControlName="password"
-                 class="w-full pl-12 pr-12 py-3.5 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg
-                        focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all
-                        placeholder-gray-400 dark:placeholder-gray-500"
-                 placeholder="••••••••" />
-          <button type="button" (click)="togglePasswordVisibility('password')"
-                  class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-            <i class="fa-solid" [ngClass]="showPassword() ? 'fa-eye' : 'fa-eye-slash'"></i>
-          </button>
-        </div>
-        @if (f['password'].touched && f['password'].hasError('required')) {
-          <p class="mt-1 text-sm text-red-600">Password is required</p>
-        }
-        @if (f['password'].touched && f['password'].hasError('minlength')) {
-          <p class="mt-1 text-sm text-red-600">Password must be at least 8 characters</p>
-        }
-      </div>
-
-      <!-- Confirm Password -->
-      <div class="relative">
-        <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">
-          Confirm Password
-        </label>
-        <div class="relative">
-          <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
-          <input [type]="showConfirmPassword() ? 'text' : 'password'"
-                 formControlName="confirmPassword"
-                 class="w-full pl-12 pr-12 py-3.5 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg
-                        focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all
-                        placeholder-gray-400 dark:placeholder-gray-500"
-                 placeholder="••••••••" />
-          <button type="button" (click)="togglePasswordVisibility('confirm')"
-                  class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-            <i class="fa-solid" [ngClass]="showConfirmPassword() ? 'fa-eye' : 'fa-eye-slash'"></i>
-          </button>
-        </div>
-        @if (f['confirmPassword'].touched && f['confirmPassword'].hasError('required')) {
-          <p class="mt-1 text-sm text-red-600">Confirm password is required</p>
-        }
-        @if (signupForm.hasError('mismatch') && (f['confirmPassword'].touched || f['password'].touched)) {
-          <p class="mt-1 text-sm text-red-600">Passwords do not match</p>
-        }
-      </div>
-
-      <!-- User Type Radio -->
-      <div class="flex justify-between gap-60 pt-2">
-        <label class="flex-1 flex items-center justify-center gap-3 cursor-pointer">
-          <input type="radio" formControlName="userType" value="client" class="hidden" />
-          <div class="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center transition-all"
-               [ngClass]="{'border-primary bg-primary': f['userType'].value === 'client'}">
-            <div class="w-2.5 h-2.5 rounded-full bg-[#FF7800]" *ngIf="f['userType'].value === 'client'"></div>
-          </div>
-          <span class="text-gray-700 dark:text-gray-300 font-medium">Client</span>
-        </label>
-
-        <label class="flex-1 flex items-center justify-center gap-3 cursor-pointer">
-          <input type="radio" formControlName="userType" value="agent" class="hidden" />
-          <div class="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center transition-all"
-               [ngClass]="{'border-primary bg-primary': f['userType'].value === 'agent'}">
-            <div class="w-2.5 h-2.5 rounded-full bg-[#FF7800]" *ngIf="f['userType'].value === 'agent'"></div>
-          </div>
-          <span class="text-gray-700 dark:text-gray-300 font-medium">Agent</span>
-        </label>
-      </div>
-
-      <!-- Submit Button -->
-      <button type="submit"
-              [disabled]="signupForm.invalid || isLoading()"
-              class="w-full py-2.5 px-6 bg-[#FF7800] text-white font-semibold rounded-full
-                     hover:bg-orange-600 transition-all disabled:cursor-not-allowed mt-8 flex items-center justify-center gap-3">
-        <span *ngIf="!isLoading()">Sign Up</span>
-        <span *ngIf="isLoading()">Creating account...</span>
-        <i class="fa-solid fa-arrow-right" *ngIf="!isLoading()"></i>
-      </button>
-
-    </form>
-    
-
-      </div>
-    </div>
-
   </div>
-
-</div>
 
 </div>

@@ -1,23 +1,96 @@
 <!-- Navbar -->
-<div class="absolute top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 flex items-center justify-between bg-white/10 backdrop-blur-lg px-3 sm:px-6 py-2 sm:py-3 rounded-full border border-white/20">
-    
-    <h1 class="text-orange-400 font-lobster font-bold text-lg sm:text-xl">Pilikapilika</h1>
+<div class="absolute top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 flex items-center justify-between bg-white/10 backdrop-blur-lg px-3 sm:px-6 py-2 sm:py-3 rounded-full border border-white/20 z-50">
+
+    <h1 class="text-orange-400 font-lobster font-bold text-lg sm:text-xl cursor-pointer" routerLink="/">Pilikapilika</h1>
 
     <div class="flex items-center gap-2 sm:gap-4">
 
         <!-- Theme Toggle -->
-        <button (click)="toggleTheme()" 
+        <button (click)="toggleTheme()"
                 class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition"
                 [attr.aria-label]="isDark ? 'Switch to light mode' : 'Switch to dark mode'">
-            
             <i class="fa-solid" [class.fa-sun]="isDark" [class.fa-moon]="!isDark"></i>
         </button>
 
-        <button routerLink="/sign-up" class="bg-orange-500 hover:scale-110 transition text-white px-3 sm:px-5 py-1.5 sm:py-2 rounded-full shadow text-sm sm:text-base">
-            Get Started
-        </button>
+        @if (!isLoggedIn()) {
+          <!-- Get Started Button (Not Logged In) -->
+          <button routerLink="/sign-up" class="bg-orange-500 hover:scale-110 transition text-white px-3 sm:px-5 py-1.5 sm:py-2 rounded-full shadow text-sm sm:text-base">
+              Get Started
+          </button>
+        } @else {
+          <!-- Profile Icon with Dropdown (Logged In) -->
+          <div class="relative profile-dropdown-container">
+            <button (click)="toggleProfileDropdown()"
+                    class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition">
+              <i class="fa-solid fa-user"></i>
+            </button>
 
-        <div class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-white text-lg sm:text-xl">
+            <!-- Dropdown Menu -->
+            @if (isProfileDropdownOpen()) {
+              <div class="fixed sm:absolute right-2 sm:right-0 top-16 sm:top-auto sm:mt-2 w-[calc(100vw-1rem)] sm:w-56 max-w-xs bg-white dark:bg-[#1a1a1a] rounded-xl shadow-2xl border border-gray-200 dark:border-[#2a2a2a] py-2 z-9999 max-h-[80vh] overflow-y-auto">
+
+                <!-- Account Section -->
+                <div class="px-4 py-2 border-b border-gray-100 dark:border-[#2a2a2a]">
+                  <p class="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase">Account</p>
+                </div>
+
+                <a routerLink="/profile-management" (click)="closeProfileDropdown()"
+                   class="flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-[#2a2a2a] transition">
+                  <i class="fa-solid fa-id-card text-orange-500 w-5"></i>
+                  <span class="whitespace-nowrap">Profile</span>
+                </a>
+
+                <a routerLink="/account/details" (click)="closeProfileDropdown()"
+                   class="flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-[#2a2a2a] transition">
+                  <i class="fa-solid fa-gear text-orange-500 w-5"></i>
+                  <span class="whitespace-nowrap">details</span>
+                </a>
+
+                <a routerLink="/account/history" (click)="closeProfileDropdown()"
+                   class="flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-[#2a2a2a] transition">
+                  <i class="fa-solid fa-clock-rotate-left text-orange-500 w-5"></i>
+                  <span class="whitespace-nowrap">History</span>
+                </a>
+
+                <a routerLink="/account/shipping" (click)="closeProfileDropdown()"
+                   class="flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-[#2a2a2a] transition">
+                  <i class="fa-solid fa-truck text-orange-500 w-5"></i>
+                  <span class="whitespace-nowrap">Shipping</span>
+                </a>
+
+                <!-- Personal Features Section -->
+                <div class="px-4 py-2 mt-1 border-t border-gray-100 dark:border-[#2a2a2a]">
+                  <p class="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase">Personal</p>
+                </div>
+
+                <a routerLink="/messages" (click)="closeProfileDropdown()"
+                   class="flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-[#2a2a2a] transition">
+                  <i class="fa-solid fa-message text-orange-500 w-5"></i>
+                  <span class="whitespace-nowrap">Messages</span>
+                </a>
+
+                <a routerLink="/account/help" (click)="closeProfileDropdown()"
+                   class="flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-[#2a2a2a] transition">
+                  <i class="fa-solid fa-circle-question text-orange-500 w-5"></i>
+                  <span class="whitespace-nowrap">Help</span>
+                </a>
+
+                <!-- Logout -->
+                <div class="border-t border-gray-100 dark:border-[#2a2a2a] mt-1 pt-1">
+                  <button (click)="logout()"
+                          class="flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition w-full dark:text-red-400">
+                    <i class="fa-solid fa-right-from-bracket w-5"></i>
+                    <span class="whitespace-nowrap">Logout</span>
+                  </button>
+                </div>
+
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Menu Icon -->
+        <div class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-white text-lg sm:text-xl cursor-pointer">
             <i class="fa-solid fa-bars"></i>
         </div>
 

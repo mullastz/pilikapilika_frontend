@@ -1,0 +1,30 @@
+<div class="fixed top-4 right-4 z-50 flex flex-col gap-2">
+  @for (toast of toastService.activeToasts(); track toast.id) {
+    <div
+      class="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg min-w-[300px] max-w-[400px] animate-slide-in"
+      [class.bg-green-500]="toast.type === 'success'"
+      [class.bg-red-500]="toast.type === 'error'"
+      [class.bg-yellow-500]="toast.type === 'warning'"
+      [class.bg-blue-500]="toast.type === 'info'"
+    >
+      <!-- Icon -->
+      <i class="fa-solid text-white text-lg"
+         [class.fa-check-circle]="toast.type === 'success'"
+         [class.fa-exclamation-circle]="toast.type === 'error'"
+         [class.fa-exclamation-triangle]="toast.type === 'warning'"
+         [class.fa-info-circle]="toast.type === 'info'"
+      ></i>
+
+      <!-- Message -->
+      <p class="text-white text-sm flex-1">{{ toast.message }}</p>
+
+      <!-- Close button -->
+      <button
+        (click)="toastService.remove(toast.id)"
+        class="text-white hover:text-gray-200 transition-colors"
+      >
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+  }
+</div>

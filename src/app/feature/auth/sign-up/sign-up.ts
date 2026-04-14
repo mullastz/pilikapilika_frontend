@@ -1,7 +1,11 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, OnInit, inject } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
+import { AuthService } from '../../../core/services/auth.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { Region, District, SignupRequest } from '../../../core/interfaces/auth.interface';
 
 @Component({
   selector: 'app-sign-up',
@@ -9,22 +13,84 @@ import { Router, RouterLink } from '@angular/router';
   templateUrl: './sign-up.html',
   styleUrl: './sign-up.css',
 })
-export class SignUp {
- signupForm: FormGroup;
+export class SignUp implements OnInit {
+  private fb = inject(FormBuilder);
+  private router = inject(Router);
+  private location = inject(Location);
+  private authService = inject(AuthService);
+  private toastService = inject(ToastService);
+
+  signupForm: FormGroup;
   isLoading = signal(false);
   showPassword = signal(false);
   showConfirmPassword = signal(false);
 
-  constructor(private fb: FormBuilder, private router: Router, private location: Location) {
+  // Region & District data
+  regions = signal<Region[]>([]);
+  districts = signal<District[]>([]);
+  isLoadingRegions = signal(false);
+  isLoadingDistricts = signal(false);
+
+  constructor() {
     this.signupForm = this.fb.group({
-      fullName: ['', [Validators.required, Validators.minLength(2)]],
+      firstname: ['', [Validators.required, Validators.minLength(2)]],
+      lastname: ['', [Validators.required, Validators.minLength(2)]],
+      gender: ['Male', Validators.required],
+      username: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
-      phone: ['', [Validators.required, Validators.pattern(/^\+?[1-9]\d{1,14}$/)]], // basic E.164-ish
-      location: ['', Validators.required],
+      phone: ['', [Validators.required]],
+      region_id: [null, Validators.required],
+      district_id: [null, Validators.required],
+      ward: ['', Validators.required],
+      address: [''],
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', Validators.required],
-      userType: ['client', Validators.required], // default to client
+      userType: ['client', Validators.required], // client = Buyer, agent = Seller
     }, { validators: this.passwordMatchValidator });
+  }
+
+  ngOnInit(): void {
+    this.loadRegions();
+
+    // Watch for region changes to load districts
+    this.signupForm.get('region_id')?.valueChanges.subscribe((regionId: number) => {
+      if (regionId) {
+        this.loadDistricts(regionId);
+        this.signupForm.patchValue({ district_id: null });
+      } else {
+        this.districts.set([]);
+      }
+    });
+  }
+
+  loadRegions(): void {
+    this.isLoadingRegions.set(true);
+    this.authService.getRegions().subscribe({
+      next: (regions) => {
+        this.regions.set(regions);
+        this.isLoadingRegions.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to load regions:', err);
+        this.isLoadingRegions.set(false);
+        this.toastService.error('Failed to load regions. Please refresh the page.');
+      }
+    });
+  }
+
+  loadDistricts(regionId: number): void {
+    this.isLoadingDistricts.set(true);
+    this.authService.getDistrictsByRegion(regionId).subscribe({
+      next: (districts) => {
+        this.districts.set(districts);
+        this.isLoadingDistricts.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to load districts:', err);
+        this.isLoadingDistricts.set(false);
+        this.toastService.error('Failed to load districts. Please try again.');
+      }
+    });
   }
 
   // Custom validator: passwords must match
@@ -46,16 +112,37 @@ export class SignUp {
 
     this.isLoading.set(true);
 
-    // TODO: call auth service / API here
-    console.log('Signup payload:', this.signupForm.value);
+    const formValue = this.signupForm.value;
+    const signupData: SignupRequest = {
+      firstname: formValue.firstname,
+      lastname: formValue.lastname,
+      gender: formValue.gender,
+      username: formValue.username,
+      email: formValue.email,
+      phone: formValue.phone,
+      password: formValue.password,
+      password_confirmation: formValue.confirmPassword,
+      region_id: formValue.region_id,
+      district_id: formValue.district_id,
+      ward: formValue.ward,
+      address: formValue.address || null,
+      role: formValue.userType === 'agent' ? 'Seller' : 'Buyer'
+    };
 
-    // Simulate API delay
-    setTimeout(() => {
-      this.isLoading.set(false);
-      // Navigate to dashboard or verify page
-      // this.router.navigate(['/dashboard']);
-      alert('Signup successful! (demo)');
-    }, 1500);
+    this.authService.signup(signupData).subscribe({
+      next: (response) => {
+        this.isLoading.set(false);
+        this.toastService.success('Account created successfully! Please sign in.');
+        // Navigate to sign in or dashboard
+        this.router.navigate(['/sign-in']);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.isLoading.set(false);
+        const errorMsg = this.extractErrorMessage(err);
+        this.toastService.error(errorMsg);
+        console.error('Signup error:', err);
+      }
+    });
   }
 
   goBack() {
@@ -68,5 +155,51 @@ export class SignUp {
     } else {
       this.showConfirmPassword.update(v => !v);
     }
+  }
+
+  private extractErrorMessage(err: HttpErrorResponse): string {
+    // Laravel validation errors (422 status with errors object)
+    if (err.error?.errors) {
+      // Get first error from any field
+      const errorKeys = Object.keys(err.error.errors);
+      for (const key of errorKeys) {
+        const messages = err.error.errors[key];
+        if (Array.isArray(messages) && messages.length > 0) {
+          return messages[0];
+        }
+      }
+    }
+
+    // Laravel message field
+    if (err.error?.message && err.error.message !== 'The given data was invalid.') {
+      return err.error.message;
+    }
+
+    // Check for specific error indicators in the error object
+    const errorStr = JSON.stringify(err.error).toLowerCase();
+    if (errorStr.includes('email') && errorStr.includes('taken')) {
+      return 'This email address is already registered.';
+    }
+    if (errorStr.includes('username') && errorStr.includes('taken')) {
+      return 'This username is already taken.';
+    }
+    if (errorStr.includes('phone') && errorStr.includes('taken')) {
+      return 'This phone number is already registered.';
+    }
+
+    // HTTP status based messages
+    if (err.status === 422) {
+      return 'Please check your information and try again.';
+    }
+
+    if (err.status === 409) {
+      return 'An account with this email or username already exists.';
+    }
+
+    if (err.status === 0) {
+      return 'Cannot connect to server. Please check your internet connection.';
+    }
+
+    return 'Signup failed. Please try again later.';
   }
 }

@@ -20,22 +20,22 @@
     <div class="bg-white dark:bg-[#0a0a0a] rounded-t-3xl px-6 pt-8 pb-10 shadow-2xl h-[65vh] overflow-y-auto">
       <form [formGroup]="signInForm" (ngSubmit)="onSubmit()" class="space-y-6">
 
-        <!-- Phone Number -->
+        <!-- Email or Username -->
         <div class="relative">
           <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">
-            Phone Number
+            Email or Username
           </label>
           <div class="relative">
-            <i class="fa-solid fa-phone absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
-            <input formControlName="phone"
-                   type="tel"
+            <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
+            <input formControlName="login"
+                   type="text"
                    class="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg
                           focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all
                           placeholder-gray-400 dark:placeholder-gray-500"
-                   placeholder="+255 712 345 678" />
+                   placeholder="you@example.com or username" />
           </div>
-          @if (f['phone'].touched && f['phone'].hasError('required')) {
-            <p class="mt-1 text-sm text-red-600">Phone number is required</p>
+          @if (f['login'].touched && f['login'].hasError('required')) {
+            <p class="mt-1 text-sm text-red-600">Email or username is required</p>
           }
         </div>
 
@@ -159,17 +159,17 @@
           <!-- Sign In Form -->
           <form [formGroup]="signInForm" (ngSubmit)="onSubmit()" class="space-y-6">
 
-            <!-- Phone Number -->
+            <!-- Email or Username -->
             <div class="relative">
-              <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">Phone Number</label>
+              <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">Email or Username</label>
               <div class="relative">
-                <i class="fa-solid fa-phone absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
-                <input formControlName="phone" type="tel"
+                <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
+                <input formControlName="login" type="text"
                        class="w-full pl-12 pr-4 py-4 bg-gray-100 dark:bg-gray-800 dark:text-white border border-gray-300 dark:border-gray-700 rounded-xl focus:border-[#FF7800] outline-none transition-all"
-                       placeholder="+255 712 345 678" />
+                       placeholder="you@example.com or username" />
               </div>
-              @if (f['phone'].touched && f['phone'].hasError('required')) {
-                <p class="mt-1 text-sm text-red-600">Phone number is required</p>
+              @if (f['login'].touched && f['login'].hasError('required')) {
+                <p class="mt-1 text-sm text-red-600">Email or username is required</p>
               }
             </div>
 

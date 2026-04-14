@@ -8,7 +8,7 @@
             <!-- HEADER -->
             <div class="flex items-center gap-3 mb-6">
 
-                <button 
+                <button
                     (click)="goBack()"
                     class="w-8 h-8 rounded-full bg-white/10 dark:bg-[#111] flex items-center justify-center shadow hover:scale-110 transition"
                 >
@@ -21,70 +21,252 @@
 
             </div>
 
-            <!-- PROFILE IMAGE -->
-            <div class="flex flex-col items-center mb-6">
-
-                <img 
-                    src="assets/landingpage_images/profile1.webp"
-                    class="w-20 h-20 rounded-full object-cover border-2 border-orange-500 mb-3"
-                />
-
-                <button class="text-sm text-orange-500 hover:underline">
-                    Change Photo
-                </button>
-
+            <!-- LOADING STATE -->
+            <div *ngIf="isLoading" class="flex justify-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
             </div>
 
-            <!-- FORM -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- PROFILE FORM -->
+            <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading">
 
-                <!-- FULL NAME -->
-                <div>
-                    <label class="text-sm text-gray-500 dark:text-gray-400">Full Name</label>
-                    <input 
-                        type="text"
-                        value="Suleiman Salum"
-                        class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+                <!-- PROFILE IMAGE -->
+                <div class="flex flex-col items-center mb-6">
+
+                    <img
+                        [src]="'assets/landingpage_images/profile1.webp'"
+                        class="w-20 h-20 rounded-full object-cover border-2 border-orange-500 mb-3"
                     />
+
+                    <button type="button" class="text-sm text-orange-500 hover:underline">
+                        Change Photo
+                    </button>
+
                 </div>
 
-                <!-- EMAIL -->
-                <div>
-                    <label class="text-sm text-gray-500 dark:text-gray-400">Email</label>
-                    <input 
-                        type="email"
-                        value="suleiman@email.com"
-                        class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
-                    />
+                <!-- FORM GRID -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                    <!-- FIRST NAME -->
+                    <div>
+                        <label class="text-sm text-gray-500 dark:text-gray-400">First Name *</label>
+                        <input
+                            type="text"
+                            formControlName="firstname"
+                            class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+                            [class.ring-2]="firstname?.invalid && firstname?.touched"
+                            [class.ring-red-500]="firstname?.invalid && firstname?.touched"
+                        />
+                        <div *ngIf="firstname?.invalid && firstname?.touched" class="text-red-500 text-xs mt-1">
+                            First name is required
+                        </div>
+                    </div>
+
+                    <!-- LAST NAME -->
+                    <div>
+                        <label class="text-sm text-gray-500 dark:text-gray-400">Last Name *</label>
+                        <input
+                            type="text"
+                            formControlName="lastname"
+                            class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+                            [class.ring-2]="lastname?.invalid && lastname?.touched"
+                            [class.ring-red-500]="lastname?.invalid && lastname?.touched"
+                        />
+                        <div *ngIf="lastname?.invalid && lastname?.touched" class="text-red-500 text-xs mt-1">
+                            Last name is required
+                        </div>
+                    </div>
+
+                    <!-- GENDER -->
+                    <div>
+                        <label class="text-sm text-gray-500 dark:text-gray-400">Gender *</label>
+                        <select
+                            formControlName="gender"
+                            class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500 appearance-none cursor-pointer"
+                            [class.ring-2]="gender?.invalid && gender?.touched"
+                            [class.ring-red-500]="gender?.invalid && gender?.touched"
+                        >
+                            <option value="">Select Gender</option>
+                            <option *ngFor="let option of genderOptions" [value]="option">{{ option }}</option>
+                        </select>
+                        <div *ngIf="gender?.invalid && gender?.touched" class="text-red-500 text-xs mt-1">
+                            Gender is required
+                        </div>
+                    </div>
+
+                    <!-- EMAIL (Read-only) -->
+                    <div>
+                        <label class="text-sm text-gray-500 dark:text-gray-400">Email</label>
+                        <input
+                            type="email"
+                            formControlName="email"
+                            class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#222] dark:text-gray-400 outline-none cursor-not-allowed"
+                            readonly
+                        />
+                        <p class="text-xs text-gray-400 mt-1">Email cannot be changed</p>
+                    </div>
+
+                    <!-- PHONE -->
+                    <div>
+                        <label class="text-sm text-gray-500 dark:text-gray-400">Phone</label>
+                        <input
+                            type="tel"
+                            formControlName="phone"
+                            class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+                        />
+                    </div>
+
+                    <!-- REGION -->
+                    <div>
+                        <label class="text-sm text-gray-500 dark:text-gray-400">Region</label>
+                        <select
+                            formControlName="region_id"
+                            (change)="onRegionChange()"
+                            class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500 appearance-none cursor-pointer"
+                        >
+                            <option [ngValue]="null">Select Region</option>
+                            <option *ngFor="let region of regions" [ngValue]="region.id">{{ region.name }}</option>
+                        </select>
+                    </div>
+
+                    <!-- DISTRICT -->
+                    <div>
+                        <label class="text-sm text-gray-500 dark:text-gray-400">District</label>
+                        <select
+                            formControlName="district_id"
+                            class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500 appearance-none cursor-pointer"
+                            [disabled]="!filteredDistricts.length"
+                        >
+                            <option [ngValue]="null">Select District</option>
+                            <option *ngFor="let district of filteredDistricts" [ngValue]="district.id">{{ district.name }}</option>
+                        </select>
+                    </div>
+
+                    <!-- WARD -->
+                    <div>
+                        <label class="text-sm text-gray-500 dark:text-gray-400">Ward</label>
+                        <input
+                            type="text"
+                            formControlName="ward"
+                            class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+                        />
+                    </div>
+
+                    <!-- ADDRESS -->
+                    <div class="sm:col-span-2">
+                        <label class="text-sm text-gray-500 dark:text-gray-400">Address</label>
+                        <textarea
+                            formControlName="address"
+                            rows="3"
+                            class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                        ></textarea>
+                    </div>
+
                 </div>
 
-                <!-- PHONE -->
-                <div>
-                    <label class="text-sm text-gray-500 dark:text-gray-400">Phone</label>
-                    <input 
-                        type="text"
-                        value="+255 700 000 000"
-                        class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
-                    />
+                <!-- SAVE BUTTON -->
+                <div class="mt-6 text-center">
+                    <button
+                        type="submit"
+                        [disabled]="isSaving"
+                        class="bg-orange-500 text-white px-6 py-3 rounded-full hover:scale-105 transition shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mx-auto"
+                    >
+                        <span *ngIf="isSaving" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                        {{ isSaving ? 'Saving...' : 'Save Changes' }}
+                    </button>
                 </div>
 
-                <!-- LOCATION -->
-                <div>
-                    <label class="text-sm text-gray-500 dark:text-gray-400">Location</label>
-                    <input 
-                        type="text"
-                        value="Arusha, Tanzania"
-                        class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
-                    />
+            </form>
+
+            <!-- DIVIDER -->
+            <div class="border-t border-gray-200 dark:border-gray-700 my-6"></div>
+
+            <!-- CHANGE PASSWORD SECTION -->
+            <div class="mt-6">
+
+                <!-- TOGGLE BUTTON -->
+                <div class="text-center mb-4">
+                    <button
+                        type="button"
+                        (click)="togglePasswordForm()"
+                        class="text-orange-500 hover:text-orange-600 font-medium text-sm flex items-center justify-center gap-2 mx-auto"
+                    >
+                        <i class="fa-solid" [class.fa-lock]="!showPasswordForm" [class.fa-unlock]="showPasswordForm"></i>
+                        {{ showPasswordForm ? 'Cancel Password Change' : 'Change Password' }}
+                    </button>
                 </div>
 
-            </div>
+                <!-- PASSWORD FORM -->
+                <form [formGroup]="passwordForm" (ngSubmit)="onChangePassword()" *ngIf="showPasswordForm" class="max-w-md mx-auto">
 
-            <!-- SAVE BUTTON -->
-            <div class="mt-6 text-center">
-                <button class="bg-orange-500 text-white px-6 py-3 rounded-full hover:scale-105 transition shadow">
-                    Save Changes
-                </button>
+                    <div class="space-y-4">
+
+                        <!-- CURRENT PASSWORD -->
+                        <div>
+                            <label class="text-sm text-gray-500 dark:text-gray-400">Current Password *</label>
+                            <input
+                                type="password"
+                                formControlName="current_password"
+                                class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+                                [class.ring-2]="currentPassword?.invalid && currentPassword?.touched"
+                                [class.ring-red-500]="currentPassword?.invalid && currentPassword?.touched"
+                                placeholder="Enter your current password"
+                            />
+                            <div *ngIf="currentPassword?.invalid && currentPassword?.touched" class="text-red-500 text-xs mt-1">
+                                Current password is required (min 6 characters)
+                            </div>
+                        </div>
+
+                        <!-- NEW PASSWORD -->
+                        <div>
+                            <label class="text-sm text-gray-500 dark:text-gray-400">New Password *</label>
+                            <input
+                                type="password"
+                                formControlName="new_password"
+                                class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+                                [class.ring-2]="newPassword?.invalid && newPassword?.touched"
+                                [class.ring-red-500]="newPassword?.invalid && newPassword?.touched"
+                                placeholder="Enter your new password"
+                            />
+                            <div *ngIf="newPassword?.invalid && newPassword?.touched" class="text-red-500 text-xs mt-1">
+                                New password is required (min 6 characters)
+                            </div>
+                        </div>
+
+                        <!-- CONFIRM NEW PASSWORD -->
+                        <div>
+                            <label class="text-sm text-gray-500 dark:text-gray-400">Confirm New Password *</label>
+                            <input
+                                type="password"
+                                formControlName="new_password_confirmation"
+                                class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+                                [class.ring-2]="(confirmPassword?.invalid && confirmPassword?.touched) || passwordForm.errors?.['passwordMismatch']"
+                                [class.ring-red-500]="(confirmPassword?.invalid && confirmPassword?.touched) || passwordForm.errors?.['passwordMismatch']"
+                                placeholder="Confirm your new password"
+                            />
+                            <div *ngIf="confirmPassword?.invalid && confirmPassword?.touched" class="text-red-500 text-xs mt-1">
+                                Password confirmation is required
+                            </div>
+                            <div *ngIf="passwordForm.errors?.['passwordMismatch'] && confirmPassword?.touched" class="text-red-500 text-xs mt-1">
+                                Passwords do not match
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- CHANGE PASSWORD BUTTON -->
+                    <div class="mt-6 text-center">
+                        <button
+                            type="submit"
+                            [disabled]="isChangingPassword"
+                            class="bg-gray-800 dark:bg-gray-700 text-white px-6 py-3 rounded-full hover:scale-105 transition shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            <span *ngIf="isChangingPassword" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                            {{ isChangingPassword ? 'Changing Password...' : 'Change Password' }}
+                        </button>
+                    </div>
+
+                </form>
+
             </div>
 
         </div>

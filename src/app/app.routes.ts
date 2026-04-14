@@ -20,7 +20,7 @@ export const routes: Routes = [
   { path: 'sign-in', component: SignIn },
   { path: '', component: LandingPage },
   { path: 'profile-management', component: ProfileManagement },
-  { path: 'account/manage', component: ManageAccount },
+  { path: 'account/details', component: ManageAccount },
   { path: 'account/history', component: History },
   { path: 'account/shipping', component: Shipping },
   { path: 'account/help', component: HelpCenter },
