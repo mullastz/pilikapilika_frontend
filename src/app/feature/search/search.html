@@ -17,50 +17,137 @@
         </h1>
       </div>
 
+      <!-- LOADING SKELETON -->
+      <div *ngIf="isLoading" class="flex flex-col gap-4">
+        <div *ngFor="let i of [1,2,3,4,5]" class="bg-gray-100 dark:bg-[#111] rounded-xl p-4 animate-pulse">
+          <div class="flex items-start gap-4">
+            <div class="w-16 h-16 rounded-full bg-gray-300 dark:bg-[#333] shrink-0"></div>
+            <div class="flex-1 space-y-3">
+              <div class="flex items-start justify-between">
+                <div class="h-4 bg-gray-300 dark:bg-[#333] rounded w-1/3"></div>
+                <div class="h-4 bg-gray-300 dark:bg-[#333] rounded w-16"></div>
+              </div>
+              <div class="h-3 bg-gray-300 dark:bg-[#333] rounded w-1/4"></div>
+              <div class="h-3 bg-gray-300 dark:bg-[#333] rounded w-24"></div>
+              <div class="flex gap-1">
+                <div class="h-5 bg-gray-300 dark:bg-[#333] rounded-full w-16"></div>
+                <div class="h-5 bg-gray-300 dark:bg-[#333] rounded-full w-20"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ERROR STATE -->
+      <div *ngIf="error && !isLoading" class="text-center py-12">
+        <i class="fa-solid fa-circle-exclamation text-4xl text-red-500 mb-4"></i>
+        <p class="text-gray-500 dark:text-gray-400 mb-4">{{error}}</p>
+        <button (click)="loadAgents()" class="bg-orange-500 text-white px-4 py-2 rounded-full hover:scale-105 transition">
+          Retry
+        </button>
+      </div>
+
       <!-- SEARCH BAR -->
-      <div class="relative mb-6">
+      <div *ngIf="!isLoading && !error" class="relative mb-6">
         <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
         <input
           type="text"
           [(ngModel)]="searchQuery"
-          placeholder="Search agents by name, location, or specialization..."
-          class="w-full pl-12 pr-4 py-3 bg-gray-100 dark:bg-[#111] rounded-xl text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+          (keyup.enter)="onSearch()"
+          placeholder="Search agents by name..."
+          class="w-full pl-12 pr-24 py-3 bg-gray-100 dark:bg-[#111] rounded-xl text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
         />
         <button
           *ngIf="searchQuery"
-          (click)="searchQuery = ''"
-          class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-orange-500 transition"
+          (click)="searchQuery = ''; onSearch()"
+          class="absolute right-20 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-orange-500 transition"
         >
           <i class="fa-solid fa-xmark"></i>
         </button>
+        <button
+          (click)="onSearch()"
+          class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-orange-600 transition"
+        >
+          Search
+        </button>
       </div>
 
-      <!-- FILTER PILLS -->
-      <div class="mb-6">
-        <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3">Filters</h3>
-        <div class="flex flex-wrap gap-2">
-          <button
-            *ngFor="let filter of filters"
-            (click)="selectFilter(filter)"
-            class="px-4 py-2 rounded-full text-xs font-medium transition"
-            [ngClass]="{
-              'bg-orange-500 text-white': selectedFilter === filter || (filter === 'All' && !selectedFilter),
-              'bg-orange-100 dark:bg-[#111] text-gray-700 dark:text-gray-300 hover:bg-orange-200 dark:hover:bg-[#222]': selectedFilter !== filter && !(filter === 'All' && !selectedFilter)
-            }"
-          >
-            {{filter}}
-          </button>
+      <!-- FILTERS -->
+      <div *ngIf="!isLoading && !error" class="mb-6 space-y-4">
+
+        <!-- By Specialization -->
+        <div>
+          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">By Specialization</h3>
+          <div class="flex flex-wrap gap-2">
+            <button
+              *ngFor="let spec of specializations"
+              (click)="selectSpecialization(spec)"
+              class="px-3 py-1.5 rounded-full text-xs font-medium transition"
+              [ngClass]="{
+                'bg-orange-500 text-white': selectedSpecialization === spec || (spec === 'All' && !selectedSpecialization),
+                'bg-orange-100 dark:bg-[#111] text-gray-700 dark:text-gray-300 hover:bg-orange-200 dark:hover:bg-[#222]': selectedSpecialization !== spec && !(spec === 'All' && !selectedSpecialization)
+              }"
+            >
+              {{spec}}
+            </button>
+          </div>
         </div>
+
+        <!-- By Transport -->
+        <div>
+          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">By Transport</h3>
+          <div class="flex flex-wrap gap-2">
+            <button
+              *ngFor="let transport of transportMethods"
+              (click)="selectTransport(transport.value)"
+              class="px-3 py-1.5 rounded-full text-xs font-medium transition"
+              [ngClass]="{
+                'bg-blue-500 text-white': selectedTransport === transport.value || (transport.value === 'all' && !selectedTransport),
+                'bg-blue-100 dark:bg-[#111] text-gray-700 dark:text-gray-300 hover:bg-blue-200 dark:hover:bg-[#222]': selectedTransport !== transport.value && !(transport.value === 'all' && !selectedTransport)
+              }"
+            >
+              {{transport.label}}
+            </button>
+          </div>
+        </div>
+
+        <!-- By Price -->
+        <div>
+          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">By Price</h3>
+          <div class="flex flex-wrap gap-2">
+            <button
+              *ngFor="let price of priceRanges"
+              (click)="selectPriceRange(price)"
+              class="px-3 py-1.5 rounded-full text-xs font-medium transition"
+              [ngClass]="{
+                'bg-green-500 text-white': selectedPriceRange === price || (price === 'All' && !selectedPriceRange),
+                'bg-green-100 dark:bg-[#111] text-gray-700 dark:text-gray-300 hover:bg-green-200 dark:hover:bg-[#222]': selectedPriceRange !== price && !(price === 'All' && !selectedPriceRange)
+              }"
+            >
+              {{price}}
+            </button>
+          </div>
+        </div>
+
+        <!-- Clear All Filters -->
+        <button
+          *ngIf="hasActiveFilters()"
+          (click)="clearSearch()"
+          class="text-xs text-orange-500 hover:underline"
+        >
+          Clear all filters
+        </button>
+
       </div>
 
       <!-- SEARCH RESULTS -->
-      <div>
+      <div *ngIf="!isLoading && !error">
         <div class="flex items-center justify-between mb-4">
           <h3 class="font-semibold dark:text-white">
             Results ({{filteredResults.length}})
           </h3>
-          <span *ngIf="selectedFilter" class="text-xs text-orange-500">
-            Filtered by: {{selectedFilter}}
+          <span *ngIf="hasActiveFilters()" class="text-xs text-orange-500">
+            Filters active
           </span>
         </div>
 
@@ -69,13 +156,14 @@
 
           <div
             *ngFor="let agent of filteredResults"
+            (click)="viewAgent(agent.id)"
             class="bg-gray-100 dark:bg-[#111] rounded-xl p-4 hover:scale-[1.01] transition cursor-pointer"
           >
             <div class="flex items-start gap-4">
 
               <!-- AGENT IMAGE -->
               <img
-                [src]="agent.image"
+                [src]="getAgentImage(agent)"
                 class="w-16 h-16 rounded-full border-2 border-orange-500 object-cover shrink-0"
               />
 
@@ -84,23 +172,23 @@
 
                 <div class="flex items-start justify-between mb-1">
                   <h3 class="font-semibold dark:text-white text-sm sm:text-base truncate">
-                    {{agent.name}}
+                    {{getAgentName(agent)}}
                   </h3>
                   <span class="text-orange-500 font-semibold text-sm">
-                    {{agent.price}}
+                    {{getAgentPrice(agent)}}
                   </span>
                 </div>
 
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
                   <i class="fa-solid fa-location-dot mr-1"></i>
-                  {{agent.location}}
+                  {{getAgentLocation(agent)}}
                 </p>
 
                 <!-- RATING -->
                 <div class="flex items-center gap-1 text-yellow-500 text-xs mb-2">
                   <i class="fa-solid fa-star"></i>
                   <span class="text-gray-700 dark:text-gray-300">
-                    {{agent.rating}} ({{agent.reviews}} reviews)
+                    {{agent.rating || '0.0'}} ({{agent.total_reviews || 0}} reviews)
                   </span>
                 </div>
 

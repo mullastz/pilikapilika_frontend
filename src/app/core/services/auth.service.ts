@@ -139,6 +139,22 @@ export class AuthService {
     );
   }
 
+  searchAgents(params?: { specialization?: string; transport?: string; min_price?: number; max_price?: number; q?: string }): Observable<Agent[]> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      if (params.specialization) queryParams.append('specialization', params.specialization);
+      if (params.transport) queryParams.append('transport', params.transport);
+      if (params.min_price !== undefined) queryParams.append('min_price', params.min_price.toString());
+      if (params.max_price !== undefined) queryParams.append('max_price', params.max_price.toString());
+      if (params.q) queryParams.append('q', params.q);
+    }
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `agents/search?${queryString}` : 'agents/search';
+    return this.api.get<{ data: Agent[] }>(endpoint).pipe(
+      map(response => response.data)
+    );
+  }
+
   getPublicAgentProfile(userId: number): Observable<Agent> {
     console.log('Fetching public agent profile for ID:', userId);
     return this.api.get<{ data: Agent }>(`agents/${userId}/public`).pipe(
