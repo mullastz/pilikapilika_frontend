@@ -1,10 +1,13 @@
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Component, ElementRef, ViewChild, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Footer } from '../../shared/footer/footer';
 import { Header } from '../../shared/header/header';
 import { Router } from '@angular/router';
-
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
+import { Agent } from '../../core/interfaces/auth.interface';
+import { ToastService } from '../../core/services/toast.service';
+
 @Component({
   selector: 'app-landing-page',
   imports: [ CommonModule, Footer, Header, RouterLink ],
@@ -12,15 +15,63 @@ import { RouterLink } from '@angular/router';
   styleUrl: './landing-page.css'
 })
 
-export class LandingPage {
+export class LandingPage implements OnInit {
   @ViewChild('agentsContainer') agentsContainer!: ElementRef;
   @ViewChild('topAgentsContainer') topAgentsContainer!: ElementRef;
 
-constructor(private router: Router) {}
+  agents: Agent[] = [];
+  topAgents: Agent[] = [];
+  isLoadingAgents = true;
 
-goTo(route: string) {
-  this.router.navigate([route]);
-}
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+    private toastService: ToastService,
+    private cdr: ChangeDetectorRef
+  ) {}
+
+  ngOnInit(): void {
+    this.loadAgents();
+  }
+
+  loadAgents(): void {
+    this.isLoadingAgents = true;
+    console.log('Loading agents...');
+    this.authService.getAvailableAgents().subscribe({
+      next: (agents) => {
+        console.log('Agents loaded:', agents);
+        this.agents = agents;
+        // Sort by rating for top agents
+        this.topAgents = [...agents].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 6);
+        this.isLoadingAgents = false;
+        this.cdr.detectChanges(); // Trigger change detection
+      },
+      error: (err) => {
+        console.error('Error loading agents:', err);
+        this.toastService.error('Failed to load agents. Please try again.');
+        this.isLoadingAgents = false;
+        this.agents = [];
+        this.topAgents = [];
+        this.cdr.detectChanges(); // Trigger change detection
+      }
+    });
+  }
+
+  goTo(route: string): void {
+    this.router.navigate([route]);
+  }
+
+  viewAgentProfile(agentId: number): void {
+    console.log('Navigating to agent profile:', agentId);
+    this.router.navigate(['/agent', agentId]).then(
+      (success) => console.log('Navigation result:', success),
+      (error) => console.error('Navigation error:', error)
+    );
+  }
+
+  trackByAgentId(index: number, agent: Agent): number {
+    return agent.id;
+  }
 
 activities = [
   { icon: 'fa-solid fa-user', label: 'Become Agent', route: '/sign-up' },
@@ -29,53 +80,6 @@ activities = [
   { icon: 'fa-solid fa-location-crosshairs', label: 'Track Shipping', route: '/account/shipping' },
   { icon: 'fa-solid fa-handshake', label: 'Negotiate', route: '/search' }, // same page
 ];
-
-agents = [
-  {
-    name: 'Juma Bakari',
-    rating: 4.9,
-    location: 'Wang Zu, China',
-    price: '$ 20 / 1kg',
-    image: 'assets/landingpage_images/profile4.jpg'
-  },
-  {
-    name: 'Juma Bakari',
-    rating: 4.9,
-    location: 'Wang Zu, China',
-    price: '$ 20 / 1kg',
-    image: 'assets/landingpage_images/profile4.jpg'
-  },  
-  {
-    name: 'Juma Bakari',
-    rating: 4.9,
-    location: 'Wang Zu, China',
-    price: '$ 20 / 1kg',
-    image: 'assets/landingpage_images/profile4.jpg'
-  },  
-  {
-    name: 'Juma Bakari',
-    rating: 4.9,
-    location: 'Wang Zu, China',
-    price: '$ 20 / 1kg',
-    image: 'assets/landingpage_images/profile4.jpg'
-  },  
-  {
-    name: 'Juma Bakari',
-    rating: 4.9,
-    location: 'Wang Zu, China',
-    price: '$ 20 / 1kg',
-    image: 'assets/landingpage_images/profile4.jpg'
-  },  
-  {
-    name: 'Juma Bakari',
-    rating: 4.9,
-    location: 'Wang Zu, China',
-    price: '$ 20 / 1kg',
-    image: 'assets/landingpage_images/profile4.jpg'
-  },
-]; 
-
-topAgents = [...this.agents];
 
 testimonials = [
   {

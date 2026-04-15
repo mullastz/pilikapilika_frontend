@@ -9,7 +9,7 @@ import { History } from './feature/history/history';
 import { HelpCenter } from './feature/help-center/help-center';
 import { AgentPage } from './feature/agent-page/agent-page';
 import { TrackShipping } from './feature/track-shipping/track-shipping';
-
+import { AgentDetails } from './feature/agent-details/agent-details';
 import { Messages } from './feature/messages/messages';
 import { Search } from './feature/search/search';
 import { QrGenerator } from './feature/qr-generator/qr-generator';
@@ -21,6 +21,7 @@ export const routes: Routes = [
   { path: '', component: LandingPage },
   { path: 'profile-management', component: ProfileManagement },
   { path: 'account/details', component: ManageAccount },
+  { path: 'account/agent', component: AgentDetails },
   { path: 'account/history', component: History },
   { path: 'account/shipping', component: Shipping },
   { path: 'account/help', component: HelpCenter },

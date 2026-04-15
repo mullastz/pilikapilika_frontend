@@ -1,0 +1,229 @@
+<div class="bg-[#f5f5f5] dark:bg-[#0a0a0a] min-h-screen transition-colors duration-300">
+
+  <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-5xl mx-auto">
+
+    <!-- CARD -->
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-4 sm:p-6 transition-colors">
+
+      <!-- HEADER -->
+      <div class="flex items-center gap-3 mb-6">
+        <button
+          (click)="goBack()"
+          class="w-8 h-8 rounded-full bg-white/10 dark:bg-[#111] flex items-center justify-center shadow hover:scale-110 transition"
+        >
+          <i class="fa-solid fa-arrow-left text-orange-500"></i>
+        </button>
+
+        <h1 class="text-lg sm:text-xl font-bold dark:text-white">
+          Manage Agent Profile
+        </h1>
+      </div>
+
+      <!-- STATS OVERVIEW (Read-only) - AT TOP -->
+      <div class="mb-6">
+        <h3 class="font-semibold mb-4 dark:text-white text-center">Performance Overview</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+
+          <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
+            <p class="text-sm text-gray-500">Total Deliveries</p>
+            <p class="font-semibold dark:text-white">{{ agent?.total_deliveries || 0 }}</p>
+          </div>
+
+          <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
+            <p class="text-sm text-gray-500">Rating</p>
+            <p class="font-semibold dark:text-white">{{ agent?.rating || '0.0' }} / 5</p>
+          </div>
+
+          <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
+            <p class="text-sm text-gray-500">Reviews</p>
+            <p class="font-semibold dark:text-white">{{ agent?.total_reviews || 0 }}</p>
+          </div>
+
+          <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
+            <p class="text-sm text-gray-500">Success Rate</p>
+            <p class="font-semibold dark:text-white">{{ agent?.success_rate || 0 }}%</p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- LOADING STATE -->
+      <div *ngIf="isLoading" class="flex justify-center py-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+      </div>
+
+      <!-- PROFILE FORM -->
+      <form [formGroup]="agentForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading">
+
+        <!-- INFO NOTE -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
+          <p class="text-sm text-blue-700 dark:text-blue-300">
+            <i class="fa-solid fa-info-circle mr-2"></i>
+            Personal details (name, phone, address) can be updated in <a routerLink="/account/details" class="underline font-medium">Manage Account</a>
+          </p>
+        </div>
+
+        <!-- FORM GRID -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          <!-- AVAILABILITY STATUS -->
+          <div>
+            <label class="text-sm text-gray-500 dark:text-gray-400">Availability Status</label>
+            <select
+              formControlName="availability_status"
+              class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500 appearance-none cursor-pointer"
+            >
+              <option value="available">Available</option>
+              <option value="busy">Busy</option>
+              <option value="offline">Offline</option>
+            </select>
+          </div>
+
+          <!-- BASE PRICE -->
+          <div>
+            <label class="text-sm text-gray-500 dark:text-gray-400">Base Delivery Price (TZS) *</label>
+            <input
+              type="number"
+              formControlName="base_price"
+              class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+              [class.ring-2]="agentForm.get('base_price')?.invalid && agentForm.get('base_price')?.touched"
+              [class.ring-red-500]="agentForm.get('base_price')?.invalid && agentForm.get('base_price')?.touched"
+              placeholder="e.g. 5000"
+            />
+            <div *ngIf="agentForm.get('base_price')?.invalid && agentForm.get('base_price')?.touched" class="text-red-500 text-xs mt-1">
+              Base price is required
+            </div>
+          </div>
+
+          <!-- PRICE PER KM -->
+          <div>
+            <label class="text-sm text-gray-500 dark:text-gray-400">Price Per KM (TZS)</label>
+            <input
+              type="number"
+              formControlName="price_per_km"
+              class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+              placeholder="e.g. 500"
+            />
+          </div>
+
+          <!-- MAX DELIVERY DISTANCE -->
+          <div>
+            <label class="text-sm text-gray-500 dark:text-gray-400">Max Delivery Distance (km)</label>
+            <input
+              type="number"
+              formControlName="max_delivery_distance"
+              class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+              placeholder="e.g. 50"
+            />
+          </div>
+
+          <!-- AVERAGE DELIVERY TIME -->
+          <div>
+            <label class="text-sm text-gray-500 dark:text-gray-400">Avg. Delivery Time</label>
+            <input
+              type="text"
+              formControlName="avg_delivery_time"
+              class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+              placeholder="e.g. 30-45 mins"
+            />
+          </div>
+
+          <!-- BIO / ABOUT -->
+          <div class="sm:col-span-2">
+            <label class="text-sm text-gray-500 dark:text-gray-400">About / Bio</label>
+            <textarea
+              formControlName="bio"
+              rows="4"
+              class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+              placeholder="Tell customers about yourself, your experience, and what makes your delivery service special..."
+            ></textarea>
+          </div>
+
+          <!-- SPECIALIZATIONS -->
+          <div class="sm:col-span-2">
+            <label class="text-sm text-gray-500 dark:text-gray-400">Specializations</label>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <label
+                *ngFor="let spec of specializationOptions"
+                class="flex items-center gap-2 bg-gray-100 dark:bg-[#111] px-3 py-2 rounded-xl cursor-pointer hover:bg-gray-200 dark:hover:bg-[#222] transition"
+              >
+                <input
+                  type="checkbox"
+                  [checked]="isSpecializationSelected(spec)"
+                  (change)="toggleSpecialization(spec)"
+                  class="w-4 h-4 accent-orange-500"
+                />
+                <span class="text-sm dark:text-white">{{ spec }}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- TRANSPORT METHODS -->
+          <div class="sm:col-span-2">
+            <label class="text-sm text-gray-500 dark:text-gray-400">Transport Methods</label>
+            <div class="mt-2 flex flex-wrap gap-3">
+              <label
+                *ngFor="let transport of transportOptions"
+                class="flex items-center gap-2 bg-gray-100 dark:bg-[#111] px-4 py-2 rounded-xl cursor-pointer hover:bg-gray-200 dark:hover:bg-[#222] transition"
+              >
+                <input
+                  type="checkbox"
+                  [checked]="isTransportSelected(transport.value)"
+                  (change)="toggleTransport(transport.value)"
+                  class="w-4 h-4 accent-orange-500"
+                />
+                <i [class]="transport.icon" class="text-orange-500"></i>
+                <span class="text-sm dark:text-white">{{ transport.label }}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- ID VERIFICATION NUMBER (Read-only if verified) -->
+          <div>
+            <label class="text-sm text-gray-500 dark:text-gray-400">ID/Verification Number</label>
+            <input
+              type="text"
+              formControlName="id_number"
+              class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+              placeholder="National ID or Passport"
+            />
+          </div>
+
+          <!-- VERIFICATION STATUS (Read-only) -->
+          <div>
+            <label class="text-sm text-gray-500 dark:text-gray-400">Verification Status</label>
+            <div class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#222] flex items-center gap-2">
+              <i
+                class="fa-solid"
+                [class.fa-check-circle]="agent?.is_verified"
+                [class.fa-clock]="!agent?.is_verified"
+                [class.text-green-500]="agent?.is_verified"
+                [class.text-yellow-500]="!agent?.is_verified"
+              ></i>
+              <span class="dark:text-gray-400">
+                {{ agent?.is_verified ? 'Verified' : 'Pending Verification' }}
+              </span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- SAVE BUTTON -->
+        <div class="mt-6 text-center">
+          <button
+            type="submit"
+            [disabled]="isSaving"
+            class="bg-orange-500 text-white px-6 py-3 rounded-full hover:scale-105 transition shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mx-auto"
+          >
+            <span *ngIf="isSaving" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+            {{ isSaving ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+</div>

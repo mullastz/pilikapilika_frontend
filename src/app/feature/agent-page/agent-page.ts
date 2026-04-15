@@ -1,7 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { Footer } from '../../shared/footer/footer';
+import { AuthService } from '../../core/services/auth.service';
+import { Agent } from '../../core/interfaces/auth.interface';
+import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   selector: 'app-agent-page',
@@ -10,87 +13,78 @@ import { Footer } from '../../shared/footer/footer';
   templateUrl: './agent-page.html',
   styleUrl: './agent-page.css',
 })
-export class AgentPage {
+export class AgentPage implements OnInit {
+  agent: Agent | null = null;
+  isLoading = true;
+  error: string | null = null;
 
+  // Transport method icons mapping
+  transportIcons: { [key: string]: string } = {
+    'air': 'fa-solid fa-plane',
+    'sea': 'fa-solid fa-ship',
+    'road': 'fa-solid fa-truck',
+    'express': 'fa-solid fa-bolt',
+    'rail': 'fa-solid fa-train'
+  };
 
-  constructor( private route: ActivatedRoute, private location: Location) {}
+  constructor(
+    private route: ActivatedRoute,
+    private location: Location,
+    private authService: AuthService,
+    private toastService: ToastService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
+    console.log('AgentPage ngOnInit');
     const id = this.route.snapshot.paramMap.get('id');
-    console.log('Agent ID:', id);
-
-    this.loadAgent(id);
+    console.log('Agent ID from route:', id);
+    if (id) {
+      this.loadAgent(+id);
+    } else {
+      this.error = 'No agent ID provided';
+      this.isLoading = false;
+    }
   }
-  goBack() {
+
+  goBack(): void {
     this.location.back();
   }
-  agent: any;
-  loadAgent(id: string | null) {
-    this.agent = {
-      name: 'Agent #' + id,
-      location: 'Guangzhou, China',
-      rating: 4.8,
-      reviews: 126,
-      deliveries: 542,
-      deliveryTime: '3–5 days',
-      price: '$18/kg',
-      successRate: 96,
-      image: 'assets/landingpage_images/profile4.jpg',
 
-      bio: 'Experienced sourcing and logistics agent specializing in fast and reliable international deliveries. Handles procurement, quality checks, and shipping coordination.',
-
-      specializations: [
-        'Electronics',
-        'Fashion',
-        'Home Appliances',
-        'Wholesale Sourcing'
-      ],
-
-      transport: [
-        { icon: 'fa-solid fa-plane', label: 'Air Freight' },
-        { icon: 'fa-solid fa-ship', label: 'Sea Freight' },
-        { icon: 'fa-solid fa-truck', label: 'Local Delivery' }
-      ],
-
-     testimonials : [
-        {
-          name: 'Andra',
-          city: 'Dar-es-salaam',
-          message: 'The tracking updates gave me full confidence.',
-          avatar: 'assets/landingpage_images/profile1.webp'
-        },
-        {
-          name: 'Andra',
-          city: 'Dar-es-salaam',
-          message: 'The tracking updates gave me full confidence.',
-          avatar: 'assets/landingpage_images/profile1.webp'
-        },  
-        {
-          name: 'Andra',
-          city: 'Dar-es-salaam',
-          message: 'The tracking updates gave me full confidence.',
-          avatar: 'assets/landingpage_images/profile1.webp'
-        },  
-        {
-          name: 'Andra',
-          city: 'Dar-es-salaam',
-          message: 'The tracking updates gave me full confidence.',
-          avatar: 'assets/landingpage_images/profile1.webp'
-        },  
-        {
-          name: 'Andra',
-          city: 'Dar-es-salaam',
-          message: 'The tracking updates gave me full confidence.',
-          avatar: 'assets/landingpage_images/profile1.webp'
-        },  
-        {
-          name: 'Andra',
-          city: 'Dar-es-salaam',
-          message: 'The tracking updates gave me full confidence.',
-          avatar: 'assets/landingpage_images/profile1.webp'
-        },
-      ]
-    };
+  loadAgent(id: number): void {
+    console.log('Loading agent:', id);
+    this.isLoading = true;
+    this.authService.getPublicAgentProfile(id).subscribe({
+      next: (agent) => {
+        console.log('Agent loaded successfully:', agent);
+        this.agent = agent;
+        this.isLoading = false;
+        this.cdr.detectChanges(); // Trigger change detection
+      },
+      error: (err) => {
+        console.error('Error loading agent:', err);
+        this.error = err.error?.message || 'Failed to load agent profile';
+        this.toastService.error(this.error || 'Failed to load agent profile');
+        this.isLoading = false;
+        this.cdr.detectChanges(); // Trigger change detection
+      }
+    });
   }
 
+  getTransportIcon(method: string): string {
+    return this.transportIcons[method] || 'fa-solid fa-truck';
+  }
+
+  getFullName(): string {
+    if (!this.agent) return '';
+    return `${this.agent.firstname || ''} ${this.agent.lastname || ''}`.trim() || 'Unknown Agent';
+  }
+
+  getLocation(): string {
+    if (!this.agent) return '';
+    const region = this.agent.region?.name || '';
+    const district = this.agent.district?.name || '';
+    if (region && district) return `${region}, ${district}`;
+    return region || district || 'Unknown Location';
+  }
 }

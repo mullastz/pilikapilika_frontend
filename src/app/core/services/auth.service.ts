@@ -7,10 +7,14 @@ import {
   LoginRequest,
   LoginResponse,
   User,
+  Agent,
+  AgentProfile,
   Region,
   District,
   UpdateProfileRequest,
-  UpdateProfileResponse
+  UpdateProfileResponse,
+  UpdateAgentProfileRequest,
+  AgentProfileResponse
 } from '../interfaces/auth.interface';
 
 @Injectable({
@@ -111,5 +115,37 @@ export class AuthService {
   // Password management
   changePassword(data: { current_password: string; new_password: string; new_password_confirmation: string }): Observable<{ message: string; data: User }> {
     return this.api.post<{ message: string; data: User }>('change-password', data);
+  }
+
+  // Agent profile management (authenticated)
+  getAgentProfile(userId: number): Observable<Agent> {
+    return this.api.get<{ data: Agent }>(`agents/${userId}/profile`).pipe(
+      map(response => response.data),
+      tap(agent => {
+        // Save merged agent data to localStorage
+        this.saveUser(agent);
+      })
+    );
+  }
+
+  updateAgentProfile(userId: number, data: UpdateAgentProfileRequest): Observable<AgentProfileResponse> {
+    return this.api.put<AgentProfileResponse>(`agents/${userId}/profile`, data);
+  }
+
+  // Public agent discovery (no authentication required)
+  getAvailableAgents(): Observable<Agent[]> {
+    return this.api.get<{ data: Agent[] }>('agents').pipe(
+      map(response => response.data)
+    );
+  }
+
+  getPublicAgentProfile(userId: number): Observable<Agent> {
+    console.log('Fetching public agent profile for ID:', userId);
+    return this.api.get<{ data: Agent }>(`agents/${userId}/public`).pipe(
+      map(response => {
+        console.log('Public agent profile response:', response);
+        return response.data;
+      })
+    );
   }
 }

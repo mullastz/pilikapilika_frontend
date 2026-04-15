@@ -51,6 +51,48 @@ export interface User {
   district?: District;
 }
 
+export interface AgentProfile {
+  id?: number;
+  user_id?: number;
+  availability_status: 'available' | 'busy' | 'offline';
+  base_price: number | null;
+  price_per_km: number | null;
+  max_delivery_distance: number | null;
+  avg_delivery_time: string | null;
+  bio: string | null;
+  id_number: string | null;
+  is_verified: boolean;
+  image: string | null;
+  specializations: string[];
+  transport_methods: string[];
+  // Agent stats (read-only)
+  total_deliveries: number;
+  rating: number;
+  total_reviews: number;
+  success_rate: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Combined agent profile for display (merges User + AgentProfile)
+export interface Agent extends User {
+  availability_status: 'available' | 'busy' | 'offline';
+  base_price: number | null;
+  price_per_km: number | null;
+  max_delivery_distance: number | null;
+  avg_delivery_time: string | null;
+  bio: string | null;
+  id_number: string | null;
+  is_verified: boolean;
+  image: string | null;
+  specializations: string[];
+  transport_methods: string[];
+  total_deliveries: number;
+  rating: number;
+  total_reviews: number;
+  success_rate: number;
+}
+
 export interface Region {
   id: number;
   name: string;
@@ -83,6 +125,25 @@ export interface UpdateProfileRequest {
 
 export interface UpdateProfileResponse {
   data: User;
+  statusCode: number;
+  message: string;
+}
+
+// Agent profile update request
+export interface UpdateAgentProfileRequest {
+  availability_status?: 'available' | 'busy' | 'offline';
+  base_price?: number;
+  price_per_km?: number | null;
+  max_delivery_distance?: number | null;
+  avg_delivery_time?: string | null;
+  bio?: string | null;
+  id_number?: string | null;
+  specializations?: string[];
+  transport_methods?: string[];
+}
+
+export interface AgentProfileResponse {
+  data: Agent;
   statusCode: number;
   message: string;
 }

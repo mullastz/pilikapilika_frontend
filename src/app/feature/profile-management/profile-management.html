@@ -37,10 +37,10 @@
                     <!-- NAME + LOCATION -->
                     <div>
                         <h2 class="font-semibold text-base sm:text-lg dark:text-white">
-                            Suleiman Abubakari
+                            {{ user?.firstname || 'User' }} {{ user?.lastname || '' }}
                         </h2>
                         <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                            Arusha, Tanzania
+                            {{ user?.region?.name || 'Unknown Location' }}, Tanzania
                         </p>
                     </div>
 
@@ -76,6 +76,20 @@
                             <i class="fa-solid fa-user-gear"></i>
                         </div>
                         <span class="text-sm sm:text-base dark:text-white">Manage Account</span>
+                    </div>
+
+                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
+
+                </div>
+
+                <!-- AGENT PROFILE ITEM - Only for agents -->
+                <div *ngIf="isAgent" (click)="goTo('agent')" class="flex items-center justify-between bg-blue-100 dark:bg-[#111] p-3 sm:p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
+
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-500 flex items-center justify-center text-white text-lg">
+                            <i class="fa-solid fa-id-card"></i>
+                        </div>
+                        <span class="text-sm sm:text-base dark:text-white">Agent Profile</span>
                     </div>
 
                     <i class="fa-solid fa-chevron-right text-gray-400"></i>

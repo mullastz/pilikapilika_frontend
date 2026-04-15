@@ -2,7 +2,56 @@
 
   <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-5xl mx-auto">
 
-    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow overflow-hidden">
+    <!-- LOADING STATE - SKELETON -->
+    <div *ngIf="isLoading" class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow overflow-hidden">
+      <!-- Skeleton Header -->
+      <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-[#333] animate-pulse"></div>
+          <div class="h-5 w-32 bg-gray-200 dark:bg-[#333] rounded animate-pulse"></div>
+        </div>
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div class="w-20 h-20 rounded-full bg-gray-200 dark:bg-[#333] animate-pulse"></div>
+          <div class="flex-1 space-y-2">
+            <div class="h-5 w-48 bg-gray-200 dark:bg-[#333] rounded animate-pulse"></div>
+            <div class="h-4 w-32 bg-gray-200 dark:bg-[#333] rounded animate-pulse"></div>
+            <div class="h-3 w-24 bg-gray-200 dark:bg-[#333] rounded animate-pulse"></div>
+          </div>
+          <div class="h-10 w-28 bg-gray-200 dark:bg-[#333] rounded-full animate-pulse"></div>
+        </div>
+      </div>
+      <!-- Skeleton Body -->
+      <div class="p-4 sm:p-6 space-y-6">
+        <div class="h-4 w-full bg-gray-200 dark:bg-[#333] rounded animate-pulse"></div>
+        <div class="h-4 w-3/4 bg-gray-200 dark:bg-[#333] rounded animate-pulse"></div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div *ngFor="let i of [1,2,3,4]" class="h-20 bg-gray-200 dark:bg-[#333] rounded-xl animate-pulse"></div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="h-16 bg-gray-200 dark:bg-[#333] rounded-xl animate-pulse"></div>
+          <div class="h-16 bg-gray-200 dark:bg-[#333] rounded-xl animate-pulse"></div>
+        </div>
+        <div class="h-8 w-32 bg-gray-200 dark:bg-[#333] rounded-full animate-pulse"></div>
+        <div class="flex flex-wrap gap-2">
+          <div *ngFor="let i of [1,2,3]" class="h-6 w-20 bg-gray-200 dark:bg-[#333] rounded-full animate-pulse"></div>
+        </div>
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
+          <div class="h-4 w-48 bg-gray-200 dark:bg-[#333] rounded animate-pulse"></div>
+          <div class="h-4 w-64 bg-gray-200 dark:bg-[#333] rounded animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ERROR STATE -->
+    <div *ngIf="error && !isLoading" class="text-center py-20">
+      <p class="text-red-500 mb-4">{{error}}</p>
+      <button (click)="goBack()" class="bg-orange-500 text-white px-6 py-2 rounded-full hover:scale-105 transition">
+        Go Back
+      </button>
+    </div>
+
+    <!-- AGENT PROFILE CONTENT -->
+    <div *ngIf="agent && !isLoading" class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow overflow-hidden">
 
       <!-- HEADER -->
       <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
@@ -21,25 +70,31 @@
         <!-- PROFILE -->
         <div class="flex flex-col sm:flex-row sm:items-center gap-4">
 
-          <img [src]="agent.image"
+          <img [src]="agent.image || 'assets/landingpage_images/profile4.jpg'"
                class="w-20 h-20 rounded-full border-2 border-orange-500 object-cover"/>
 
           <div class="flex-1">
 
             <h2 class="text-lg sm:text-xl font-semibold dark:text-white">
-              {{agent.name}}
+              {{getFullName()}}
             </h2>
 
             <p class="text-sm text-gray-500 dark:text-gray-400">
-              {{agent.location}}
+              {{getLocation()}}
             </p>
 
             <!-- RATING -->
             <div class="flex items-center gap-1 mt-1 text-yellow-500 text-sm">
-              <i class="fa-solid fa-star" *ngFor="let s of [1,2,3,4,5]"></i>
+              <i class="fa-solid fa-star"></i>
               <span class="text-gray-700 dark:text-gray-300 ml-1">
-                {{agent.rating}} ({{agent.reviews}} reviews)
+                {{agent.rating || '0.0'}} ({{agent.total_reviews || 0}} reviews)
               </span>
+            </div>
+
+            <!-- VERIFIED BADGE -->
+            <div *ngIf="agent.is_verified" class="flex items-center gap-1 mt-1 text-green-500 text-xs">
+              <i class="fa-solid fa-check-circle"></i>
+              <span>Verified Agent</span>
             </div>
 
           </div>
@@ -57,7 +112,7 @@
       <div class="p-4 sm:p-6 space-y-6">
 
         <!-- BIO -->
-        <div>
+        <div *ngIf="agent.bio">
           <h3 class="font-semibold mb-2 dark:text-white">About</h3>
           <p class="text-sm text-gray-600 dark:text-gray-400">
             {{agent.bio}}
@@ -69,28 +124,51 @@
 
           <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
             <p class="text-sm text-gray-500">Deliveries</p>
-            <p class="font-semibold dark:text-white">{{agent.deliveries}}</p>
+            <p class="font-semibold dark:text-white">{{agent.total_deliveries || 0}}</p>
           </div>
 
           <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
             <p class="text-sm text-gray-500">Avg Time</p>
-            <p class="font-semibold dark:text-white">{{agent.deliveryTime}}</p>
+            <p class="font-semibold dark:text-white">{{agent.avg_delivery_time || 'N/A'}}</p>
           </div>
 
           <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
-            <p class="text-sm text-gray-500">Price</p>
-            <p class="font-semibold text-orange-500">{{agent.price}}</p>
+            <p class="text-sm text-gray-500">Base Price</p>
+            <p class="font-semibold text-orange-500">{{agent.base_price ? '$' + agent.base_price : 'Contact'}}</p>
           </div>
 
           <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
             <p class="text-sm text-gray-500">Success Rate</p>
-            <p class="font-semibold dark:text-white">{{agent.successRate}}%</p>
+            <p class="font-semibold dark:text-white">{{agent.success_rate || 0}}%</p>
           </div>
 
         </div>
 
+        <!-- PRICING DETAILS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="bg-gray-50 dark:bg-[#111] p-3 rounded-xl">
+            <p class="text-sm text-gray-500">Price per km</p>
+            <p class="font-semibold dark:text-white">{{agent.price_per_km ? '$' + agent.price_per_km : 'Contact for pricing'}}</p>
+          </div>
+          <div class="bg-gray-50 dark:bg-[#111] p-3 rounded-xl">
+            <p class="text-sm text-gray-500">Max Distance</p>
+            <p class="font-semibold dark:text-white">{{agent.max_delivery_distance ? agent.max_delivery_distance + ' km' : 'Contact'}}</p>
+          </div>
+        </div>
+
+        <!-- AVAILABILITY STATUS -->
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-500">Availability:</span>
+          <span class="px-3 py-1 rounded-full text-xs font-medium"
+                [class]="agent.availability_status === 'available' ? 'bg-green-100 text-green-700' : 
+                         agent.availability_status === 'busy' ? 'bg-yellow-100 text-yellow-700' : 
+                         'bg-gray-100 text-gray-700'">
+            {{agent.availability_status | titlecase}}
+          </span>
+        </div>
+
         <!-- SPECIALIZATIONS -->
-        <div>
+        <div *ngIf="agent.specializations && agent.specializations.length > 0">
           <h3 class="font-semibold mb-2 dark:text-white">Specializations</h3>
           <div class="flex flex-wrap gap-2">
             <span *ngFor="let s of agent.specializations"
@@ -101,53 +179,37 @@
         </div>
 
         <!-- TRANSPORT METHODS -->
-        <div>
+        <div *ngIf="agent.transport_methods && agent.transport_methods.length > 0">
           <h3 class="font-semibold mb-2 dark:text-white">Transport Methods</h3>
-          <div class="flex gap-4">
+          <div class="flex gap-4 flex-wrap">
 
-            <div *ngFor="let t of agent.transport"
+            <div *ngFor="let method of agent.transport_methods"
                  class="flex flex-col items-center text-sm">
 
               <div class="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white">
-                <i [class]="t.icon"></i>
+                <i [class]="getTransportIcon(method)"></i>
               </div>
 
-              <span class="mt-1 dark:text-white">{{t.label}}</span>
+              <span class="mt-1 dark:text-white capitalize">{{method}}</span>
 
             </div>
 
           </div>
         </div>
 
-        <!-- REVIEWS -->
-        <div>
-          <h3 class="font-semibold mb-3 dark:text-white">Reviews</h3>
-
-         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            <div *ngFor="let t of agent.testimonials"
-                class="bg-white dark:bg-[#1a1a1a] text-black dark:text-white rounded-2xl p-4 sm:p-5 shadow-lg hover:-translate-y-1 transition-colors">
-
-            <div class="text-orange-500 mb-2 text-sm">
-                <i class="fa-solid fa-star"></i>
-                <i class="fa-solid fa-star"></i>
-                <i class="fa-solid fa-star"></i>
-                <i class="fa-solid fa-star"></i>
-                <i class="fa-solid fa-star"></i>
-            </div>
-
-            <p class="text-xs sm:text-sm mb-4 dark:text-gray-300">{{t.message}}</p>
-
-            <div class="flex items-center gap-3">
-                <img [src]="t.avatar" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full"/>
-                <div>
-                <p class="font-medium text-sm sm:text-base">{{t.name}}</p>
-                <p class="text-xs text-gray-500">{{t.city}}</p>
-                </div>
-            </div>
-
-            </div>
-        </div>
-
+        <!-- CONTACT INFO -->
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <h3 class="font-semibold mb-2 dark:text-white">Contact Information</h3>
+          <div class="space-y-2 text-sm">
+            <p *ngIf="agent.phone" class="dark:text-gray-300">
+              <i class="fa-solid fa-phone mr-2 text-orange-500"></i>
+              {{agent.phone}}
+            </p>
+            <p *ngIf="agent.address" class="dark:text-gray-300">
+              <i class="fa-solid fa-location-dot mr-2 text-orange-500"></i>
+              {{agent.address}}
+            </p>
+          </div>
         </div>
 
       </div>
@@ -156,6 +218,5 @@
 
   </div>
 
-</div>
-
   <app-footer></app-footer>
+</div>

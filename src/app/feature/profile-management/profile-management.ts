@@ -1,6 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { Router } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
+import { User } from '../../core/interfaces/auth.interface';
 
 @Component({
   selector: 'app-profile-management',
@@ -8,9 +11,27 @@ import { Router } from '@angular/router';
   templateUrl: './profile-management.html',
   styleUrl: './profile-management.css',
 })
-export class ProfileManagement {
+export class ProfileManagement implements OnInit {
   showLogoutModal = signal(false);
-  constructor(private location: Location,private router: Router) {}
+  user: User | null = null;
+  isAgent = false;
+
+  constructor(
+    private location: Location,
+    private router: Router,
+    private authService: AuthService,
+    private toastService: ToastService
+  ) {}
+
+  ngOnInit(): void {
+    this.loadUser();
+  }
+
+  loadUser(): void {
+    this.user = this.authService.getUser();
+    // Backend uses 'Seller' for agents and 'Buyer' for clients
+    this.isAgent = this.user?.role === 'Seller' || this.user?.role === 'seller';
+  }
 
   goBack() {
     if (window.history.length > 1) {
@@ -36,13 +57,13 @@ export class ProfileManagement {
   confirmLogout() {
     this.showLogoutModal.set(false);
     
-    // TODO: Add your actual logout logic here
-    console.log('User logged out');
-
-    // Example: Clear token and redirect to login
-    // localStorage.removeItem('token');
-    // this.router.navigate(['/signin']);
+    // Clear auth data
+    this.authService.logout();
     
-    alert('You have been logged out successfully.'); // Remove this in production
+    // Show success toast
+    this.toastService.success('You have been logged out successfully');
+    
+    // Redirect to login
+    this.router.navigate(['/sign-in']);
   }
 }
