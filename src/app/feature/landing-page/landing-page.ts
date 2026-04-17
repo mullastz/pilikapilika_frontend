@@ -4,6 +4,7 @@ import { Footer } from '../../shared/footer/footer';
 import { Header } from '../../shared/header/header';
 import { Router } from '@angular/router';
 import { RouterLink } from '@angular/router';
+import { AgentService } from '../../core/services/agent.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Agent } from '../../core/interfaces/auth.interface';
 import { ToastService } from '../../core/services/toast.service';
@@ -22,9 +23,11 @@ export class LandingPage implements OnInit {
   agents: Agent[] = [];
   topAgents: Agent[] = [];
   isLoadingAgents = true;
+  showProfilePopup = false;
 
   constructor(
     private router: Router,
+    private agentService: AgentService,
     private authService: AuthService,
     private toastService: ToastService,
     private cdr: ChangeDetectorRef
@@ -32,13 +35,29 @@ export class LandingPage implements OnInit {
 
   ngOnInit(): void {
     this.loadAgents();
+    this.checkProfileCompletion();
+  }
+
+  checkProfileCompletion(): void {
+    if (this.authService.isAuthenticated() && this.authService.needsProfileCompletion()) {
+      this.showProfilePopup = true;
+    }
+  }
+
+  goToProfile(): void {
+    this.showProfilePopup = false;
+    this.router.navigate(['/account/details']);
+  }
+
+  closeProfilePopup(): void {
+    this.showProfilePopup = false;
   }
 
   loadAgents(): void {
     this.isLoadingAgents = true;
     console.log('Loading agents...');
-    this.authService.getAvailableAgents().subscribe({
-      next: (agents) => {
+    this.agentService.getAvailableAgents().subscribe({
+      next: (agents: Agent[]) => {
         console.log('Agents loaded:', agents);
         this.agents = agents;
         // Sort by rating for top agents
@@ -46,7 +65,7 @@ export class LandingPage implements OnInit {
         this.isLoadingAgents = false;
         this.cdr.detectChanges(); // Trigger change detection
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error loading agents:', err);
         this.toastService.error('Failed to load agents. Please try again.');
         this.isLoadingAgents = false;

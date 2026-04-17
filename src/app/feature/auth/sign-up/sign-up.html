@@ -12,46 +12,19 @@
         <i class="fa-solid fa-arrow-left text-2xl"></i>
       </button>
 
-      <h1 class="text-3xl mt-5 font-bold text-white dark:text-white mb-8">
+      <h1 class="text-3xl mt-5 font-bold text-white dark:text-white mb-4">
         Create Your Account
       </h1>
+      <p class="text-white/90 text-sm">Quick registration - complete your profile later</p>
     </div>
 
     <!-- Spacer to push card to bottom -->
     <div class="grow"></div>
 
     <!-- Signup Card -->
-    <div class="bg-white dark:bg-[#0a0a0a] rounded-t-3xl px-6 pt-8 pb-10 shadow-2xl h-[80vh] overflow-y-auto">
+    <div class="bg-white dark:bg-[#0a0a0a] rounded-t-3xl px-6 pt-8 pb-10 shadow-2xl overflow-y-auto">
 
       <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="space-y-4">
-
-        <!-- First Name -->
-        <div class="relative">
-          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">First Name</label>
-          <div class="relative">
-            <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
-            <input formControlName="firstname" type="text"
-                   class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none"
-                   placeholder="John" />
-          </div>
-          @if (f['firstname'].touched && f['firstname'].hasError('required')) {
-            <p class="mt-1 text-sm text-red-600">First name is required</p>
-          }
-        </div>
-
-        <!-- Last Name -->
-        <div class="relative">
-          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">Last Name</label>
-          <div class="relative">
-            <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
-            <input formControlName="lastname" type="text"
-                   class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none"
-                   placeholder="Doe" />
-          </div>
-          @if (f['lastname'].touched && f['lastname'].hasError('required')) {
-            <p class="mt-1 text-sm text-red-600">Last name is required</p>
-          }
-        </div>
 
         <!-- Username -->
         <div class="relative">
@@ -65,20 +38,9 @@
           @if (f['username'].touched && f['username'].hasError('required')) {
             <p class="mt-1 text-sm text-red-600">Username is required</p>
           }
-        </div>
-
-        <!-- Gender -->
-        <div class="relative">
-          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">Gender</label>
-          <div class="relative">
-            <i class="fa-solid fa-venus-mars absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
-            <select formControlName="gender"
-                    class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none">
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
+          @if (f['username'].touched && f['username'].hasError('minlength')) {
+            <p class="mt-1 text-sm text-red-600">Min 3 characters</p>
+          }
         </div>
 
         <!-- Email -->
@@ -95,77 +57,6 @@
           }
           @if (f['email'].touched && f['email'].hasError('email')) {
             <p class="mt-1 text-sm text-red-600">Please enter a valid email</p>
-          }
-        </div>
-
-        <!-- Phone -->
-        <div class="relative">
-          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">Phone Number</label>
-          <div class="relative">
-            <i class="fa-solid fa-phone absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
-            <input formControlName="phone" type="tel"
-                   class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none"
-                   placeholder="+255 712 345 678" />
-          </div>
-          @if (f['phone'].touched && f['phone'].hasError('required')) {
-            <p class="mt-1 text-sm text-red-600">Phone is required</p>
-          }
-        </div>
-
-        <!-- Region Dropdown -->
-        <div class="relative">
-          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">Region</label>
-          <div class="relative">
-            <i class="fa-solid fa-map absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
-            <select formControlName="region_id"
-                    class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none">
-              <option [ngValue]="null">Select Region</option>
-              @for (region of regions(); track region.id) {
-                <option [ngValue]="region.id">{{ region.name }}</option>
-              }
-            </select>
-            @if (isLoadingRegions()) {
-              <i class="fa-solid fa-spinner fa-spin absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            }
-          </div>
-          @if (f['region_id'].touched && f['region_id'].hasError('required')) {
-            <p class="mt-1 text-sm text-red-600">Region is required</p>
-          }
-        </div>
-
-        <!-- District Dropdown -->
-        <div class="relative">
-          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">District</label>
-          <div class="relative">
-            <i class="fa-solid fa-location-dot absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
-            <select formControlName="district_id"
-                    [disabled]="!f['region_id'].value"
-                    class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none disabled:opacity-50">
-              <option [ngValue]="null">Select District</option>
-              @for (district of districts(); track district.id) {
-                <option [ngValue]="district.id">{{ district.name }}</option>
-              }
-            </select>
-            @if (isLoadingDistricts()) {
-              <i class="fa-solid fa-spinner fa-spin absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            }
-          </div>
-          @if (f['district_id'].touched && f['district_id'].hasError('required')) {
-            <p class="mt-1 text-sm text-red-600">District is required</p>
-          }
-        </div>
-
-        <!-- Ward -->
-        <div class="relative">
-          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">Ward</label>
-          <div class="relative">
-            <i class="fa-solid fa-map-pin absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
-            <input formControlName="ward" type="text"
-                   class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none"
-                   placeholder="Your ward/street" />
-          </div>
-          @if (f['ward'].touched && f['ward'].hasError('required')) {
-            <p class="mt-1 text-sm text-red-600">Ward is required</p>
           }
         </div>
 
@@ -303,40 +194,10 @@
           </div>
 
           <!-- Heading -->
-          <h2 class="text-3xl font-semibold text-gray-900 dark:text-white mb-6">Create Your Account</h2>
+          <h2 class="text-3xl font-semibold text-gray-900 dark:text-white mb-2">Create Your Account</h2>
+          <p class="text-gray-500 dark:text-gray-400 mb-6">Quick registration - complete your profile later</p>
 
           <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="space-y-4 flex-1">
-
-            <!-- Names Row -->
-            <div class="grid grid-cols-2 gap-4">
-              <!-- First Name -->
-              <div class="relative">
-                <label class="block text-sm font-medium text-[#FF7800] mb-1">First Name</label>
-                <div class="relative">
-                  <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
-                  <input formControlName="firstname" type="text"
-                         class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none"
-                         placeholder="John" />
-                </div>
-                @if (f['firstname'].touched && f['firstname'].hasError('required')) {
-                  <p class="mt-1 text-sm text-red-600">Required</p>
-                }
-              </div>
-
-              <!-- Last Name -->
-              <div class="relative">
-                <label class="block text-sm font-medium text-[#FF7800] mb-1">Last Name</label>
-                <div class="relative">
-                  <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
-                  <input formControlName="lastname" type="text"
-                         class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none"
-                         placeholder="Doe" />
-                </div>
-                @if (f['lastname'].touched && f['lastname'].hasError('required')) {
-                  <p class="mt-1 text-sm text-red-600">Required</p>
-                }
-              </div>
-            </div>
 
             <!-- Username -->
             <div class="relative">
@@ -350,37 +211,9 @@
               @if (f['username'].touched && f['username'].hasError('required')) {
                 <p class="mt-1 text-sm text-red-600">Username is required</p>
               }
-            </div>
-
-            <!-- Gender & Phone Row -->
-            <div class="grid grid-cols-2 gap-4">
-              <!-- Gender -->
-              <div class="relative">
-                <label class="block text-sm font-medium text-[#FF7800] mb-1">Gender</label>
-                <div class="relative">
-                  <i class="fa-solid fa-venus-mars absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
-                  <select formControlName="gender"
-                          class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none">
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Phone -->
-              <div class="relative">
-                <label class="block text-sm font-medium text-[#FF7800] mb-1">Phone</label>
-                <div class="relative">
-                  <i class="fa-solid fa-phone absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
-                  <input formControlName="phone" type="tel"
-                         class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none"
-                         placeholder="+255 712 345 678" />
-                </div>
-                @if (f['phone'].touched && f['phone'].hasError('required')) {
-                  <p class="mt-1 text-sm text-red-600">Required</p>
-                }
-              </div>
+              @if (f['username'].touched && f['username'].hasError('minlength')) {
+                <p class="mt-1 text-sm text-red-600">Min 3 characters</p>
+              }
             </div>
 
             <!-- Email -->
@@ -397,66 +230,6 @@
               }
               @if (f['email'].touched && f['email'].hasError('email')) {
                 <p class="mt-1 text-sm text-red-600">Invalid email</p>
-              }
-            </div>
-
-            <!-- Region & District Row -->
-            <div class="grid grid-cols-2 gap-4">
-              <!-- Region -->
-              <div class="relative">
-                <label class="block text-sm font-medium text-[#FF7800] mb-1">Region</label>
-                <div class="relative">
-                  <i class="fa-solid fa-map absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
-                  <select formControlName="region_id"
-                          class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none">
-                    <option [ngValue]="null">Select Region</option>
-                    @for (region of regions(); track region.id) {
-                      <option [ngValue]="region.id">{{ region.name }}</option>
-                    }
-                  </select>
-                  @if (isLoadingRegions()) {
-                    <i class="fa-solid fa-spinner fa-spin absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                  }
-                </div>
-                @if (f['region_id'].touched && f['region_id'].hasError('required')) {
-                  <p class="mt-1 text-sm text-red-600">Required</p>
-                }
-              </div>
-
-              <!-- District -->
-              <div class="relative">
-                <label class="block text-sm font-medium text-[#FF7800] mb-1">District</label>
-                <div class="relative">
-                  <i class="fa-solid fa-location-dot absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
-                  <select formControlName="district_id"
-                          [disabled]="!f['region_id'].value"
-                          class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none disabled:opacity-50">
-                    <option [ngValue]="null">Select District</option>
-                    @for (district of districts(); track district.id) {
-                      <option [ngValue]="district.id">{{ district.name }}</option>
-                    }
-                  </select>
-                  @if (isLoadingDistricts()) {
-                    <i class="fa-solid fa-spinner fa-spin absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                  }
-                </div>
-                @if (f['district_id'].touched && f['district_id'].hasError('required')) {
-                  <p class="mt-1 text-sm text-red-600">Required</p>
-                }
-              </div>
-            </div>
-
-            <!-- Ward -->
-            <div class="relative">
-              <label class="block text-sm font-medium text-[#FF7800] mb-1">Ward</label>
-              <div class="relative">
-                <i class="fa-solid fa-map-pin absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
-                <input formControlName="ward" type="text"
-                       class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none"
-                       placeholder="Your ward/street" />
-              </div>
-              @if (f['ward'].touched && f['ward'].hasError('required')) {
-                <p class="mt-1 text-sm text-red-600">Ward is required</p>
               }
             </div>
 

@@ -118,27 +118,23 @@
                     <!-- REGION -->
                     <div>
                         <label class="text-sm text-gray-500 dark:text-gray-400">Region</label>
-                        <select
-                            formControlName="region_id"
-                            (change)="onRegionChange()"
-                            class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500 appearance-none cursor-pointer"
-                        >
-                            <option [ngValue]="null">Select Region</option>
-                            <option *ngFor="let region of regions" [ngValue]="region.id">{{ region.name }}</option>
-                        </select>
+                        <input
+                            type="text"
+                            formControlName="region"
+                            class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+                            placeholder="Enter region"
+                        />
                     </div>
 
                     <!-- DISTRICT -->
                     <div>
                         <label class="text-sm text-gray-500 dark:text-gray-400">District</label>
-                        <select
-                            formControlName="district_id"
-                            class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500 appearance-none cursor-pointer"
-                            [disabled]="!filteredDistricts.length"
-                        >
-                            <option [ngValue]="null">Select District</option>
-                            <option *ngFor="let district of filteredDistricts" [ngValue]="district.id">{{ district.name }}</option>
-                        </select>
+                        <input
+                            type="text"
+                            formControlName="district"
+                            class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+                            placeholder="Enter district"
+                        />
                     </div>
 
                     <!-- WARD -->
@@ -183,89 +179,48 @@
             <!-- CHANGE PASSWORD SECTION -->
             <div class="mt-6">
 
-                <!-- TOGGLE BUTTON -->
-                <div class="text-center mb-4">
-                    <button
-                        type="button"
-                        (click)="togglePasswordForm()"
-                        class="text-orange-500 hover:text-orange-600 font-medium text-sm flex items-center justify-center gap-2 mx-auto"
-                    >
-                        <i class="fa-solid" [class.fa-lock]="!showPasswordForm" [class.fa-unlock]="showPasswordForm"></i>
-                        {{ showPasswordForm ? 'Cancel Password Change' : 'Change Password' }}
-                    </button>
-                </div>
+                <!-- PASSWORD CHANGE SECTION -->
+                <div class="max-w-md mx-auto">
 
-                <!-- PASSWORD FORM -->
-                <form [formGroup]="passwordForm" (ngSubmit)="onChangePassword()" *ngIf="showPasswordForm" class="max-w-md mx-auto">
-
-                    <div class="space-y-4">
-
-                        <!-- CURRENT PASSWORD -->
-                        <div>
-                            <label class="text-sm text-gray-500 dark:text-gray-400">Current Password *</label>
-                            <input
-                                type="password"
-                                formControlName="current_password"
-                                class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
-                                [class.ring-2]="currentPassword?.invalid && currentPassword?.touched"
-                                [class.ring-red-500]="currentPassword?.invalid && currentPassword?.touched"
-                                placeholder="Enter your current password"
-                            />
-                            <div *ngIf="currentPassword?.invalid && currentPassword?.touched" class="text-red-500 text-xs mt-1">
-                                Current password is required (min 6 characters)
-                            </div>
-                        </div>
-
-                        <!-- NEW PASSWORD -->
-                        <div>
-                            <label class="text-sm text-gray-500 dark:text-gray-400">New Password *</label>
-                            <input
-                                type="password"
-                                formControlName="new_password"
-                                class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
-                                [class.ring-2]="newPassword?.invalid && newPassword?.touched"
-                                [class.ring-red-500]="newPassword?.invalid && newPassword?.touched"
-                                placeholder="Enter your new password"
-                            />
-                            <div *ngIf="newPassword?.invalid && newPassword?.touched" class="text-red-500 text-xs mt-1">
-                                New password is required (min 6 characters)
-                            </div>
-                        </div>
-
-                        <!-- CONFIRM NEW PASSWORD -->
-                        <div>
-                            <label class="text-sm text-gray-500 dark:text-gray-400">Confirm New Password *</label>
-                            <input
-                                type="password"
-                                formControlName="new_password_confirmation"
-                                class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
-                                [class.ring-2]="(confirmPassword?.invalid && confirmPassword?.touched) || passwordForm.errors?.['passwordMismatch']"
-                                [class.ring-red-500]="(confirmPassword?.invalid && confirmPassword?.touched) || passwordForm.errors?.['passwordMismatch']"
-                                placeholder="Confirm your new password"
-                            />
-                            <div *ngIf="confirmPassword?.invalid && confirmPassword?.touched" class="text-red-500 text-xs mt-1">
-                                Password confirmation is required
-                            </div>
-                            <div *ngIf="passwordForm.errors?.['passwordMismatch'] && confirmPassword?.touched" class="text-red-500 text-xs mt-1">
-                                Passwords do not match
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <!-- CHANGE PASSWORD BUTTON -->
-                    <div class="mt-6 text-center">
+                    <!-- Initial State - Show Change Password Button -->
+                    <div *ngIf="!passwordChangeRequested" class="text-center">
                         <button
-                            type="submit"
-                            [disabled]="isChangingPassword"
-                            class="bg-gray-800 dark:bg-gray-700 text-white px-6 py-3 rounded-full hover:scale-105 transition shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            type="button"
+                            (click)="requestPasswordChange()"
+                            [disabled]="isRequestingPasswordChange"
+                            class="text-orange-500 hover:text-orange-600 font-medium text-sm flex items-center justify-center gap-2 mx-auto"
                         >
-                            <span *ngIf="isChangingPassword" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
-                            {{ isChangingPassword ? 'Changing Password...' : 'Change Password' }}
+                            <i class="fa-solid fa-lock"></i>
+                            {{ isRequestingPasswordChange ? 'Sending...' : 'Change Password' }}
                         </button>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            A secure link will be sent to your email
+                        </p>
                     </div>
 
-                </form>
+                    <!-- Success State - Email Sent -->
+                    <div *ngIf="passwordChangeRequested" class="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
+                        <div class="w-12 h-12 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fa-solid fa-check text-green-600"></i>
+                        </div>
+                        <h3 class="font-semibold text-green-800 dark:text-green-400 mb-1">Check Your Email!</h3>
+                        <p class="text-sm text-green-700 dark:text-green-300">
+                            We've sent a secure link to <strong>{{ user?.email }}</strong> to change your password.
+                        </p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                            Didn't receive it?
+                            <button
+                                type="button"
+                                (click)="requestPasswordChange()"
+                                [disabled]="isRequestingPasswordChange"
+                                class="text-orange-500 hover:text-orange-600 font-medium underline ml-1"
+                            >
+                                {{ isRequestingPasswordChange ? 'Sending...' : 'Resend' }}
+                            </button>
+                        </p>
+                    </div>
+
+                </div>
 
             </div>
 

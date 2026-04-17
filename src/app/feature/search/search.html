@@ -17,27 +17,6 @@
         </h1>
       </div>
 
-      <!-- LOADING SKELETON -->
-      <div *ngIf="isLoading" class="flex flex-col gap-4">
-        <div *ngFor="let i of [1,2,3,4,5]" class="bg-gray-100 dark:bg-[#111] rounded-xl p-4 animate-pulse">
-          <div class="flex items-start gap-4">
-            <div class="w-16 h-16 rounded-full bg-gray-300 dark:bg-[#333] shrink-0"></div>
-            <div class="flex-1 space-y-3">
-              <div class="flex items-start justify-between">
-                <div class="h-4 bg-gray-300 dark:bg-[#333] rounded w-1/3"></div>
-                <div class="h-4 bg-gray-300 dark:bg-[#333] rounded w-16"></div>
-              </div>
-              <div class="h-3 bg-gray-300 dark:bg-[#333] rounded w-1/4"></div>
-              <div class="h-3 bg-gray-300 dark:bg-[#333] rounded w-24"></div>
-              <div class="flex gap-1">
-                <div class="h-5 bg-gray-300 dark:bg-[#333] rounded-full w-16"></div>
-                <div class="h-5 bg-gray-300 dark:bg-[#333] rounded-full w-20"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- ERROR STATE -->
       <div *ngIf="error && !isLoading" class="text-center py-12">
         <i class="fa-solid fa-circle-exclamation text-4xl text-red-500 mb-4"></i>
@@ -47,85 +26,138 @@
         </button>
       </div>
 
-      <!-- SEARCH BAR -->
-      <div *ngIf="!isLoading && !error" class="relative mb-6">
-        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-        <input
-          type="text"
-          [(ngModel)]="searchQuery"
-          (keyup.enter)="onSearch()"
-          placeholder="Search agents by name..."
-          class="w-full pl-12 pr-24 py-3 bg-gray-100 dark:bg-[#111] rounded-xl text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
-        />
-        <button
-          *ngIf="searchQuery"
-          (click)="searchQuery = ''; onSearch()"
-          class="absolute right-20 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-orange-500 transition"
-        >
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-        <button
-          (click)="onSearch()"
-          class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-orange-600 transition"
-        >
-          Search
-        </button>
+      <!-- SEARCH FIELD -->
+      <div *ngIf="!error" class="mb-6">
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearchInput()"
+            placeholder="Search by name, region, or district..."
+            class="w-full pl-12 pr-24 py-3 bg-gray-100 dark:bg-[#111] rounded-xl text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+          />
+          <button
+            *ngIf="searchQuery"
+            (click)="clearQuery()"
+            class="absolute right-20 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-orange-500 transition"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+          <button
+            (click)="onSearch()"
+            [disabled]="isLoadingResults"
+            class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-orange-600 transition disabled:opacity-50"
+          >
+            <span *ngIf="isLoadingResults" class="animate-spin rounded-full h-3 w-3 border-b-2 border-white block"></span>
+            <span *ngIf="!isLoadingResults">Search</span>
+          </button>
+        </div>
+        <p class="text-xs text-gray-400 mt-2 ml-1">
+          <i class="fa-solid fa-circle-info mr-1"></i>
+          Type to search - results update as you type
+        </p>
       </div>
 
       <!-- FILTERS -->
-      <div *ngIf="!isLoading && !error" class="mb-6 space-y-4">
+      <div *ngIf="!error" class="mb-6 space-y-3">
 
         <!-- By Specialization -->
-        <div>
-          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">By Specialization</h3>
-          <div class="flex flex-wrap gap-2">
-            <button
-              *ngFor="let spec of specializations"
-              (click)="selectSpecialization(spec)"
-              class="px-3 py-1.5 rounded-full text-xs font-medium transition"
-              [ngClass]="{
-                'bg-orange-500 text-white': selectedSpecialization === spec || (spec === 'All' && !selectedSpecialization),
-                'bg-orange-100 dark:bg-[#111] text-gray-700 dark:text-gray-300 hover:bg-orange-200 dark:hover:bg-[#222]': selectedSpecialization !== spec && !(spec === 'All' && !selectedSpecialization)
-              }"
-            >
-              {{spec}}
-            </button>
+        <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <button
+            (click)="toggleSpec()"
+            class="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-[#111] hover:bg-gray-100 dark:hover:bg-[#222] transition"
+          >
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <i class="fa-solid fa-briefcase mr-2 text-orange-500"></i>
+              By Specialization
+              <span *ngIf="selectedSpecialization && selectedSpecialization !== 'All'" class="ml-1 text-orange-500">
+                ({{selectedSpecialization}})
+              </span>
+            </span>
+            <i class="fa-solid fa-chevron-down text-gray-400 transition-transform duration-200"
+               [class.rotate-180]="!isSpecCollapsed"></i>
+          </button>
+          <div *ngIf="!isSpecCollapsed" class="p-3 bg-white dark:bg-[#1a1a1a]">
+            <div class="flex flex-wrap gap-2">
+              <button
+                *ngFor="let spec of specializations"
+                (click)="selectSpecialization(spec)"
+                class="px-3 py-1.5 rounded-full text-xs font-medium transition"
+                [ngClass]="{
+                  'bg-orange-500 text-white': selectedSpecialization === spec || (spec === 'All' && !selectedSpecialization),
+                  'bg-orange-100 dark:bg-[#111] text-gray-700 dark:text-gray-300 hover:bg-orange-200 dark:hover:bg-[#222]': selectedSpecialization !== spec && !(spec === 'All' && !selectedSpecialization)
+                }"
+              >
+                {{spec}}
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- By Transport -->
-        <div>
-          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">By Transport</h3>
-          <div class="flex flex-wrap gap-2">
-            <button
-              *ngFor="let transport of transportMethods"
-              (click)="selectTransport(transport.value)"
-              class="px-3 py-1.5 rounded-full text-xs font-medium transition"
-              [ngClass]="{
-                'bg-blue-500 text-white': selectedTransport === transport.value || (transport.value === 'all' && !selectedTransport),
-                'bg-blue-100 dark:bg-[#111] text-gray-700 dark:text-gray-300 hover:bg-blue-200 dark:hover:bg-[#222]': selectedTransport !== transport.value && !(transport.value === 'all' && !selectedTransport)
-              }"
-            >
-              {{transport.label}}
-            </button>
+        <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <button
+            (click)="toggleTransport()"
+            class="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-[#111] hover:bg-gray-100 dark:hover:bg-[#222] transition"
+          >
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <i class="fa-solid fa-truck mr-2 text-blue-500"></i>
+              By Transport
+              <span *ngIf="selectedTransport && selectedTransport !== 'all'" class="ml-1 text-blue-500">
+                ({{selectedTransport}})
+              </span>
+            </span>
+            <i class="fa-solid fa-chevron-down text-gray-400 transition-transform duration-200"
+               [class.rotate-180]="!isTransportCollapsed"></i>
+          </button>
+          <div *ngIf="!isTransportCollapsed" class="p-3 bg-white dark:bg-[#1a1a1a]">
+            <div class="flex flex-wrap gap-2">
+              <button
+                *ngFor="let transport of transportMethods"
+                (click)="selectTransport(transport.value)"
+                class="px-3 py-1.5 rounded-full text-xs font-medium transition"
+                [ngClass]="{
+                  'bg-blue-500 text-white': selectedTransport === transport.value || (transport.value === 'all' && !selectedTransport),
+                  'bg-blue-100 dark:bg-[#111] text-gray-700 dark:text-gray-300 hover:bg-blue-200 dark:hover:bg-[#222]': selectedTransport !== transport.value && !(transport.value === 'all' && !selectedTransport)
+                }"
+              >
+                {{transport.label}}
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- By Price -->
-        <div>
-          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">By Price</h3>
-          <div class="flex flex-wrap gap-2">
-            <button
-              *ngFor="let price of priceRanges"
-              (click)="selectPriceRange(price)"
-              class="px-3 py-1.5 rounded-full text-xs font-medium transition"
-              [ngClass]="{
-                'bg-green-500 text-white': selectedPriceRange === price || (price === 'All' && !selectedPriceRange),
-                'bg-green-100 dark:bg-[#111] text-gray-700 dark:text-gray-300 hover:bg-green-200 dark:hover:bg-[#222]': selectedPriceRange !== price && !(price === 'All' && !selectedPriceRange)
-              }"
-            >
-              {{price}}
-            </button>
+        <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <button
+            (click)="togglePrice()"
+            class="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-[#111] hover:bg-gray-100 dark:hover:bg-[#222] transition"
+          >
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <i class="fa-solid fa-tag mr-2 text-green-500"></i>
+              By Price
+              <span *ngIf="selectedPriceRange && selectedPriceRange !== 'All'" class="ml-1 text-green-500">
+                ({{selectedPriceRange}})
+              </span>
+            </span>
+            <i class="fa-solid fa-chevron-down text-gray-400 transition-transform duration-200"
+               [class.rotate-180]="!isPriceCollapsed"></i>
+          </button>
+          <div *ngIf="!isPriceCollapsed" class="p-3 bg-white dark:bg-[#1a1a1a]">
+            <div class="flex flex-wrap gap-2">
+              <button
+                *ngFor="let price of priceRanges"
+                (click)="selectPriceRange(price)"
+                class="px-3 py-1.5 rounded-full text-xs font-medium transition"
+                [ngClass]="{
+                  'bg-green-500 text-white': selectedPriceRange === price || (price === 'All' && !selectedPriceRange),
+                  'bg-green-100 dark:bg-[#111] text-gray-700 dark:text-gray-300 hover:bg-green-200 dark:hover:bg-[#222]': selectedPriceRange !== price && !(price === 'All' && !selectedPriceRange)
+                }"
+              >
+                {{price}}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -133,7 +165,7 @@
         <button
           *ngIf="hasActiveFilters()"
           (click)="clearSearch()"
-          class="text-xs text-orange-500 hover:underline"
+          class="text-xs text-orange-500 hover:underline mt-2"
         >
           Clear all filters
         </button>
@@ -141,18 +173,39 @@
       </div>
 
       <!-- SEARCH RESULTS -->
-      <div *ngIf="!isLoading && !error">
+      <div *ngIf="!error">
         <div class="flex items-center justify-between mb-4">
           <h3 class="font-semibold dark:text-white">
-            Results ({{filteredResults.length}})
+            Results <span *ngIf="!isLoadingResults">({{filteredResults.length}})</span>
           </h3>
-          <span *ngIf="hasActiveFilters()" class="text-xs text-orange-500">
+          <span *ngIf="hasActiveFilters() && !isLoadingResults" class="text-xs text-orange-500">
             Filters active
           </span>
         </div>
 
+        <!-- RESULTS LOADING SKELETON (only for results) -->
+        <div *ngIf="isLoadingResults" class="flex flex-col gap-4">
+          <div *ngFor="let i of [1,2,3,4,5]" class="bg-gray-100 dark:bg-[#111] rounded-xl p-4 animate-pulse">
+            <div class="flex items-start gap-4">
+              <div class="w-16 h-16 rounded-full bg-gray-300 dark:bg-[#333] shrink-0"></div>
+              <div class="flex-1 space-y-3">
+                <div class="flex items-start justify-between">
+                  <div class="h-4 bg-gray-300 dark:bg-[#333] rounded w-1/3"></div>
+                  <div class="h-4 bg-gray-300 dark:bg-[#333] rounded w-16"></div>
+                </div>
+                <div class="h-3 bg-gray-300 dark:bg-[#333] rounded w-1/4"></div>
+                <div class="h-3 bg-gray-300 dark:bg-[#333] rounded w-24"></div>
+                <div class="flex gap-1">
+                  <div class="h-5 bg-gray-300 dark:bg-[#333] rounded-full w-16"></div>
+                  <div class="h-5 bg-gray-300 dark:bg-[#333] rounded-full w-20"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- RESULTS LIST -->
-        <div class="flex flex-col gap-4">
+        <div *ngIf="!isLoadingResults" class="flex flex-col gap-4">
 
           <div
             *ngFor="let agent of filteredResults"
@@ -193,7 +246,7 @@
                 </div>
 
                 <!-- SPECIALIZATIONS -->
-                <div class="flex flex-wrap gap-1">
+                <div class="flex flex-wrap gap-1" *ngIf="agent.specializations.length">
                   <span
                     *ngFor="let spec of agent.specializations"
                     class="bg-orange-200 dark:bg-[#222] px-2 py-1 rounded-full text-xs dark:text-white"

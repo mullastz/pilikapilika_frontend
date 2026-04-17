@@ -1,10 +1,11 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
+import { AgentService } from '../../core/services/agent.service';
 import { AuthService } from '../../core/services/auth.service';
+import { Agent, AgentProfileResponse, User, UpdateAgentProfileRequest } from '../../core/interfaces/auth.interface';
 import { ToastService } from '../../core/services/toast.service';
-import { User, Agent, UpdateAgentProfileRequest } from '../../core/interfaces/auth.interface';
 
 @Component({
   selector: 'app-agent-details',
@@ -18,6 +19,11 @@ export class AgentDetails implements OnInit {
   user: User | null = null;
   isLoading = false;
   isSaving = false;
+  isRequestingVerification = false;
+  isCancellingVerification = false;
+  verificationRequested = false;
+  verificationPending = false;
+  verificationCancelled = false;
 
   selectedSpecializations: string[] = [];
   selectedTransport: string[] = [];
@@ -50,6 +56,7 @@ export class AgentDetails implements OnInit {
     private location: Location,
     private fb: FormBuilder,
     private authService: AuthService,
+    private agentService: AgentService,
     private cdr: ChangeDetectorRef,
     private toastService: ToastService,
     private route: ActivatedRoute
@@ -72,7 +79,7 @@ export class AgentDetails implements OnInit {
 
   loadAgentProfile(): void {
     this.isLoading = true;
-    this.user = this.authService.getUser();
+    this.user = this.authService.getUser() as User | null;
 
     // Get userId from route params or use current user's id for /account/agent
     const routeId = this.route.snapshot.paramMap.get('id');
@@ -80,25 +87,76 @@ export class AgentDetails implements OnInit {
 
     if (!userId) {
       this.isLoading = false;
+      this.cdr.detectChanges();
       return;
     }
 
-    this.authService.getAgentProfile(userId).subscribe({
-      next: (agent) => {
+    this.agentService.getAgentProfile(userId).subscribe({
+      next: (agent: Agent) => {
         this.agent = agent;
-        this.user = agent; // Agent extends User
-
-        this.selectedSpecializations = agent.specializations || [];
-        this.selectedTransport = agent.transport_methods || [];
-
         this.populateForm(agent);
+        // Check verification status - use user data from agent (which extends User)
+        const hasRequested = !!agent.agent_verification_requested_at;
+        const isVerified = !!agent.agent_verified_at || agent.is_agent_verified;
+        this.verificationPending = hasRequested && !isVerified;
+        this.verificationRequested = hasRequested && !isVerified;
+        this.verificationCancelled = false;
         this.isLoading = false;
+        this.cdr.markForCheck();
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error loading agent profile:', err);
         this.isLoading = false;
         this.cdr.detectChanges();
+      }
+    });
+  }
+
+  /**
+   * Request agent verification from admin
+   */
+  requestVerification(): void {
+    this.isRequestingVerification = true;
+    this.cdr.detectChanges();
+
+    this.agentService.requestVerification().subscribe({
+      next: (response) => {
+        this.isRequestingVerification = false;
+        this.toastService.success('Verification request submitted! An admin will review your profile.');
+        // Reload profile from backend to get real data
+        this.loadAgentProfile();
+      },
+      error: (err) => {
+        this.isRequestingVerification = false;
+        const errorMsg = err.error?.message || 'Failed to submit verification request. Please try again.';
+        this.toastService.error(errorMsg);
+        this.cdr.detectChanges();
+        console.error('Error requesting verification:', err);
+      }
+    });
+  }
+
+  /**
+   * Cancel agent verification request
+   */
+  cancelVerification(): void {
+    this.isCancellingVerification = true;
+    this.cdr.detectChanges();
+
+    this.agentService.cancelVerification().subscribe({
+      next: (response) => {
+        this.isCancellingVerification = false;
+        this.toastService.success('Verification request cancelled successfully.');
+        // Reload profile from backend to get real data
+        this.loadAgentProfile();
+      },
+      error: (err) => {
+        this.isCancellingVerification = false;
+        const errorMsg = err.error?.message || 'Failed to cancel verification request. Please try again.';
+        this.toastService.error(errorMsg);
+        this.cdr.detectChanges();
+        console.error('Error cancelling verification:', err);
       }
     });
   }
@@ -113,6 +171,10 @@ export class AgentDetails implements OnInit {
       bio: agent.bio || '',
       id_number: agent.id_number || '',
     });
+    
+    // Load specializations and transport methods into selected arrays
+    this.selectedSpecializations = agent.specializations || [];
+    this.selectedTransport = agent.transport_methods || [];
   }
 
   onSubmit(): void {
@@ -145,15 +207,15 @@ export class AgentDetails implements OnInit {
     };
 
     // Update agent profile only - personal details in Manage Account
-    this.authService.updateAgentProfile(userId, agentUpdateData).subscribe({
-      next: (response) => {
+    this.agentService.updateAgentProfile(userId, agentUpdateData).subscribe({
+      next: (response: AgentProfileResponse) => {
         this.isSaving = false;
         this.agent = response.data;
         this.user = response.data;
         this.toastService.success('Agent profile updated successfully!');
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: (err: any) => {
         this.isSaving = false;
         const errorMsg = err.error?.message || 'Failed to update agent profile. Please try again.';
         this.toastService.error(errorMsg);

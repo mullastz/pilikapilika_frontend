@@ -1,5 +1,34 @@
 <div class="bg-[#f5f5f5] dark:bg-[#0a0a0a] min-h-screen transition-colors duration-300">
 
+    <!-- Profile Completion Popup -->
+    @if (showProfilePopup) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl p-6 m-4 max-w-md w-full transform transition-all">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-user-circle text-3xl text-[#FF7800]"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                    Complete Your Profile
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">
+                    Please complete your profile details to unlock all features and get the best experience.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button (click)="goToProfile()"
+                            class="flex-1 bg-[#FF7800] text-white py-3 px-6 rounded-full font-semibold hover:bg-orange-600 transition-all">
+                        Complete Profile
+                    </button>
+                    <button (click)="closeProfilePopup()"
+                            class="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-full font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all">
+                        Maybe Later
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+
     <!-- HERO -->
     <section class="relative p-2 sm:p-4">
         <div class="relative rounded-2xl overflow-hidden shadow-lg">
@@ -109,7 +138,7 @@
             </div>
 
             <p class="text-xs sm:text-sm text-gray-400 text-center mt-1">
-            {{agent.region?.name || 'Unknown'}}, {{agent.district?.name || 'Unknown'}}
+            {{agent.region || 'Unknown'}}, {{agent.district || 'Unknown'}}
             </p>
 
             <p class="text-center mt-2 sm:mt-3 font-medium text-sm dark:text-gray-300 transition-colors">
@@ -278,7 +307,7 @@
             </div>
 
             <p class="text-xs sm:text-sm text-gray-400 text-center mt-1">
-            {{agent.region?.name || 'Unknown'}}, {{agent.district?.name || 'Unknown'}}
+            {{agent.region || 'Unknown'}}, {{agent.district || 'Unknown'}}
             </p>
 
             <p class="text-center mt-2 sm:mt-3 font-medium text-sm dark:text-gray-300 transition-colors">

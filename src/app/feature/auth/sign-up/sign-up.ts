@@ -1,19 +1,24 @@
-import { Component, signal, OnInit, inject } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { Region, District, SignupRequest } from '../../../core/interfaces/auth.interface';
+import { SignupRequest } from '../../../core/interfaces/auth.interface';
 
+/**
+ * Simplified Sign Up Component
+ * Only requires: username, email, password, and role
+ * Other profile fields can be filled after registration
+ */
 @Component({
   selector: 'app-sign-up',
   imports: [ CommonModule, ReactiveFormsModule, RouterLink ],
   templateUrl: './sign-up.html',
   styleUrl: './sign-up.css',
 })
-export class SignUp implements OnInit {
+export class SignUp {
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private location = inject(Location);
@@ -25,72 +30,14 @@ export class SignUp implements OnInit {
   showPassword = signal(false);
   showConfirmPassword = signal(false);
 
-  // Region & District data
-  regions = signal<Region[]>([]);
-  districts = signal<District[]>([]);
-  isLoadingRegions = signal(false);
-  isLoadingDistricts = signal(false);
-
   constructor() {
     this.signupForm = this.fb.group({
-      firstname: ['', [Validators.required, Validators.minLength(2)]],
-      lastname: ['', [Validators.required, Validators.minLength(2)]],
-      gender: ['Male', Validators.required],
       username: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
-      phone: ['', [Validators.required]],
-      region_id: [null, Validators.required],
-      district_id: [null, Validators.required],
-      ward: ['', Validators.required],
-      address: [''],
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', Validators.required],
       userType: ['client', Validators.required], // client = Buyer, agent = Seller
     }, { validators: this.passwordMatchValidator });
-  }
-
-  ngOnInit(): void {
-    this.loadRegions();
-
-    // Watch for region changes to load districts
-    this.signupForm.get('region_id')?.valueChanges.subscribe((regionId: number) => {
-      if (regionId) {
-        this.loadDistricts(regionId);
-        this.signupForm.patchValue({ district_id: null });
-      } else {
-        this.districts.set([]);
-      }
-    });
-  }
-
-  loadRegions(): void {
-    this.isLoadingRegions.set(true);
-    this.authService.getRegions().subscribe({
-      next: (regions) => {
-        this.regions.set(regions);
-        this.isLoadingRegions.set(false);
-      },
-      error: (err) => {
-        console.error('Failed to load regions:', err);
-        this.isLoadingRegions.set(false);
-        this.toastService.error('Failed to load regions. Please refresh the page.');
-      }
-    });
-  }
-
-  loadDistricts(regionId: number): void {
-    this.isLoadingDistricts.set(true);
-    this.authService.getDistrictsByRegion(regionId).subscribe({
-      next: (districts) => {
-        this.districts.set(districts);
-        this.isLoadingDistricts.set(false);
-      },
-      error: (err) => {
-        console.error('Failed to load districts:', err);
-        this.isLoadingDistricts.set(false);
-        this.toastService.error('Failed to load districts. Please try again.');
-      }
-    });
   }
 
   // Custom validator: passwords must match
@@ -114,27 +61,24 @@ export class SignUp implements OnInit {
 
     const formValue = this.signupForm.value;
     const signupData: SignupRequest = {
-      firstname: formValue.firstname,
-      lastname: formValue.lastname,
-      gender: formValue.gender,
       username: formValue.username,
       email: formValue.email,
-      phone: formValue.phone,
       password: formValue.password,
       password_confirmation: formValue.confirmPassword,
-      region_id: formValue.region_id,
-      district_id: formValue.district_id,
-      ward: formValue.ward,
-      address: formValue.address || null,
       role: formValue.userType === 'agent' ? 'Seller' : 'Buyer'
     };
 
     this.authService.signup(signupData).subscribe({
       next: (response) => {
         this.isLoading.set(false);
-        this.toastService.success('Account created successfully! Please sign in.');
-        // Navigate to sign in or dashboard
-        this.router.navigate(['/sign-in']);
+        // Show success toast
+        this.toastService.success('Registration successful! Please check your email to verify your account.');
+        // Navigate to email verification page with UUID in path
+        this.router.navigate(['/verify-email', response.data?.uuid], {
+          queryParams: {
+            email: response.data?.user?.email
+          }
+        });
       },
       error: (err: HttpErrorResponse) => {
         this.isLoading.set(false);

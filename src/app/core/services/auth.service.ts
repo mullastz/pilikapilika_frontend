@@ -6,33 +6,37 @@ import {
   SignupResponse,
   LoginRequest,
   LoginResponse,
-  User,
-  Agent,
-  AgentProfile,
-  Region,
-  District,
-  UpdateProfileRequest,
-  UpdateProfileResponse,
-  UpdateAgentProfileRequest,
-  AgentProfileResponse
+  User
 } from '../interfaces/auth.interface';
 
+/**
+ * AuthService - Handles authentication operations only
+ * (Login, Logout, Register, Token management)
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
   constructor(private api: ApiService) {}
 
+  /**
+   * Register a new user
+   */
   signup(data: SignupRequest): Observable<SignupResponse> {
     return this.api.post<SignupResponse>('register', data).pipe(
       tap(response => {
-        if (response.data) {
-          this.saveUser(response.data);
+        // Don't save token on registration - user needs to verify email first
+        if (response.data?.user) {
+          // Store minimal user info for verification purposes
+          localStorage.setItem('pending_verification_email', response.data.user.email);
         }
       })
     );
   }
 
+  /**
+   * Login user
+   */
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.api.post<LoginResponse>('login', credentials).pipe(
       tap(response => {
@@ -42,35 +46,25 @@ export class AuthService {
         if (response.data) {
           this.saveUser(response.data);
         }
+        // Store profile completion status
+        if (response.profile) {
+          localStorage.setItem('profile_completion', JSON.stringify(response.profile));
+        }
       })
     );
   }
 
+  /**
+   * Logout user
+   */
   logout(): void {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
+    localStorage.removeItem('profile_completion');
   }
 
-  // Region & District APIs
-  getRegions(): Observable<Region[]> {
-    return this.api.get<{ success: boolean; data: Region[] }>('regions').pipe(
-      map(response => response.data)
-    );
-  }
+  // ========== Token & User Storage ==========
 
-  getDistrictsByRegion(regionId: number): Observable<District[]> {
-    return this.api.get<{ success: boolean; data: { region: string; districts: District[] } }>(`regions/${regionId}/districts`).pipe(
-      map(response => response.data.districts)
-    );
-  }
-
-  getAllDistricts(): Observable<District[]> {
-    return this.api.get<{ success: boolean; data: District[] }>('districts').pipe(
-      map(response => response.data)
-    );
-  }
-
-  // Storage helpers
   saveToken(token: string): void {
     localStorage.setItem('auth_token', token);
   }
@@ -92,76 +86,52 @@ export class AuthService {
     return !!this.getToken();
   }
 
-  // Profile management
-  getProfile(): Observable<User> {
-    return this.api.get<{ data: User }>('me').pipe(
-      map(response => response.data),
-      tap(user => {
-        this.saveUser(user);
-      })
-    );
+  // ========== Profile Completion Helpers ==========
+
+  getProfileCompletionStatus(): { is_complete: boolean; missing_fields: string[] } | null {
+    const status = localStorage.getItem('profile_completion');
+    return status ? JSON.parse(status) : null;
   }
 
-  updateProfile(data: UpdateProfileRequest): Observable<UpdateProfileResponse> {
-    return this.api.put<UpdateProfileResponse>('me', data).pipe(
-      tap(response => {
-        if (response.data) {
-          this.saveUser(response.data);
-        }
-      })
-    );
+  setProfileComplete(): void {
+    localStorage.setItem('profile_completion', JSON.stringify({ is_complete: true, missing_fields: [] }));
   }
 
-  // Password management
-  changePassword(data: { current_password: string; new_password: string; new_password_confirmation: string }): Observable<{ message: string; data: User }> {
-    return this.api.post<{ message: string; data: User }>('change-password', data);
+  needsProfileCompletion(): boolean {
+    const status = this.getProfileCompletionStatus();
+    return status ? !status.is_complete : false;
   }
 
-  // Agent profile management (authenticated)
-  getAgentProfile(userId: number): Observable<Agent> {
-    return this.api.get<{ data: Agent }>(`agents/${userId}/profile`).pipe(
-      map(response => response.data),
-      tap(agent => {
-        // Save merged agent data to localStorage
-        this.saveUser(agent);
-      })
-    );
+  // ========== Pending Verification Helpers ==========
+
+  getPendingVerificationEmail(): string | null {
+    return localStorage.getItem('pending_verification_email');
   }
 
-  updateAgentProfile(userId: number, data: UpdateAgentProfileRequest): Observable<AgentProfileResponse> {
-    return this.api.put<AgentProfileResponse>(`agents/${userId}/profile`, data);
+  clearPendingVerification(): void {
+    localStorage.removeItem('pending_verification_email');
   }
 
-  // Public agent discovery (no authentication required)
-  getAvailableAgents(): Observable<Agent[]> {
-    return this.api.get<{ data: Agent[] }>('agents').pipe(
-      map(response => response.data)
-    );
+  // ========== Password Reset ==========
+
+  /**
+   * Request password reset email
+   */
+  forgotPassword(email: string): Observable<any> {
+    return this.api.post('forgot-password', { email });
   }
 
-  searchAgents(params?: { specialization?: string; transport?: string; min_price?: number; max_price?: number; q?: string }): Observable<Agent[]> {
-    const queryParams = new URLSearchParams();
-    if (params) {
-      if (params.specialization) queryParams.append('specialization', params.specialization);
-      if (params.transport) queryParams.append('transport', params.transport);
-      if (params.min_price !== undefined) queryParams.append('min_price', params.min_price.toString());
-      if (params.max_price !== undefined) queryParams.append('max_price', params.max_price.toString());
-      if (params.q) queryParams.append('q', params.q);
-    }
-    const queryString = queryParams.toString();
-    const endpoint = queryString ? `agents/search?${queryString}` : 'agents/search';
-    return this.api.get<{ data: Agent[] }>(endpoint).pipe(
-      map(response => response.data)
-    );
+  /**
+   * Verify reset token is valid
+   */
+  verifyResetToken(uuid: string, token: string): Observable<any> {
+    return this.api.get(`reset-password/${uuid}/verify?token=${token}`);
   }
 
-  getPublicAgentProfile(userId: number): Observable<Agent> {
-    console.log('Fetching public agent profile for ID:', userId);
-    return this.api.get<{ data: Agent }>(`agents/${userId}/public`).pipe(
-      map(response => {
-        console.log('Public agent profile response:', response);
-        return response.data;
-      })
-    );
+  /**
+   * Reset password with token
+   */
+  resetPassword(data: { uuid: string; token: string; password: string; password_confirmation: string }): Observable<any> {
+    return this.api.post('reset-password', data);
   }
 }

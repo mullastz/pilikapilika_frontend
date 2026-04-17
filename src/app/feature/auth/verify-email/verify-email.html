@@ -1,0 +1,85 @@
+<div class="min-h-screen bg-linear-to-br from-[#FF7800] to-[#FF5500] flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-[#0a0a0a] rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+    
+    <!-- Email Icon -->
+    <div class="mb-6">
+      <div class="w-20 h-20 bg-[#FF7800]/10 rounded-full flex items-center justify-center mx-auto">
+        <i class="fa-solid fa-envelope text-4xl text-[#FF7800]"></i>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+      Verify Your Email
+    </h1>
+
+    @if (isVerified()) {
+      <!-- Success State -->
+      <div class="mb-6">
+        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fa-solid fa-check text-3xl text-green-600"></i>
+        </div>
+        <p class="text-gray-600 dark:text-gray-400 mb-6">
+          Your email has been verified successfully! You can now log in to your account.
+        </p>
+        <button (click)="goToLogin()"
+                class="w-full py-3 px-6 bg-[#FF7800] text-white font-semibold rounded-full hover:bg-[#E66A00] transition-colors">
+          Go to Login
+        </button>
+      </div>
+    } @else if (isVerifying()) {
+      <!-- Verifying State -->
+      <div class="mb-6">
+        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-600"></i>
+        </div>
+        <p class="text-gray-600 dark:text-gray-400">
+          Verifying your email... Please wait.
+        </p>
+      </div>
+    } @else {
+      <!-- Default State -->
+      <p class="text-gray-600 dark:text-gray-400 mb-6">
+        We've sent a verification link to <strong class="text-[#FF7800]">{{ email() || 'your email' }}</strong>. 
+        Please check your inbox and click the link to verify your account.
+      </p>
+
+      @if (errorMessage()) {
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <p class="text-red-600 dark:text-red-400 text-sm">
+            <i class="fa-solid fa-exclamation-circle mr-2"></i>
+            {{ errorMessage() }}
+          </p>
+        </div>
+      }
+
+      <!-- Resend Button -->
+      <div class="space-y-4">
+        <button (click)="resendEmail()" 
+                [disabled]="isLoading()"
+                class="w-full py-3 px-6 bg-[#FF7800] text-white font-semibold rounded-full hover:bg-[#E66A00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+          @if (isLoading()) {
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            Sending...
+          } @else {
+            <i class="fa-solid fa-paper-plane"></i>
+            Resend Verification Email
+          }
+        </button>
+
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          Didn't receive the email? Check your spam folder or click above to resend.
+        </p>
+      </div>
+
+      <!-- Back to Login -->
+      <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <a routerLink="/sign-in" class="text-[#FF7800] hover:underline text-sm">
+          <i class="fa-solid fa-arrow-left mr-2"></i>
+          Back to Login
+        </a>
+      </div>
+    }
+
+  </div>
+</div>

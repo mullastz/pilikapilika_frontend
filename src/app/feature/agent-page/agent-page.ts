@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { Footer } from '../../shared/footer/footer';
-import { AuthService } from '../../core/services/auth.service';
+import { AgentService } from '../../core/services/agent.service';
 import { Agent } from '../../core/interfaces/auth.interface';
 import { ToastService } from '../../core/services/toast.service';
 
@@ -30,7 +30,7 @@ export class AgentPage implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private location: Location,
-    private authService: AuthService,
+    private agentService: AgentService,
     private toastService: ToastService,
     private cdr: ChangeDetectorRef
   ) {}
@@ -54,14 +54,14 @@ export class AgentPage implements OnInit {
   loadAgent(id: number): void {
     console.log('Loading agent:', id);
     this.isLoading = true;
-    this.authService.getPublicAgentProfile(id).subscribe({
-      next: (agent) => {
+    this.agentService.getPublicAgentProfile(id).subscribe({
+      next: (agent: Agent) => {
         console.log('Agent loaded successfully:', agent);
         this.agent = agent;
         this.isLoading = false;
         this.cdr.detectChanges(); // Trigger change detection
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error loading agent:', err);
         this.error = err.error?.message || 'Failed to load agent profile';
         this.toastService.error(this.error || 'Failed to load agent profile');
@@ -82,8 +82,8 @@ export class AgentPage implements OnInit {
 
   getLocation(): string {
     if (!this.agent) return '';
-    const region = this.agent.region?.name || '';
-    const district = this.agent.district?.name || '';
+    const region = this.agent.region || '';
+    const district = this.agent.district || '';
     if (region && district) return `${region}, ${district}`;
     return region || district || 'Unknown Location';
   }

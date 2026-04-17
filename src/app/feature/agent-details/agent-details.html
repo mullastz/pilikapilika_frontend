@@ -193,16 +193,21 @@
           <div>
             <label class="text-sm text-gray-500 dark:text-gray-400">Verification Status</label>
             <div class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#222] flex items-center gap-2">
-              <i
-                class="fa-solid"
-                [class.fa-check-circle]="agent?.is_verified"
-                [class.fa-clock]="!agent?.is_verified"
-                [class.text-green-500]="agent?.is_verified"
-                [class.text-yellow-500]="!agent?.is_verified"
-              ></i>
-              <span class="dark:text-gray-400">
-                {{ agent?.is_verified ? 'Verified' : 'Pending Verification' }}
-              </span>
+              <!-- Verified -->
+              <ng-container *ngIf="agent?.is_verified || agent?.is_agent_verified">
+                <i class="fa-solid fa-check-circle text-green-500"></i>
+                <span class="dark:text-gray-400">Verified</span>
+              </ng-container>
+              <!-- Pending -->
+              <ng-container *ngIf="(verificationPending || verificationRequested) && !agent?.is_verified && !agent?.is_agent_verified">
+                <i class="fa-solid fa-clock text-yellow-500"></i>
+                <span class="dark:text-gray-400">Pending Verification</span>
+              </ng-container>
+              <!-- Not requested -->
+              <ng-container *ngIf="!verificationPending && !verificationRequested && !agent?.is_verified && !agent?.is_agent_verified">
+                <i class="fa-solid fa-circle-exclamation text-gray-400"></i>
+                <span class="dark:text-gray-400">Not Verified</span>
+              </ng-container>
             </div>
           </div>
 
@@ -218,6 +223,64 @@
             <span *ngIf="isSaving" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
             {{ isSaving ? 'Saving...' : 'Save Changes' }}
           </button>
+        </div>
+
+        <!-- VERIFICATION REQUEST SECTION -->
+        <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6" *ngIf="!agent?.is_verified && !agent?.is_agent_verified">
+
+          <!-- Not Requested Yet -->
+          <div *ngIf="!verificationRequested && !verificationPending" class="text-center">
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
+              <i class="fa-solid fa-info-circle mr-1"></i>
+              Request verification to become visible to clients
+            </p>
+            <button
+              type="button"
+              (click)="requestVerification()"
+              [disabled]="isRequestingVerification"
+              class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-full transition shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mx-auto"
+            >
+              <span *ngIf="isRequestingVerification" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+              <i class="fa-solid fa-user-check" *ngIf="!isRequestingVerification"></i>
+              {{ isRequestingVerification ? 'Requesting...' : 'Request Verification' }}
+            </button>
+          </div>
+
+          <!-- Already Requested - Pending -->
+          <div *ngIf="verificationRequested || verificationPending" class="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl">
+            <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/40 rounded-full flex items-center justify-center mx-auto mb-2">
+              <i class="fa-solid fa-clock text-yellow-600"></i>
+            </div>
+            <h4 class="font-semibold text-yellow-800 dark:text-yellow-400">Verification Pending</h4>
+            <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+              Your verification request has been submitted. An admin will review your profile shortly.
+            </p>
+            <!-- Cancel Button -->
+            <button
+              type="button"
+              (click)="cancelVerification()"
+              [disabled]="isCancellingVerification"
+              class="mt-3 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full transition shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mx-auto text-sm"
+            >
+              <span *ngIf="isCancellingVerification" class="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></span>
+              <i class="fa-solid fa-times" *ngIf="!isCancellingVerification"></i>
+              {{ isCancellingVerification ? 'Cancelling...' : 'Cancel Request' }}
+            </button>
+          </div>
+
+        </div>
+
+        <!-- VERIFIED BADGE -->
+        <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6" *ngIf="agent?.is_verified || agent?.is_agent_verified">
+          <div class="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
+            <div class="w-12 h-12 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mx-auto mb-2">
+              <i class="fa-solid fa-check-circle text-green-600 text-xl"></i>
+            </div>
+            <h4 class="font-semibold text-green-800 dark:text-green-400">Verified Agent</h4>
+            <p class="text-sm text-green-700 dark:text-green-300 mt-1">
+              Your profile is verified and visible to clients.
+            </p>
+          </div>
         </div>
 
       </form>

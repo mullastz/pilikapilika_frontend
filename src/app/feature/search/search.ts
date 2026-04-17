@@ -1,9 +1,11 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule, Location  } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AuthService } from '../../core/services/auth.service';
+import { AgentService } from '../../core/services/agent.service';
 import { Agent } from '../../core/interfaces/auth.interface';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   selector: 'app-search',
@@ -12,10 +14,15 @@ import { Agent } from '../../core/interfaces/auth.interface';
   templateUrl: './search.html',
   styleUrl: './search.css',
 })
-export class Search implements OnInit {
+export class Search implements OnInit, OnDestroy {
+  // Combined search query
   searchQuery = '';
+  private searchSubject = new Subject<string>();
+  private searchSubscription?: Subscription;
+
   agents: Agent[] = [];
-  isLoading = true;
+  isLoading = true; // Initial page load
+  isLoadingResults = false; // Only for results refresh
   error: string | null = null;
 
   // Filter states
@@ -23,24 +30,47 @@ export class Search implements OnInit {
   selectedTransport: string | null = null;
   selectedPriceRange: string | null = null;
 
+  // Collapsible sections - collapsed by default
+  isSpecCollapsed = true;
+  isTransportCollapsed = true;
+  isPriceCollapsed = true;
+
   constructor(
     private route: ActivatedRoute,
     private location: Location,
     private router: Router,
-    private authService: AuthService,
+    private agentService: AgentService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
+    // Setup debounced search - updates as user types with 300ms delay
+    this.searchSubscription = this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe(() => {
+      this.performSearch();
+    });
     this.loadAgents();
+  }
+
+  ngOnDestroy(): void {
+    this.searchSubscription?.unsubscribe();
+  }
+
+  onSearchInput(): void {
+    this.searchSubject.next(this.searchQuery);
   }
 
   loadAgents(): void {
     this.isLoading = true;
+    this.isLoadingResults = true;
     this.error = null;
-    console.log('Search: Loading agents with filters...');
+    this.performSearch();
+  }
 
-    // Build search params from current filters
+  private performSearch(): void {
+    // Build search params from current filters and search query
     const params: { specialization?: string; transport?: string; min_price?: number; max_price?: number; q?: string } = {};
 
     if (this.selectedSpecialization && this.selectedSpecialization !== 'All') {
@@ -67,22 +97,25 @@ export class Search implements OnInit {
           break;
       }
     }
+    // Combined search query - searches name, region, district on backend
     if (this.searchQuery.trim()) {
       params.q = this.searchQuery.trim();
     }
 
-    this.authService.searchAgents(params).subscribe({
-      next: (agents) => {
+    this.agentService.searchAgents(params).subscribe({
+      next: (agents: Agent[]) => {
         console.log('Search: Agents loaded:', agents);
         this.agents = agents;
         this.isLoading = false;
-        this.cdr.detectChanges();
+        this.isLoadingResults = false;
+        this.cdr.markForCheck();
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Search: Error loading agents:', err);
         this.error = err.error?.message || 'Failed to load agents';
         this.isLoading = false;
-        this.cdr.detectChanges();
+        this.isLoadingResults = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -92,8 +125,8 @@ export class Search implements OnInit {
   }
 
   getAgentLocation(agent: Agent): string {
-    const region = agent.region?.name || '';
-    const district = agent.district?.name || '';
+    const region = agent.region || '';
+    const district = agent.district || '';
     if (region && district) return `${region}, ${district}`;
     return region || district || 'Unknown Location';
   }
@@ -152,21 +185,22 @@ export class Search implements OnInit {
 
   selectSpecialization(filter: string) {
     this.selectedSpecialization = filter === 'All' ? null : filter;
-    this.loadAgents(); // Reload with new filter
+    this.onSearch(); // Use partial loading
   }
 
   selectTransport(filter: string) {
     this.selectedTransport = filter === 'all' ? null : filter;
-    this.loadAgents(); // Reload with new filter
+    this.onSearch(); // Use partial loading
   }
 
   selectPriceRange(filter: string) {
     this.selectedPriceRange = filter === 'All' ? null : filter;
-    this.loadAgents(); // Reload with new filter
+    this.onSearch(); // Use partial loading
   }
 
   onSearch(): void {
-    this.loadAgents(); // Reload with search query
+    this.isLoadingResults = true;
+    this.performSearch();
   }
 
   clearSearch() {
@@ -174,11 +208,29 @@ export class Search implements OnInit {
     this.selectedSpecialization = null;
     this.selectedTransport = null;
     this.selectedPriceRange = null;
-    this.loadAgents(); // Reload with cleared filters
+    this.isLoadingResults = true;
+    this.performSearch();
   }
 
   hasActiveFilters(): boolean {
-    return !!this.selectedSpecialization || !!this.selectedTransport || !!this.selectedPriceRange;
+    return !!this.selectedSpecialization || !!this.selectedTransport || !!this.selectedPriceRange || !!this.searchQuery.trim();
+  }
+
+  clearQuery() {
+    this.searchQuery = '';
+    this.onSearchInput();
+  }
+
+  toggleSpec() {
+    this.isSpecCollapsed = !this.isSpecCollapsed;
+  }
+
+  toggleTransport() {
+    this.isTransportCollapsed = !this.isTransportCollapsed;
+  }
+
+  togglePrice() {
+    this.isPriceCollapsed = !this.isPriceCollapsed;
   }
 
   viewAgent(agentId: number) {
