@@ -16,6 +16,7 @@ import { AgentDetails } from './feature/agent-details/agent-details';
 import { Messages } from './feature/messages/messages';
 import { Search } from './feature/search/search';
 import { QrGenerator } from './feature/qr-generator/qr-generator';
+import { Home } from './feature/home/home';
 
 
 export const routes: Routes = [
@@ -25,6 +26,7 @@ export const routes: Routes = [
   { path: 'forgot-password', component: ForgotPassword },
   { path: 'reset-password/:uuid', component: ResetPassword },
   { path: '', component: LandingPage },
+  { path: 'home', component: Home },
   { path: 'profile-management', component: ProfileManagement },
   { path: 'account/details', component: ManageAccount },
   { path: 'account/agent', component: AgentDetails },

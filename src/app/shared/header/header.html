@@ -18,8 +18,8 @@
               Get Started
           </button>
         } @else {
-          <!-- Profile Icon with Dropdown (Logged In) -->
-          <div class="relative profile-dropdown-container">
+          <!-- Profile Icon with Dropdown (Logged In) - Desktop Only -->
+          <div class="relative profile-dropdown-container hidden sm:block">
             <button (click)="toggleProfileDropdown()"
                     class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition">
               <i class="fa-solid fa-user"></i>
@@ -88,11 +88,6 @@
             }
           </div>
         }
-
-        <!-- Menu Icon -->
-        <div class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-white text-lg sm:text-xl cursor-pointer">
-            <i class="fa-solid fa-bars"></i>
-        </div>
 
     </div>
 </div>

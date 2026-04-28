@@ -1,0 +1,91 @@
+/* Home Page Styles */
+
+/* Hide scrollbar but keep scroll functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Smooth horizontal scroll */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* Agent card hover effect */
+.agent-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.agent-card:hover {
+  transform: scale(1.05);
+}
+
+/* Progress bar animation */
+.progress-bar-fill {
+  transition: width 0.5s ease;
+}
+
+/* Shipment card hover */
+.shipment-card {
+  transition: box-shadow 0.2s ease;
+}
+
+.shipment-card:hover {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* Section title styling */
+.section-title {
+  position: relative;
+}
+
+/* Safe area support for mobile */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .home-container {
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* Loading skeleton animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.dark .skeleton {
+  background: linear-gradient(90deg, #2a2a2a 25%, #333 50%, #2a2a2a 75%);
+  background-size: 200% 100%;
+}
+
+/* Verified badge pulse */
+@keyframes pulse-blue {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0);
+  }
+}
+
+.verified-badge {
+  animation: pulse-blue 2s infinite;
+}
+
+/* Ensure horizontal scroll containers don't overflow */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}

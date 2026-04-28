@@ -1,0 +1,34 @@
+/* Menu Bar Component Styles */
+
+/* Smooth slide animation */
+nav {
+  will-change: transform;
+}
+
+/* Safe area support for mobile devices with notches */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  nav > div {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* Active state animation */
+button i {
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+button:active i {
+  transform: scale(0.95);
+}
+
+/* Prevent text selection on menu items */
+button {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure menu stays above other fixed elements */
+nav {
+  z-index: 50;
+}

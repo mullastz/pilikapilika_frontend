@@ -1,0 +1,29 @@
+@if (shouldShowMenuBar()) {
+  <nav
+    class="fixed bottom-0 left-0 right-0 z-50 md:hidden transition-transform duration-300 ease-out"
+    [class.translate-y-0]="isVisible()"
+    [class.translate-y-full]="!isVisible()"
+  >
+    <div class="bg-white dark:bg-[#1a1a1a] border-t border-gray-200 dark:border-gray-800 shadow-lg transition-colors duration-300">
+      <div class="flex items-center justify-around px-2 py-2">
+        @for (item of menuItems; track item.route) {
+          <button
+            (click)="navigateTo(item.route)"
+            class="flex flex-col items-center justify-center min-w-[60px] py-1 px-2 rounded-lg transition-all duration-200"
+            [class.text-[#FF7800]]="isActive(item.route)"
+            [class.dark:text-[#FF7800]]="isActive(item.route)"
+            [class.text-gray-500]="!isActive(item.route)"
+            [class.dark:text-gray-400]="!isActive(item.route)"
+            [class.hover:bg-gray-100]="!isActive(item.route)"
+            [class.dark:hover:bg-gray-800]="!isActive(item.route)"
+            [class.hover:bg-orange-50]="isActive(item.route)"
+            [class.dark:hover:bg-orange-900\/20]="isActive(item.route)"
+          >
+            <i [class]="item.icon" class="text-xl mb-1 transition-transform duration-200" [class.scale-110]="isActive(item.route)"></i>
+            <span class="text-xs font-medium">{{ item.label }}</span>
+          </button>
+        }
+      </div>
+    </div>
+  </nav>
+}

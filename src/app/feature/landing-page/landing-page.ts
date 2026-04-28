@@ -34,6 +34,11 @@ export class LandingPage implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // Redirect logged-in users to home page
+    if (this.authService.isAuthenticated()) {
+      this.router.navigate(['/home']);
+      return;
+    }
     this.loadAgents();
     this.checkProfileCompletion();
   }
