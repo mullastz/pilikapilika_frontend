@@ -89,3 +89,15 @@
 .overflow-x-auto {
   -webkit-overflow-scrolling: touch;
 }
+
+/* Hand wave animation for hero greeting */
+@keyframes wave {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(20deg); }
+  75% { transform: rotate(-10deg); }
+}
+
+.animate-wave {
+  animation: wave 1.5s ease-in-out infinite;
+  display: inline-block;
+}

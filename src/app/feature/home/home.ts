@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AgentService } from '../../core/services/agent.service';
@@ -28,8 +28,7 @@ interface Shipment {
   templateUrl: './home.html',
   styleUrl: './home.css'
 })
-export class Home implements OnInit, OnDestroy {
-  private heroSlideInterval: any;
+export class Home implements OnInit {
   currentUser: User | null = null;
   isLoadingAgents = true;
 
@@ -57,35 +56,6 @@ export class Home implements OnInit, OnDestroy {
     { icon: 'fa-solid fa-magnifying-glass', label: 'Search Agent', route: '/search' },
     { icon: 'fa-solid fa-location-crosshairs', label: 'Track Shipping', route: '/account/shipping' },
     { icon: 'fa-solid fa-handshake', label: 'Negotiate', route: '/search' }
-  ];
-
-  // Hero slides for mobile carousel
-  currentHeroSlide = 0;
-  heroSlides = [
-    {
-      id: 1,
-      image: 'assets/landingpage_images/logistics.webp',
-      title: 'Fast Delivery',
-      subtitle: 'Ship anywhere in Tanzania',
-      buttonText: 'Find Agent',
-      route: '/search'
-    },
-    {
-      id: 2,
-      image: 'assets/landingpage_images/bookshipment.jpg',
-      title: 'Safe Shipping',
-      subtitle: 'Verified agents at your service',
-      buttonText: 'Book Now',
-      route: '/search'
-    },
-    {
-      id: 3,
-      image: 'assets/landingpage_images/deliveryman.webp',
-      title: 'Best Prices',
-      subtitle: 'Compare and save on shipping',
-      buttonText: 'Compare',
-      route: '/search'
-    }
   ];
 
   // Mock shipments for UI visualization
@@ -140,30 +110,6 @@ export class Home implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadCurrentUser();
     this.loadAgents();
-    this.startHeroAutoSlide();
-  }
-
-  ngOnDestroy(): void {
-    this.stopHeroAutoSlide();
-  }
-
-  startHeroAutoSlide(): void {
-    this.heroSlideInterval = setInterval(() => {
-      this.currentHeroSlide = (this.currentHeroSlide + 1) % this.heroSlides.length;
-      this.cdr.detectChanges();
-    }, 5000); // Change slide every 5 seconds
-  }
-
-  stopHeroAutoSlide(): void {
-    if (this.heroSlideInterval) {
-      clearInterval(this.heroSlideInterval);
-    }
-  }
-
-  setHeroSlide(index: number): void {
-    this.currentHeroSlide = index;
-    this.stopHeroAutoSlide();
-    this.startHeroAutoSlide(); // Restart timer after manual selection
   }
 
   loadCurrentUser(): void {
@@ -250,6 +196,25 @@ export class Home implements OnInit, OnDestroy {
       },
       10
     ).sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+  }
+
+  goTo(route: string): void {
+    this.router.navigate([route]);
+  }
+
+  getWelcomeMessage(): string {
+    if (!this.currentUser) {
+      return 'Welcome! Ready to ship with confidence?';
+    }
+
+    const role = this.currentUser.role;
+    const name = this.currentUser.firstname;
+
+    if (role === 'Seller' || role === 'seller' || role === 'agent') {
+      return `Welcome back, ${name}! Ready to manage your deliveries and connect with customers?`;
+    } else {
+      return `Are you ready to ship today, ${name}? Find the best agents for your packages!`;
+    }
   }
 
   viewAgentProfile(agentId: number): void {

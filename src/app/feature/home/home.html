@@ -1,75 +1,60 @@
 <div class="bg-[#f5f5f5] dark:bg-[#0a0a0a] min-h-screen pb-24 transition-colors duration-300">
 
-  <!-- HERO SECTION - Auto-sliding carousel (Mobile & Desktop) -->
-  <section class="relative p-2 sm:p-4">
-    <div class="relative rounded-2xl overflow-hidden shadow-lg">
+    <!-- HERO -->
+    <section class="relative p-2 sm:p-4">
+        <div class="relative rounded-2xl overflow-hidden shadow-lg">
+        
+        <img src="assets/landingpage_images/logistics.webp" class="w-full h-64 sm:h-full object-cover"/>
 
-      <!-- Slides -->
-      <div class="relative w-full h-64 sm:h-80 md:h-96">
-        @for (slide of heroSlides; track slide.id; let i = $index) {
-          <div class="absolute inset-0 transition-all duration-700 ease-in-out transform"
-               [class.opacity-100]="currentHeroSlide === i"
-               [class.opacity-0]="currentHeroSlide !== i"
-               [class.translate-x-0]="currentHeroSlide === i"
-               [class.translate-x-full]="currentHeroSlide < i"
-               [class.-translate-x-full]="currentHeroSlide > i">
-            <img [src]="slide.image" class="w-full h-full object-cover"/>
-          </div>
-        }
-      </div>
+        <!-- Overlay -->
+        <div class="absolute inset-0 bg-black/40"></div>
 
-      <!-- Overlay -->
-      <div class="absolute inset-0 bg-black/40"></div>
+        <!-- Navbar -->
+        <app-header></app-header>
 
-      <!-- Header -->
-      <app-header></app-header>
-
-      <!-- Hero Content -->
-      <div class="absolute left-4 sm:left-10 bottom-1/4 sm:bottom-1/3 text-white max-w-xs sm:max-w-md">
-        <h2 class="text-2xl sm:text-3xl font-bold mb-2">{{ heroSlides[currentHeroSlide].title }}</h2>
-        <p class="text-gray-200 mb-3 sm:mb-4 text-sm sm:text-base">
-          {{ heroSlides[currentHeroSlide].subtitle }}
-        </p>
-        <button (click)="router.navigate([heroSlides[currentHeroSlide].route])"
-                class="bg-[#FF7800] px-6 sm:px-8 py-2 rounded-full hover:scale-110 transition text-sm sm:text-base">
-          {{ heroSlides[currentHeroSlide].buttonText }}
-        </button>
-      </div>
-
-      <!-- Slide Indicators -->
-      <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-        @for (slide of heroSlides; track slide.id; let i = $index) {
-          <button (click)="setHeroSlide(i)"
-                  class="w-2.5 h-2.5 rounded-full transition-all duration-300"
-                  [class.bg-white]="currentHeroSlide === i"
-                  [class.bg-white/50]="currentHeroSlide !== i"
-                  [class.scale-125]="currentHeroSlide === i">
-          </button>
-        }
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ACTIVITIES (Mobile & Desktop) -->
-  <section class="px-4 sm:px-6 py-4 sm:py-6">
-    <div class="flex justify-between items-center mb-4 sm:mb-6">
-      <h3 class="text-lg sm:text-xl font-bold dark:text-white transition-colors">Activities</h3>
-      <button (click)="router.navigate(['/search'])" class="bg-[#FF7800] text-white px-4 sm:px-6 py-1.5 sm:py-2 rounded-full hover:scale-110 transition text-sm">
-        See all
-      </button>
-    </div>
-    <div class="grid grid-cols-5 gap-2 sm:gap-4 text-center max-w-4xl mx-auto">
-      @for (item of activities; track item.route) {
-        <div (click)="router.navigate([item.route])" class="flex flex-col items-center hover:scale-110 transition cursor-pointer">
-          <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#FF7800] flex items-center justify-center text-white text-lg sm:text-xl shadow">
-            <i [class]="item.icon"></i>
-          </div>
-          <p class="text-xs sm:text-sm mt-2 dark:text-gray-300 transition-colors">{{ item.label }}</p>
+        <!-- Hero Content -->
+        <div class="absolute left-4 sm:left-10 bottom-1/4 sm:bottom-1/3 text-white max-w-xs sm:max-w-md">
+            <!-- Greeting with hand icon and user name -->
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fa-solid fa-hand text-orange-400 text-xl sm:text-2xl animate-wave"></i>
+                <h2 class="text-2xl sm:text-3xl font-bold">
+                    Hello {{ currentUser?.firstname || 'Guest' }}
+                </h2>
+            </div>
+            
+            <!-- Dynamic description based on user role -->
+            <p class="text-gray-200 mb-3 sm:mb-4 text-sm sm:text-base">
+                {{ getWelcomeMessage() }}
+            </p>
         </div>
-      }
+
+        </div>
+    </section>
+
+    <!-- ACTIVITIES -->
+    <section class="px-4 sm:px-6 py-4 sm:py-6">
+    <div class="flex justify-between items-center mb-4 sm:mb-6">
+        <h3 class="text-lg sm:text-xl text-center font-bold dark:text-white transition-colors">Activities</h3>
+        <button class="bg-orange-500 text-white px-15 sm:px-20 py-1.5 sm:py-2 rounded-full hover:scale-110 transition text-sm sm:text-base">
+        See all
+        </button>
     </div>
-  </section>
+
+    <div class="grid grid-cols-5 gap-2 sm:gap-4 text-center">
+        <div *ngFor="let item of activities" (click)="goTo(item.route)" class="flex flex-col items-center hover:scale-110 transition cursor-pointer">
+        
+        <!-- KEEP THIS WRAPPER (this gives you the circle) -->
+        <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-orange-500 flex items-center justify-center text-white text-lg sm:text-xl shadow">
+            
+            <!-- Replace emoji with Font Awesome icon -->
+            <i [class]="item.icon"></i>
+
+        </div>
+
+        <p class="text-xs sm:text-sm mt-2 dark:text-gray-300 transition-colors">{{ item.label }}</p>
+        </div>
+    </div>
+    </section>
 
   <!-- Active Shipments (Mock Data) -->
   @if (activeShipments.length > 0) {
