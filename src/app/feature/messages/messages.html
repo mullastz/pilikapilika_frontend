@@ -53,7 +53,14 @@
 
         <!-- CONVERSATIONS LIST -->
         <div class="flex-1 overflow-y-auto">
-
+          <!-- Debug: Show conversation count -->
+          <div class="p-2 text-xs text-gray-500 dark:text-gray-400">
+            Debug: {{conversations.length}} conversations loaded
+          </div>
+          <!-- Debug: Show active conversation -->
+          <div class="p-2 text-xs text-gray-500 dark:text-gray-400">
+            Debug: Active = {{activeConversationId}}
+          </div>
           <div
             *ngFor="let conversation of conversations"
             (click)="selectConversation(conversation.id)"
@@ -164,9 +171,18 @@
           </div>
         </div>
 
+        <!-- LOADING STATE -->
+        <div *ngIf="isLoadingConversations" class="flex-1 flex items-center justify-center">
+          <div class="text-center">
+            <i class="fa-solid fa-spinner fa-spin text-4xl text-orange-500 mb-4"></i>
+            <p class="text-gray-500 dark:text-gray-400">Loading conversations...</p>
+            <p class="text-xs text-gray-400 mt-2">Debug: isLoadingConversations = {{isLoadingConversations}}</p>
+          </div>
+        </div>
+
         <!-- EMPTY STATE -->
         <div
-          *ngIf="!activeConversation"
+          *ngIf="!activeConversation && !isLoadingConversations"
           class="flex-1 flex items-center justify-center"
         >
           <div class="text-center">

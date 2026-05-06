@@ -1,6 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Footer } from '../../shared/footer/footer';
 import { AgentService } from '../../core/services/agent.service';
 import { Agent } from '../../core/interfaces/auth.interface';
@@ -29,7 +29,7 @@ export class AgentPage implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private location: Location,
+    private router: Router,
     private agentService: AgentService,
     private toastService: ToastService,
     private cdr: ChangeDetectorRef
@@ -48,7 +48,7 @@ export class AgentPage implements OnInit {
   }
 
   goBack(): void {
-    this.location.back();
+    this.router.navigate(['-1']);
   }
 
   loadAgent(id: number): void {
@@ -86,5 +86,22 @@ export class AgentPage implements OnInit {
     const district = this.agent.district || '';
     if (region && district) return `${region}, ${district}`;
     return region || district || 'Unknown Location';
+  }
+
+  startConversation(): void {
+    if (!this.agent) {
+      this.toastService.error('Agent information not available');
+      return;
+    }
+
+    console.log('Starting conversation with agent:', this.agent);
+    
+    // Navigate to messages page with agent information as query parameters
+    this.router.navigate(['/messages'], {
+      queryParams: {
+        userId: this.agent.uuid || this.agent.id.toString(),
+        name: this.getFullName()
+      }
+    });
   }
 }
