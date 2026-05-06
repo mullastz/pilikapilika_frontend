@@ -12,6 +12,12 @@ export interface DecryptedMessage {
   status: 'received' | 'failed';
 }
 
+export interface ConnectionState {
+  status: 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error';
+  error?: string;
+  reconnectAttempts?: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -20,17 +26,55 @@ export class RealtimeService {
   private messaging = inject(MessagingService);
 
   readonly incomingMessage = signal<DecryptedMessage | null>(null);
+  readonly connectionState = signal<ConnectionState>({
+    status: 'disconnected',
+    reconnectAttempts: 0
+  });
 
   private messageSubject = new Subject<DecryptedMessage>();
   readonly message$ = this.messageSubject.asObservable();
+  readonly connectionState$ = new Subject<ConnectionState>();
 
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 3;
+  private maxReconnectAttempts = 5;
   private reconnectDelay = 3000;
   private connectionTimeout: ReturnType<typeof setTimeout> | null = null;
+  private pingInterval: ReturnType<typeof setInterval> | null = null;
   private isConnected = false;
   private processedIds = new Set<number>();
+
+  private updateConnectionState(
+    status: ConnectionState['status'], 
+    error?: string, 
+    reconnectAttempts?: number
+  ): void {
+    const newState: ConnectionState = {
+      status,
+      error,
+      reconnectAttempts: reconnectAttempts !== undefined ? reconnectAttempts : this.reconnectAttempts
+    };
+    
+    this.connectionState.set(newState);
+    this.connectionState$.next(newState);
+    
+    console.log('[WEBSOCKET] Connection state updated:', newState);
+  }
+
+  private startPingInterval(): void {
+    // Clear existing interval
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+    }
+    
+    // Start new ping interval (every 30 seconds)
+    this.pingInterval = setInterval(() => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        console.log('[WEBSOCKET] Sending ping');
+        this.ws.send(JSON.stringify({event: 'pusher:ping', data: {}}));
+      }
+    }, 30000);
+  }
 
   connect(): void {
     console.log('[WEBSOCKET] connect() called');
@@ -38,14 +82,20 @@ export class RealtimeService {
     const user = this.auth.getUser();
     if (!user) {
       console.log('[WEBSOCKET] No user, skipping connection');
+      this.updateConnectionState('disconnected', 'No authenticated user');
       return;
     }
 
     const token = this.auth.getToken();
     if (!token) {
       console.log('[WEBSOCKET] No token, skipping connection');
+      this.updateConnectionState('disconnected', 'No authentication token');
       return;
     }
+
+    // Update connection state
+    const currentState = this.connectionState();
+    this.updateConnectionState('connecting', undefined, currentState.reconnectAttempts);
 
     // Close existing connection if any
     if (this.ws) {
@@ -69,11 +119,21 @@ export class RealtimeService {
       this.ws.onopen = (event) => {
         this.isConnected = true;
         console.log('[WEBSOCKET] Connected successfully!');
+        
+        // Clear connection timeout
         if (this.connectionTimeout) {
           clearTimeout(this.connectionTimeout);
           this.connectionTimeout = null;
         }
+        
+        // Reset reconnect attempts
         this.reconnectAttempts = 0;
+        
+        // Update connection state
+        this.updateConnectionState('connected');
+        
+        // Start ping interval for connection health
+        this.startPingInterval();
         
         // Subscribe to user's private channel
         const user = this.auth.getUser();
@@ -81,8 +141,6 @@ export class RealtimeService {
           const channelName = `user.${user.uuid}`;
           const token = this.auth.getToken();
           console.log('[WEBSOCKET] Attempting to subscribe to channel:', channelName);
-          console.log('[WEBSOCKET] User UUID:', user.uuid);
-          console.log('[WEBSOCKET] Token available:', !!token);
           
           const subscribeMessage = {
             event: 'pusher:subscribe',
@@ -97,6 +155,7 @@ export class RealtimeService {
           console.log('[WEBSOCKET] Subscription message sent to channel:', channelName);
         } else {
           console.log('[WEBSOCKET] No user found for channel subscription');
+          this.updateConnectionState('error', 'No user found for channel subscription');
         }
       };
 
@@ -127,12 +186,21 @@ export class RealtimeService {
         this.isConnected = false;
         console.log('[WEBSOCKET] Connection closed:', event.code, event.reason);
         
+        // Clear ping interval
+        if (this.pingInterval) {
+          clearInterval(this.pingInterval);
+          this.pingInterval = null;
+        }
+        
         // Don't reconnect if clean close or max attempts reached
         if (event.code === 1000 || this.reconnectAttempts >= this.maxReconnectAttempts) {
-          console.log('[WEBSOCKET] Not reconnecting - abnormal closure or max attempts reached');
+          console.log('[WEBSOCKET] Not reconnecting - clean close or max attempts reached');
+          this.updateConnectionState('disconnected', event.reason || 'Connection closed');
           return;
         }
         
+        // Update connection state and attempt reconnect
+        this.updateConnectionState('reconnecting', `Connection closed (${event.code}): ${event.reason}`, this.reconnectAttempts);
         this.attemptReconnect();
       };
 
@@ -150,10 +218,15 @@ export class RealtimeService {
       clearTimeout(this.connectionTimeout);
       this.connectionTimeout = null;
     }
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
     this.ws?.close();
     this.ws = null;
     this.isConnected = false;
     this.processedIds.clear();
+    this.updateConnectionState('disconnected', 'Disconnected manually');
   }
 
   private async handleIncomingMessage(data: StoredMessage): Promise<void> {

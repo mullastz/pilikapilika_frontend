@@ -3,7 +3,7 @@ import { CommonModule, Location  } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MessagingService, type PendingMessage, type ApiConversation, type StoredMessage } from '../../core/services/messaging.service';
-import { RealtimeService, type DecryptedMessage } from '../../core/services/realtime.service';
+import { RealtimeService, type DecryptedMessage, type ConnectionState } from '../../core/services/realtime.service';
 import { IdentityService } from '../../core/services/crypto/identity.service';
 import { SecurityService } from '../../core/services/crypto/security.service';
 import { KeySyncService } from '../../core/services/key-sync.service';
@@ -14,7 +14,7 @@ interface Message {
   sender: 'agent' | 'customer';
   text: string;
   timestamp: Date;
-  status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed' | 'received' | 'locked';
+  status: 'pending' | 'sending' | 'sent' | 'delivered' | 'read' | 'failed' | 'received' | 'locked';
 }
 
 interface UiConversation {
@@ -41,6 +41,9 @@ export class Messages implements OnInit, OnDestroy {
   showMobileChat = false;
   isLoadingConversations = false;
   isLoadingMessages = false;
+  isSendingMessage = false;
+  errorMessage: string | null = null;
+  connectionState: ConnectionState = { status: 'disconnected' };
 
   @ViewChild('messagesContainer') messagesContainer!: ElementRef<HTMLDivElement>;
 
@@ -52,8 +55,10 @@ export class Messages implements OnInit, OnDestroy {
   private cdr = inject(ChangeDetectorRef);
 
   private messageSubscription: Subscription | null = null;
+  private connectionStateSubscription: Subscription | null = null;
 
   conversations: UiConversation[] = [];
+  pendingMessages: Map<string, PendingMessage> = new Map();
 
   constructor(private route: ActivatedRoute, private location: Location) {
     effect(() => {
@@ -61,6 +66,24 @@ export class Messages implements OnInit, OnDestroy {
       if (incoming) {
         this.handleIncomingMessage(incoming);
       }
+    });
+
+    // Subscribe to connection state changes
+    this.connectionStateSubscription = this.realtime.connectionState$.subscribe((state) => {
+      this.connectionState = state;
+      console.log('[MESSAGES] Connection state updated:', state);
+      
+      // Clear error message when connection is restored
+      if (state.status === 'connected') {
+        this.errorMessage = null;
+      }
+      
+      // Show connection error to user
+      if (state.status === 'error' && state.error) {
+        this.errorMessage = `Connection error: ${state.error}`;
+      }
+      
+      this.cdr.detectChanges();
     });
   }
 
@@ -94,6 +117,7 @@ export class Messages implements OnInit, OnDestroy {
   async loadConversations(): Promise<void> {
     console.log('[MESSAGES] loadConversations started');
     this.isLoadingConversations = true;
+    this.errorMessage = null;
 
     try {
       console.log('[MESSAGES] Calling fetchConversations API...');
@@ -108,7 +132,7 @@ export class Messages implements OnInit, OnDestroy {
         lastMessage: '', // Will be populated when messages load
         lastMessageTime: conv.last_message_at ? new Date(conv.last_message_at) : new Date(),
         unreadCount: conv.unread_count,
-        isOnline: false, // TODO: Implement online status via WebSocket
+        isOnline: this.connectionState.status === 'connected', // Online based on connection state
         messages: [],
       }));
       console.log('[MESSAGES] Conversations mapped to UI format:', this.conversations.length);
@@ -116,6 +140,9 @@ export class Messages implements OnInit, OnDestroy {
       console.error('[MESSAGING] Error fetching conversations:', err);
       console.error('[MESSAGING] Error status:', err?.status);
       console.error('[MESSAGING] Error details:', err?.error);
+      
+      // Show user-friendly error message
+      this.errorMessage = 'Failed to load conversations. Please try again.';
       
       // Return empty array to prevent UI from breaking
       console.log('[MESSAGING] No conversations loaded');
@@ -203,10 +230,31 @@ export class Messages implements OnInit, OnDestroy {
 
   public sendMessage() {
     console.log('[MESSAGES] sendMessage() called');
+    
+    // Clear previous error messages
+    this.errorMessage = null;
+    
     if (!this.newMessage.trim() || !this.activeConversation) {
       console.log('[MESSAGES] Cannot send: empty message or no active conversation');
+      if (!this.newMessage.trim()) {
+        this.errorMessage = 'Message cannot be empty';
+      }
       return;
     }
+
+    // Check connection state before sending
+    if (this.connectionState.status === 'disconnected' || this.connectionState.status === 'error') {
+      this.errorMessage = 'Cannot send message - connection lost. Please wait for reconnection.';
+      return;
+    }
+
+    // Prevent sending while already sending
+    if (this.isSendingMessage) {
+      console.log('[MESSAGES] Already sending message, ignoring');
+      return;
+    }
+
+    this.isSendingMessage = true;
 
     // Sanitize input before sending
     const rawText = this.newMessage.trim();
@@ -214,6 +262,8 @@ export class Messages implements OnInit, OnDestroy {
 
     if (!validation.valid) {
       console.log('[MESSAGES] Message validation failed, rejecting');
+      this.errorMessage = 'Message contains invalid content';
+      this.isSendingMessage = false;
       this.newMessage = '';
       return;
     }
@@ -222,58 +272,75 @@ export class Messages implements OnInit, OnDestroy {
     const recipientId = this.getRecipientId(this.activeConversation);
     console.log('[MESSAGES] Sending message to:', recipientId);
 
-    const { pendingMessage, promise } = this.messaging.sendMessage(
-      recipientId,
-      text
-    );
+    try {
+      const { pendingMessage, promise } = this.messaging.sendMessage(
+        recipientId,
+        text
+      );
 
-    const message: Message = {
-      id: pendingMessage.id,
-      sender: 'agent',
-      text: pendingMessage.content,
-      timestamp: pendingMessage.timestamp,
-      status: 'pending',
-    };
+      // Track pending message
+      this.pendingMessages.set(pendingMessage.id, pendingMessage);
 
-    this.activeConversation.messages.push(message);
-    this.activeConversation.lastMessage = message.text;
-    this.activeConversation.lastMessageTime = message.timestamp;
-    this.newMessage = '';
-    
-    // Force UI update after adding message
-    this.cdr.detectChanges();
-    
-    // Refresh messages for other user to see new messages
-    setTimeout(() => {
-      const activeConv = this.activeConversation;
-      if (activeConv) {
-        console.log('[MESSAGES] Refreshing conversation for new messages');
-        this.loadMessages(activeConv.id);
-      }
-    }, 1000);
+      const message: Message = {
+        id: pendingMessage.id,
+        sender: 'agent',
+        text: pendingMessage.content,
+        timestamp: pendingMessage.timestamp,
+        status: 'pending',
+      };
 
-    promise
-      .then(() => {
-        console.log('[MESSAGES] Message sent successfully');
-        message.status = 'sent';
-        
-        // Update message status in real-time for both sender and receiver
-        this.updateMessageStatus(message.id, 'sent');
-      })
-      .catch((err) => {
-        message.status = 'failed';
-        console.error('[MESSAGES] Failed to send message:', err);
-        // Show specific error for missing recipient key
-        if (err?.error?.includes('No public key found')) {
-          console.error('[MESSAGES] Please ensure the recipient has a public key in the system');
-        }
+      this.activeConversation.messages.push(message);
+      this.activeConversation.lastMessage = message.text;
+      this.activeConversation.lastMessageTime = message.timestamp;
+      this.newMessage = '';
+      
+      // Force UI update after adding message
+      this.cdr.detectChanges();
+      
+      // Scroll to bottom after adding message
+      this.scrollToBottom();
+
+      promise
+        .then(() => {
+          console.log('[MESSAGES] Message sent successfully');
+          message.status = 'sent';
+          
+          // Update message status in real-time for both sender and receiver
+          this.updateMessageStatus(message.id, 'sent');
+          
+          // Remove from pending messages
+          this.pendingMessages.delete(pendingMessage.id);
+        })
+        .catch((err) => {
+          console.error('[MESSAGES] Failed to send message:', err);
+          message.status = 'failed';
+          
+          // Remove from pending messages
+          this.pendingMessages.delete(pendingMessage.id);
+          
+          // Show user-friendly error message
+          if (err?.message) {
+            this.errorMessage = `Failed to send: ${err.message}`;
+          } else {
+            this.errorMessage = 'Failed to send message. Please try again.';
+          }
+        })
+        .finally(() => {
+          this.isSendingMessage = false;
+          this.cdr.detectChanges();
+        });
+
+      this.conversations.sort((a, b) => {
+        if (a.id === this.activeConversationId) return -1;
+        if (b.id === this.activeConversationId) return 1;
+        return b.lastMessageTime.getTime() - a.lastMessageTime.getTime();
       });
-
-    this.conversations.sort((a, b) => {
-      if (a.id === this.activeConversationId) return -1;
-      if (b.id === this.activeConversationId) return 1;
-      return b.lastMessageTime.getTime() - a.lastMessageTime.getTime();
-    });
+    } catch (err: any) {
+      console.error('[MESSAGES] Error sending message:', err);
+      this.errorMessage = 'Failed to send message. Please try again.';
+      this.isSendingMessage = false;
+      this.cdr.detectChanges();
+    }
   }
 
   private getRecipientId(conversation: UiConversation): string {
@@ -322,8 +389,19 @@ export class Messages implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    console.log('[MESSAGES] ngOnDestroy - Component cleaning up');
+    
+    // Disconnect from realtime
     this.realtime.disconnect();
+    
+    // Clean up subscriptions
     this.messageSubscription?.unsubscribe();
+    this.connectionStateSubscription?.unsubscribe();
+    
+    // Clear pending messages
+    this.pendingMessages.clear();
+    
+    console.log('[MESSAGES] Component cleanup completed');
   }
 
   private handleNewConversation(userId: string, name?: string): void {
@@ -465,5 +543,65 @@ export class Messages implements OnInit, OnDestroy {
     if (hours < 24) return `${hours}h ago`;
     if (days < 7) return `${days}d ago`;
     return date.toLocaleDateString();
+  }
+
+  // Connection state utility methods
+  public get connectionStatusText(): string {
+    switch (this.connectionState.status) {
+      case 'connected':
+        return 'Connected';
+      case 'connecting':
+        return 'Connecting...';
+      case 'reconnecting':
+        return `Reconnecting... (${this.connectionState.reconnectAttempts || 0}/5)`;
+      case 'disconnected':
+        return 'Disconnected';
+      case 'error':
+        return 'Connection Error';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  
+  public clearError(): void {
+    this.errorMessage = null;
+    this.cdr.detectChanges();
+  }
+
+  public retryConnection(): void {
+    console.log('[MESSAGES] Manual connection retry requested');
+    this.errorMessage = null;
+    this.realtime.connect();
+  }
+
+  public getMessageStatusIcon(status: Message['status']): string {
+    switch (status) {
+      case 'pending':
+        return '•';
+      case 'sending':
+        return '•';
+      case 'sent':
+        return '✓';
+      case 'delivered':
+        return '✓✓';
+      case 'read':
+        return '✓✓';
+      case 'failed':
+        return '✗';
+      case 'received':
+        return '•';
+      case 'locked':
+        return '•';
+      default:
+        return '';
+    }
+  }
+
+  public canSendMessage(): boolean {
+    return !this.isSendingMessage && 
+           this.connectionState.status === 'connected' && 
+           !!this.activeConversation &&
+           this.newMessage.trim().length > 0;
   }
 }
