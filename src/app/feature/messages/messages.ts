@@ -80,6 +80,10 @@ export class Messages implements OnInit, OnDestroy {
       conversation.unreadCount = 0;
       // Load messages for the selected conversation
       this.loadMessages(id);
+      
+      // Force UI update immediately
+      this.cdr.detectChanges();
+      console.log('[MESSAGES] Conversation selected and UI updated:', id);
     }
   }
 
@@ -94,15 +98,7 @@ export class Messages implements OnInit, OnDestroy {
     try {
       console.log('[MESSAGES] Calling fetchConversations API...');
       
-      // Add timeout to prevent infinite loading
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('API timeout after 30 seconds')), 30000);
-      });
-      
-      const apiConversations = await Promise.race([
-        this.messaging.fetchConversations(),
-        timeoutPromise
-      ]);
+      const apiConversations = await this.messaging.fetchConversations();
       
       console.log('[MESSAGES] API returned conversations:', apiConversations.length);
       this.conversations = (apiConversations as any[]).map((conv: any): UiConversation => ({
@@ -140,33 +136,48 @@ export class Messages implements OnInit, OnDestroy {
     this.isLoadingMessages = true;
     try {
       const paginated = await this.messaging.fetchMessages(conversationId);
-      const decryptedMessages: Message[] = [];
 
-      for (const storedMsg of paginated.messages) {
-        try {
-          const plaintext = await this.messaging.decryptMessage(storedMsg);
-          decryptedMessages.push({
-            id: storedMsg.id,
-            sender: storedMsg.is_outgoing ? 'agent' : 'customer',
-            text: this.security.sanitizeForDisplay(plaintext),
-            timestamp: new Date(storedMsg.created_at),
-            status: storedMsg.read_at ? 'read' : 'delivered',
-          });
-        } catch (decryptError) {
-          console.error('[MESSAGES] Decryption failed for message:', storedMsg.id, decryptError);
-          // Decryption failed - show locked message
-          decryptedMessages.push({
-            id: storedMsg.id,
-            sender: storedMsg.is_outgoing ? 'agent' : 'customer',
-            text: 'Unable to decrypt message',
-            timestamp: new Date(storedMsg.created_at),
-            status: 'locked',
-          });
-        }
+      // Pre-fetch all needed public keys for batch decryption
+    const uniqueUserIds = new Set<string>();
+    paginated.messages.forEach(msg => {
+      const keyUserId = msg.is_outgoing ? msg.recipient_id : msg.sender_id;
+      uniqueUserIds.add(keyUserId);
+    });
+    
+    // Pre-fetch all public keys in parallel
+    await Promise.all(Array.from(uniqueUserIds).map(userId => 
+      this.messaging.preFetchPublicKey(userId)
+    ));
+    
+    console.log('[MESSAGES] Pre-fetched public keys for', uniqueUserIds.size, 'unique users');
+
+    // Batch decrypt messages for better performance
+    const decryptPromises = paginated.messages.map(async (storedMsg) => {
+      try {
+        const plaintext = await this.messaging.decryptMessage(storedMsg);
+        return {
+          id: storedMsg.id,
+          sender: storedMsg.is_outgoing ? 'agent' as const : 'customer' as const,
+          text: this.security.sanitizeForDisplay(plaintext),
+          timestamp: new Date(storedMsg.created_at),
+          status: storedMsg.read_at ? ('read' as const) : ('delivered' as const),
+        };
+      } catch (decryptError) {
+        console.error('[MESSAGES] Decryption failed for message:', storedMsg.id, decryptError);
+        // Decryption failed - show locked message
+        return {
+          id: storedMsg.id,
+          sender: storedMsg.is_outgoing ? 'agent' as const : 'customer' as const,
+          text: 'Unable to decrypt message',
+          timestamp: new Date(storedMsg.created_at),
+          status: 'locked' as const,
+        };
       }
+    });
 
-      // Sort by timestamp ascending
-      decryptedMessages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    // Wait for all decryption to complete
+    const decryptedMessages: Message[] = await Promise.all(decryptPromises);
+    decryptedMessages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
       conversation.messages = decryptedMessages;
 
@@ -175,6 +186,13 @@ export class Messages implements OnInit, OnDestroy {
       if (lastMsg) {
         conversation.lastMessage = lastMsg.text;
         conversation.lastMessageTime = lastMsg.timestamp;
+      }
+      
+      // Update conversation in conversation list for real-time UI
+      const convIndex = this.conversations.findIndex(c => c.id === conversationId);
+      if (convIndex !== -1) {
+        this.conversations[convIndex] = { ...conversation };
+        console.log('[MESSAGES] Updated conversation list in real-time');
       }
     } catch (err) {
       // Error loading messages
@@ -238,13 +256,16 @@ export class Messages implements OnInit, OnDestroy {
       .then(() => {
         console.log('[MESSAGES] Message sent successfully');
         message.status = 'sent';
+        
+        // Update message status in real-time for both sender and receiver
+        this.updateMessageStatus(message.id, 'sent');
       })
       .catch((err) => {
         message.status = 'failed';
         console.error('[MESSAGES] Failed to send message:', err);
         // Show specific error for missing recipient key
-        if (err?.status === 404 || err?.message?.includes('public key')) {
-          message.text = 'Cannot send message - recipient has not set up messaging yet';
+        if (err?.error?.includes('No public key found')) {
+          console.error('[MESSAGES] Please ensure the recipient has a public key in the system');
         }
       });
 
@@ -405,6 +426,20 @@ export class Messages implements OnInit, OnDestroy {
     return conversation?.id ?? null;
   }
 
+  private updateMessageStatus(messageId: string | number, status: Message['status']): void {
+    // Update message status in conversation
+    for (const conversation of this.conversations) {
+      const messageIndex = conversation.messages.findIndex(m => m.id === messageId);
+      if (messageIndex !== -1) {
+        conversation.messages[messageIndex].status = status;
+        console.log(`[MESSAGES] Updated message ${messageId} status to: ${status}`);
+      }
+    }
+    
+    // Force UI update
+    this.cdr.detectChanges();
+  }
+
   private scrollToBottom(): void {
     setTimeout(() => {
       const container = this.messagesContainer?.nativeElement;
@@ -414,21 +449,21 @@ export class Messages implements OnInit, OnDestroy {
     }, 100);
   }
 
+  public getTotalUnreadCount(): number {
+    return this.conversations.reduce((sum: number, c: UiConversation) => sum + c.unreadCount, 0);
+  }
+
   public formatTime(date: Date): string {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
     if (minutes < 1) return 'Just now';
     if (minutes < 60) return `${minutes}m ago`;
     if (hours < 24) return `${hours}h ago`;
     if (days < 7) return `${days}d ago`;
     return date.toLocaleDateString();
-  }
-
-  public getTotalUnreadCount(): number {
-    return this.conversations.reduce((sum, c) => sum + c.unreadCount, 0);
   }
 }

@@ -179,15 +179,12 @@ export class MessagingService {
       throw new Error('No local identity');
     }
 
-    console.log('[MESSAGING] Decrypting message from:', storedMessage.sender_id);
-    console.log('[MESSAGING] Message recipient:', storedMessage.recipient_id);
-    
     // For incoming messages, use sender's public key
     // For outgoing messages, use recipient's public key
     const keyUserId = storedMessage.is_outgoing ? storedMessage.recipient_id : storedMessage.sender_id;
-    const otherUserKey = await this.fetchPublicKey(keyUserId);
-
-    console.log('[MESSAGING] Using key from user:', keyUserId);
+    
+    // Use cached public key to avoid repeated API calls
+    const otherUserKey = await this.getCachedPublicKey(keyUserId);
 
     const aesKey = await this.encryption.deriveSharedKey(
       privateKey,
@@ -201,12 +198,38 @@ export class MessagingService {
 
     try {
       const decrypted = await this.encryption.decryptMessage(aesKey, encrypted);
-      console.log('[MESSAGING] Successfully decrypted message');
       return decrypted;
     } catch (decryptError) {
       console.error('[MESSAGING] Decryption failed:', decryptError);
       throw decryptError;
     }
+  }
+
+  private publicKeyCache = new Map<string, JsonWebKey>();
+
+  private async getCachedPublicKey(userId: string): Promise<JsonWebKey> {
+    // Check cache first
+    if (this.publicKeyCache.has(userId)) {
+      console.log('[MESSAGING] Using cached public key for user:', userId);
+      return this.publicKeyCache.get(userId)!;
+    }
+
+    // Fetch from API if not in cache
+    console.log('[MESSAGING] Fetching and caching public key for user:', userId);
+    const response = await firstValueFrom(
+      this.api.get<{ data: { public_key: JsonWebKey } }>(`keys/${userId}`)
+    );
+    
+    const publicKey = response.data.public_key;
+    this.publicKeyCache.set(userId, publicKey);
+    console.log('[MESSAGING] Cached public key for user:', userId);
+    
+    return publicKey;
+  }
+
+  async preFetchPublicKey(userId: string): Promise<void> {
+    // This method just ensures the key is cached
+    await this.getCachedPublicKey(userId);
   }
 
   async fetchConversations(): Promise<ApiConversation[]> {
