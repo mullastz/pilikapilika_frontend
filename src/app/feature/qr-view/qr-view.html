@@ -1,0 +1,243 @@
+<div class="bg-[#f5f5f5] dark:bg-[#0a0a0a] min-h-screen transition-colors duration-300">
+  <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-3xl mx-auto">
+
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-4 sm:p-6">
+
+      <!-- Header -->
+      <div class="flex items-center gap-3 mb-6">
+        <button
+          (click)="goBack()"
+          class="w-8 h-8 rounded-full bg-white/10 dark:bg-[#111] flex items-center justify-center shadow hover:scale-110 transition"
+        >
+          <i class="fa-solid fa-arrow-left text-orange-500"></i>
+        </button>
+        <h1 class="text-lg sm:text-xl font-bold dark:text-white">Product Details</h1>
+      </div>
+
+      <!-- Loading Skeleton -->
+      <div *ngIf="isLoading" class="space-y-6">
+        <!-- Header skeleton -->
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+          <div class="h-6 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+        </div>
+
+        <!-- Product Info skeleton -->
+        <div>
+          <div class="h-5 w-40 bg-gray-200 dark:bg-gray-700 rounded mb-3 animate-pulse"></div>
+          <div class="bg-gray-50 dark:bg-[#111] rounded-xl p-4 space-y-3">
+            <div class="flex justify-between">
+              <div class="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              <div class="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            </div>
+            <div class="flex justify-between">
+              <div class="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              <div class="h-4 w-28 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            </div>
+            <div class="flex justify-between">
+              <div class="h-4 w-28 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              <div class="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            </div>
+            <div class="flex justify-between">
+              <div class="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              <div class="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description skeleton -->
+        <div>
+          <div class="h-5 w-28 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse"></div>
+          <div class="bg-gray-50 dark:bg-[#111] rounded-xl p-4">
+            <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse"></div>
+            <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6 animate-pulse"></div>
+          </div>
+        </div>
+
+        <!-- Supplier Info skeleton -->
+        <div>
+          <div class="h-5 w-44 bg-gray-200 dark:bg-gray-700 rounded mb-3 animate-pulse"></div>
+          <div class="bg-gray-50 dark:bg-[#111] rounded-xl p-4 space-y-3">
+            <div class="flex justify-between">
+              <div class="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              <div class="h-4 w-36 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            </div>
+            <div class="flex justify-between">
+              <div class="h-4 w-36 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              <div class="h-4 w-28 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            </div>
+            <div class="flex justify-between">
+              <div class="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              <div class="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Photos skeleton -->
+        <div>
+          <div class="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded mb-3 animate-pulse"></div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div class="aspect-square bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
+            <div class="aspect-square bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
+            <div class="aspect-square bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
+            <div class="aspect-square bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
+            <div class="aspect-square bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
+            <div class="aspect-square bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="errorMessage && !isLoading" class="text-center py-12">
+        <i class="fa-solid fa-circle-exclamation text-red-500 text-3xl mb-3"></i>
+        <p class="text-red-600 dark:text-red-400">{{errorMessage}}</p>
+      </div>
+
+      <!-- Content -->
+      <div *ngIf="qrData && !isLoading" class="space-y-6">
+
+        <!-- Product Info -->
+        <div>
+          <h2 class="text-base font-semibold text-orange-500 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-box"></i> Product Information
+          </h2>
+          <div class="bg-orange-50 dark:bg-[#111] rounded-xl p-4 space-y-3">
+            <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+              <span class="text-sm text-gray-500">Product Name</span>
+              <span class="text-sm font-medium dark:text-white">{{qrData.product_name}}</span>
+            </div>
+            <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+              <span class="text-sm text-gray-500">Cost Per product</span>
+              <span class="text-sm font-medium dark:text-white">{{qrData.currency}} {{qrData.product_cost}}</span>
+            </div>
+            <div *ngIf="qrData.product_id" class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+              <span class="text-sm text-gray-500">Product ID</span>
+              <span class="text-sm font-medium dark:text-white">{{qrData.product_id}}</span>
+            </div>
+            <div *ngIf="qrData.category" class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+              <span class="text-sm text-gray-500">Category</span>
+              <span class="text-sm font-medium dark:text-white">{{qrData.category}}</span>
+            </div>
+            <div *ngIf="qrData.package_type" class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+              <span class="text-sm text-gray-500">Package Type</span>
+              <span class="text-sm font-medium dark:text-white">{{qrData.package_type}}</span>
+            </div>
+            <div *ngIf="qrData.quantity !== null" class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+              <span class="text-sm text-gray-500">Quantity</span>
+              <span class="text-sm font-medium dark:text-white">{{qrData.quantity}}</span>
+            </div>
+            <div *ngIf="qrData.total_weight" class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+              <span class="text-sm text-gray-500">Total Weight</span>
+              <span class="text-sm font-medium dark:text-white">{{qrData.total_weight}} kg</span>
+            </div>
+            <div *ngIf="qrData.total_volume" class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+              <span class="text-sm text-gray-500">Total Volume</span>
+              <span class="text-sm font-medium dark:text-white">{{qrData.total_volume}} m³</span>
+            </div>
+            <div *ngIf="qrData.product_value" class="flex justify-between">
+              <span class="text-sm text-gray-500">Total Cost</span>
+              <span class="text-sm font-medium dark:text-white">{{qrData.currency}} {{qrData.product_value}}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div *ngIf="qrData.description">
+          <h2 class="text-base font-semibold text-orange-500 mb-2">Description</h2>
+          <p class="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-[#111] rounded-xl p-4">
+            {{qrData.description}}
+          </p>
+        </div>
+
+        <!-- Supplier Info -->
+        <div>
+          <h2 class="text-base font-semibold text-orange-500 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-building"></i> Supplier Information
+          </h2>
+          <div class="bg-orange-50 dark:bg-[#111] rounded-xl p-4 space-y-3">
+            <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+              <span class="text-sm text-gray-500">Supplier Name</span>
+              <span class="text-sm font-medium dark:text-white">{{qrData.supplier_name}}</span>
+            </div>
+            <div *ngIf="qrData.supplier_contact_person" class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+              <span class="text-sm text-gray-500">Contact Person</span>
+              <span class="text-sm font-medium dark:text-white">{{qrData.supplier_contact_person}}</span>
+            </div>
+            <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+              <span class="text-sm text-gray-500">Phone</span>
+              <span class="text-sm font-medium dark:text-white">{{qrData.supplier_phone}}</span>
+            </div>
+            <div *ngIf="qrData.supplier_pickup_address" class="flex justify-between">
+              <span class="text-sm text-gray-500">Pickup Address</span>
+              <span class="text-sm font-medium dark:text-white">{{qrData.supplier_pickup_address}}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Photos -->
+        <div *ngIf="qrData.photos && qrData.photos.length > 0">
+          <h2 class="text-base font-semibold text-orange-500 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-images"></i> Photos ({{qrData.photos.length}})
+          </h2>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div *ngFor="let photo of qrData.photos" class="aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-[#111]">
+              <img [src]="photo" class="w-full h-full object-cover" alt="Product photo" />
+            </div>
+          </div>
+        </div>
+
+        <!-- QR Code Section -->
+        <div *ngIf="qrData.qr_data">
+          <h2 class="text-base font-semibold text-orange-500 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-qrcode"></i> QR Code
+          </h2>
+          <div class="bg-orange-50 dark:bg-[#111] rounded-xl p-6">
+            <!-- QR Code Display -->
+            <div class="flex justify-center mb-4">
+              <div class="bg-white p-4 rounded-xl inline-block">
+                <qrcode
+                  [qrdata]="qrData.qr_data"
+                  [width]="256"
+                  [errorCorrectionLevel]="'M'"
+                ></qrcode>
+              </div>
+            </div>
+
+            <!-- QR Code Actions -->
+            <div class="space-y-3">
+              <button
+                (click)="downloadQR()"
+                class="w-full py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition flex items-center justify-center gap-2"
+              >
+                <i class="fa-solid fa-download"></i>
+                Download QR Code
+              </button>
+              
+              <button
+                (click)="shareQR()"
+                class="w-full py-3 bg-gray-200 dark:bg-[#222] text-gray-700 dark:text-white rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-[#333] transition flex items-center justify-center gap-2"
+              >
+                <i class="fa-solid fa-share"></i>
+                Share QR Code
+              </button>
+              
+              <button
+                (click)="sendToAgent()"
+                class="w-full py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition flex items-center justify-center gap-2"
+              >
+                <i class="fa-solid fa-paper-plane"></i>
+                Send to Agent
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Meta -->
+        <div class="text-xs text-gray-400 text-center pt-4 border-t border-gray-200 dark:border-gray-700">
+          Generated on {{formatDate(qrData.created_at)}}
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>

@@ -67,76 +67,24 @@
 
             <!-- MENU LIST -->
             <div class="flex flex-col gap-3 sm:gap-4">
+                
+                <!-- DYNAMIC TAB ITEMS -->
+                <ng-container *ngFor="let tab of tabs">
+                    <div *ngIf="!tab.agentOnly || isAgent"
+                         (click)="goTo(tab.id)" 
+                         class="flex items-center justify-between {{tab.bgColor}} {{tab.darkBgColor}} p-3 sm:p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
 
-                <!-- ITEM -->
-                <div (click)="goTo('details')" class="flex items-center justify-between bg-orange-200 dark:bg-[#111] p-3 sm:p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
-
-                    <div class="flex items-center gap-3">
-                        <div  class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-lg">
-                            <i class="fa-solid fa-user-gear"></i>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full {{tab.iconBgColor}} flex items-center justify-center text-white text-lg">
+                                <i class="fa-solid {{tab.icon}}"></i>
+                            </div>
+                            <span class="text-sm sm:text-base dark:text-white">{{tab.title}}</span>
                         </div>
-                        <span class="text-sm sm:text-base dark:text-white">Manage Account</span>
+
+                        <i class="fa-solid fa-chevron-right text-gray-400"></i>
+
                     </div>
-
-                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
-
-                </div>
-
-                <!-- AGENT PROFILE ITEM - Only for agents -->
-                <div *ngIf="isAgent" (click)="goTo('agent')" class="flex items-center justify-between bg-blue-100 dark:bg-[#111] p-3 sm:p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
-
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-500 flex items-center justify-center text-white text-lg">
-                            <i class="fa-solid fa-id-card"></i>
-                        </div>
-                        <span class="text-sm sm:text-base dark:text-white">Agent Profile</span>
-                    </div>
-
-                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
-
-                </div>
-
-                <!-- ITEM -->
-                <div (click)="goTo('shipping')" class="flex items-center justify-between bg-orange-200 dark:bg-[#111] p-3 sm:p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
-
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-lg">
-                            <i class="fa-solid fa-truck-fast"></i>
-                        </div>
-                        <span class="text-sm sm:text-base dark:text-white">My Shipping</span>
-                    </div>
-
-                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
-
-                </div>
-
-                <!-- ITEM -->
-                <div (click)="goTo('history')" class="flex items-center justify-between bg-orange-200 dark:bg-[#111] p-3 sm:p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
-
-                    <div class="flex items-center gap-3">
-                        <div  class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-lg">
-                            <i class="fa-solid fa-clock-rotate-left"></i>
-                        </div>
-                        <span class="text-sm sm:text-base dark:text-white">History</span>
-                    </div>
-
-                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
-
-                </div>
-
-                <!-- ITEM -->
-                <div (click)="goTo('help')" class="flex items-center justify-between bg-orange-200 dark:bg-[#111] p-3 sm:p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
-
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-lg">
-                            <i class="fa-solid fa-circle-question"></i>
-                        </div>
-                        <span class="text-sm sm:text-base dark:text-white">Help Center</span>
-                    </div>
-
-                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
-
-                </div>
+                </ng-container>
 
             </div>
 

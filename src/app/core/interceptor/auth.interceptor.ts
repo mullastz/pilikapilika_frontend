@@ -12,8 +12,11 @@ export const authInterceptor: HttpInterceptorFn = (
   // Get token from localStorage
   const token = localStorage.getItem('auth_token');
 
-  // Clone request and add auth header if token exists
-  if (token) {
+  // Check if this is a public QR code endpoint
+  const isPublicQrEndpoint = req.url.includes('/qr-codes/') && req.method === 'GET';
+
+  // Clone request and add auth header if token exists and not a public QR endpoint
+  if (token && !isPublicQrEndpoint) {
     req = req.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`,

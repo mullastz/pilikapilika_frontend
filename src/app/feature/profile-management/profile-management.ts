@@ -15,6 +15,58 @@ export class ProfileManagement implements OnInit {
   showLogoutModal = signal(false);
   user: User | null = null;
   isAgent = false;
+  
+  tabs = [
+    {
+      id: 'details',
+      title: 'Manage Account',
+      icon: 'fa-user-gear',
+      bgColor: 'bg-orange-200',
+      darkBgColor: 'dark:bg-[#111]',
+      iconBgColor: 'bg-orange-500'
+    },
+    {
+      id: 'agent',
+      title: 'Agent Profile',
+      icon: 'fa-id-card',
+      bgColor: 'bg-blue-100',
+      darkBgColor: 'dark:bg-[#111]',
+      iconBgColor: 'bg-blue-500',
+      agentOnly: true
+    },
+    {
+      id: 'my-products',
+      title: 'My Products',
+      icon: 'fa-box',
+      bgColor: 'bg-orange-200',
+      darkBgColor: 'dark:bg-[#111]',
+      iconBgColor: 'bg-orange-500'
+    },
+    {
+      id: 'shipping',
+      title: 'My Shipping',
+      icon: 'fa-truck-fast',
+      bgColor: 'bg-orange-200',
+      darkBgColor: 'dark:bg-[#111]',
+      iconBgColor: 'bg-orange-500'
+    },
+    {
+      id: 'history',
+      title: 'History',
+      icon: 'fa-clock-rotate-left',
+      bgColor: 'bg-orange-200',
+      darkBgColor: 'dark:bg-[#111]',
+      iconBgColor: 'bg-orange-500'
+    },
+    {
+      id: 'help',
+      title: 'Help Center',
+      icon: 'fa-circle-question',
+      bgColor: 'bg-orange-200',
+      darkBgColor: 'dark:bg-[#111]',
+      iconBgColor: 'bg-orange-500'
+    }
+  ];
 
   constructor(
     private location: Location,

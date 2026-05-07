@@ -1,0 +1,435 @@
+<div class="bg-[#f5f5f5] dark:bg-[#0a0a0a] min-h-screen transition-colors duration-300">
+  <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-6xl mx-auto">
+
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-6">
+      <button
+        (click)="goBack()"
+        class="w-8 h-8 rounded-full bg-white/10 dark:bg-[#111] flex items-center justify-center shadow hover:scale-110 transition"
+      >
+        <i class="fa-solid fa-arrow-left text-orange-500"></i>
+      </button>
+      <h1 class="text-lg sm:text-xl font-bold dark:text-white">
+        {{ isEditMode ? 'Edit Package' : 'Create Package' }}
+      </h1>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+      <!-- Form Section -->
+      <div class="lg:col-span-2 space-y-6">
+
+        <!-- Package Details -->
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-6 sm:p-8">
+          <h2 class="text-base font-semibold text-orange-500 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-layer-group"></i>
+            Package Details
+          </h2>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Package Name -->
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Package Name <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                [(ngModel)]="package.name"
+                placeholder="Enter package name..."
+                class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+              />
+            </div>
+
+            <!-- Description -->
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Description
+              </label>
+              <textarea
+                [(ngModel)]="package.description"
+                placeholder="Enter package description..."
+                rows="3"
+                class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition resize-none"
+              ></textarea>
+            </div>
+
+
+            <!-- Tracking Number -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Tracking Number
+              </label>
+              <input
+                type="text"
+                [(ngModel)]="package.trackingNumber"
+                placeholder="Enter tracking number"
+                class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+              />
+            </div>
+
+            <!-- Pickup Address -->
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Pickup Address
+              </label>
+              <textarea
+                [(ngModel)]="package.pickupAddress"
+                placeholder="Enter pickup address"
+                rows="2"
+                class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition resize-none"
+              ></textarea>
+            </div>
+
+            <!-- Destination Address -->
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Destination Address
+              </label>
+              <textarea
+                [(ngModel)]="package.destinationAddress"
+                placeholder="Enter destination address"
+                rows="2"
+                class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition resize-none"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product Selection -->
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-6 sm:p-8">
+          <h2 class="text-base font-semibold text-orange-500 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-cubes"></i>
+            Select Products <span class="text-red-500">*</span>
+          </h2>
+
+          <!-- Available Products -->
+          <div class="space-y-3 mb-6">
+            <div
+              *ngFor="let product of availableProducts"
+              class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-[#222] transition"
+            >
+              <div class="flex items-center gap-3">
+                <img
+                  *ngIf="product.photos && product.photos.length > 0"
+                  [src]="product.photos[0]"
+                  [alt]="product.product_name"
+                  class="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
+                />
+                <div
+                  *ngIf="!product.photos || product.photos.length === 0"
+                  class="w-12 h-12 rounded-lg bg-gray-100 dark:bg-[#111] flex items-center justify-center border border-gray-200 dark:border-gray-700"
+                >
+                  <i class="fa-solid fa-image text-gray-400"></i>
+                </div>
+                <div>
+                  <p class="font-medium text-gray-900 dark:text-white">
+                    {{ product.product_name }}
+                  </p>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ product.currency }} {{ product.product_cost }}
+                  </p>
+                </div>
+              </div>
+              <button
+                *ngIf="!selectedProducts.find(p => p.uuid === product.uuid)"
+                (click)="addProduct(product)"
+                class="px-3 py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 transition"
+              >
+                <i class="fa-solid fa-plus mr-2"></i>Add
+              </button>
+            </div>
+          </div>
+
+          <!-- Selected Products -->
+          <div *ngIf="selectedProducts.length > 0" class="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 class="font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-check-circle text-green-500"></i>
+              Selected Products ({{ selectedProducts.length }})
+            </h3>
+            <div class="space-y-3">
+              <div
+                *ngFor="let selected of selectedProducts"
+                class="flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg"
+              >
+                <div class="flex items-center gap-3">
+                  <img
+                    *ngIf="selected.photos && selected.photos.length > 0"
+                    [src]="selected.photos[0]"
+                    [alt]="selected.name"
+                    class="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
+                  />
+                  <div
+                    *ngIf="!selected.photos || selected.photos.length === 0"
+                    class="w-12 h-12 rounded-lg bg-gray-100 dark:bg-[#111] flex items-center justify-center border border-gray-200 dark:border-gray-700"
+                  >
+                    <i class="fa-solid fa-image text-gray-400"></i>
+                  </div>
+                  <div>
+                    <p class="font-medium text-gray-900 dark:text-white">
+                      {{ selected.name }}
+                    </p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                      {{ selected.currency }} {{ selected.cost }}
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button
+                    (click)="removeProduct(selected.uuid)"
+                    class="px-3 py-1 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition"
+                  >
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="availableProducts.length === 0" class="text-center py-8">
+            <i class="fa-solid fa-box-open text-gray-400 text-3xl mb-3"></i>
+            <p class="text-gray-500 dark:text-gray-400">
+              No products available. Create some products first.
+            </p>
+          </div>
+        </div>
+
+        <!-- Package Photos -->
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-6 sm:p-8">
+          <h2 class="text-base font-semibold text-orange-500 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-camera"></i>
+            Package Photos
+          </h2>
+
+          <div class="space-y-4">
+            <!-- Photo Upload -->
+            <div>
+              <div
+                *ngIf="packagePhotos.length < 12"
+                class="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 text-center hover:border-orange-500 transition cursor-pointer mb-4"
+                (click)="$any($event.target).querySelector('input')?.click()"
+              >
+                <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-3"></i>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                  Click to upload package photos (bulk allowed)
+                </p>
+                <p class="text-xs text-gray-400">
+                  Supports: JPG, PNG, WEBP (Max 5MB each) — {{packagePhotos.length}} / 12 uploaded
+                </p>
+                <input
+                  #fileInput
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  (change)="onPhotoUpload($event)"
+                  class="hidden"
+                />
+              </div>
+
+              <p *ngIf="packagePhotos.length >= 12" class="text-xs text-orange-500 text-center mb-4">
+                Maximum 12 photos reached.
+              </p>
+            </div>
+
+            <!-- Photo Preview -->
+            <div *ngIf="packagePhotos.length > 0" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+              <div *ngFor="let photo of packagePhotos; let i = index" class="relative group">
+                <img
+                  [src]="photo.preview"
+                  class="w-full h-24 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                />
+                <button
+                  (click)="removePhoto(i)"
+                  class="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                >
+                  <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Clear All -->
+            <div *ngIf="packagePhotos.length > 0" class="mt-3 text-right">
+              <button
+                (click)="clearAllPhotos()"
+                class="text-xs text-red-500 hover:text-red-600 underline"
+              >
+                Clear all photos
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- GENERATE/UPDATE BUTTON -->
+        <div *ngIf="!generatedQR || isEditMode" class="pt-4">
+          <button
+            (click)="generatePackage()"
+            [disabled]="!isFormValid() || isLoading"
+            class="w-full py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <i *ngIf="!isLoading" class="fa-solid fa-layer-group"></i>
+            <i *ngIf="isLoading" class="fa-solid fa-circle-notch fa-spin"></i>
+            {{ isLoading ? (isEditMode ? 'Updating...' : 'Generating...') : (isEditMode ? 'Update Package' : 'Generate Package') }}
+          </button>
+          <p *ngIf="!isFormValid()" class="text-xs text-gray-500 text-center mt-2">
+            Please fill in package name and select at least one product
+          </p>
+        </div>
+
+        <!-- CANCEL EDIT BUTTON -->
+        <div *ngIf="isEditMode" class="pt-2">
+          <button
+            (click)="goBack()"
+            class="w-full py-3 bg-gray-200 dark:bg-[#222] text-gray-700 dark:text-white rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-[#333] transition flex items-center justify-center gap-2"
+          >
+            <i class="fa-solid fa-times"></i>
+            Cancel Edit
+          </button>
+        </div>
+
+        <!-- Error Message -->
+        <div *ngIf="errorMessage" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+          <p class="text-sm text-red-600 dark:text-red-400">{{errorMessage}}</p>
+        </div>
+      </div>
+
+      <!-- QR Code Display -->
+      <div class="lg:col-span-1">
+        <!-- QR Code Section (shown after generation) -->
+        <div *ngIf="generatedQR" #qrCodeSection id="qrCodeSection" class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-6 sticky top-6">
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            Package QR Code
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- QR Code -->
+            <div class="flex justify-center">
+              <div class="bg-white p-4 rounded-xl inline-block">
+                <qrcode
+                  [qrdata]="generatedQR"
+                  [width]="200"
+                  [errorCorrectionLevel]="'M'"
+                ></qrcode>
+              </div>
+            </div>
+
+            <!-- Package Info Summary -->
+            <div class="bg-gray-50 dark:bg-[#111] rounded-xl p-4">
+              <p class="font-medium text-gray-900 dark:text-white mb-2">
+                {{ package.name }}
+              </p>
+              <div class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                <p>{{ selectedProducts.length }} products</p>
+                @if (package.description && package.description !== '') {
+                  <p>{{ package.description }}</p>
+                }
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="space-y-3">
+              <button
+                (click)="downloadQR()"
+                [disabled]="isDownloading"
+                class="w-full py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                @if (isDownloading) {
+                  <i class="fa-solid fa-circle-notch fa-spin"></i>
+                  <span>Downloading...</span>
+                } @else {
+                  <i class="fa-solid fa-download"></i>
+                  <span>Download QR</span>
+                }
+              </button>
+              
+              <button
+                (click)="shareQR()"
+                class="w-full py-3 bg-gray-200 dark:bg-[#222] text-gray-700 dark:text-white rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-[#333] transition flex items-center justify-center gap-2"
+              >
+                <i class="fa-solid fa-share"></i>
+                Share
+              </button>
+
+              <button
+                (click)="sendToAgent()"
+                class="w-full py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition flex items-center justify-center gap-2"
+              >
+                <i class="fa-solid fa-paper-plane"></i>
+                Send to Agent
+              </button>
+
+              <button
+                *ngIf="!isEditMode"
+                (click)="resetForm()"
+                class="w-full py-3 bg-gray-200 dark:bg-[#222] text-gray-700 dark:text-white rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-[#333] transition flex items-center justify-center gap-2"
+              >
+                <i class="fa-solid fa-rotate-left"></i>
+                Create New Package
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Placeholder Section (shown before generation) -->
+        <div *ngIf="!generatedQR" class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-6 sticky top-6">
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            Package QR Code Preview
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- QR Code Placeholder -->
+            <div class="flex justify-center">
+              <div class="w-52 h-52 bg-gray-100 dark:bg-[#111] rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700">
+                <div class="text-center">
+                  <i class="fa-solid fa-qrcode text-4xl text-gray-400 mb-2"></i>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">QR Code will appear here</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Package Info Preview -->
+            <div class="bg-gray-50 dark:bg-[#111] rounded-xl p-4">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="w-4 h-4 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+                <p class="font-medium text-gray-500 dark:text-gray-400">Package Name</p>
+              </div>
+              <div class="text-sm text-gray-400 dark:text-gray-500 space-y-1">
+                <div class="flex items-center gap-2">
+                  <div class="w-3 h-3 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+                  <p>Products count will appear here</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="w-3 h-3 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+                  <p>Description will appear here</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Preview Actions -->
+            <div class="space-y-3">
+              <div class="w-full py-3 bg-gray-100 dark:bg-[#222] text-gray-400 rounded-xl font-medium flex items-center justify-center gap-2 cursor-not-allowed">
+                <i class="fa-solid fa-download"></i>
+                Download QR
+              </div>
+              
+              <div class="w-full py-3 bg-gray-100 dark:bg-[#222] text-gray-400 rounded-xl font-medium flex items-center justify-center gap-2 cursor-not-allowed">
+                <i class="fa-solid fa-share"></i>
+                Share
+              </div>
+
+              <div class="w-full py-3 bg-gray-100 dark:bg-[#222] text-gray-400 rounded-xl font-medium flex items-center justify-center gap-2 cursor-not-allowed">
+                <i class="fa-solid fa-paper-plane"></i>
+                Send to Agent
+              </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="text-center pt-4 border-t border-gray-200 dark:border-gray-700">
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                <i class="fa-solid fa-info-circle mr-1"></i>
+                Fill in the form and click "Generate Package" to create your package QR code
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

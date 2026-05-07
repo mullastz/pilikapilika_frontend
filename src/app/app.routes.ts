@@ -16,6 +16,10 @@ import { AgentDetails } from './feature/agent-details/agent-details';
 import { Messages } from './feature/messages/messages';
 import { Search } from './feature/search/search';
 import { QrGenerator } from './feature/qr-generator/qr-generator';
+import { QrView } from './feature/qr-view/qr-view';
+import { MyProducts } from './feature/my-products/my-products';
+import { PackageGenerator } from './feature/package-generator/package-generator';
+import { PackageView } from './feature/package-view/package-view';
 import { Home } from './feature/home/home';
 
 
@@ -38,5 +42,9 @@ export const routes: Routes = [
   { path: 'messages', component: Messages },
   { path: 'search', component: Search },
   { path: 'qr-generator', component: QrGenerator },
+  { path: 'qr/:uuid', component: QrView },
+  { path: 'package-generator', component: PackageGenerator },
+  { path: 'package/:uuid', component: PackageView },
+  { path: 'account/my-products', component: MyProducts },
 
 ];
