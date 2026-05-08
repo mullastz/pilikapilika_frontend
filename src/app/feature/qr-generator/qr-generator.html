@@ -54,7 +54,8 @@
                 </select>
                 <input
                   type="text"
-                  [(ngModel)]="product.cost"
+                  [value]="formatWithCommas(product.cost)"
+                  (input)="onCostInput($event)"
                   placeholder="e.g., 1500"
                   class="flex-1 px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
                 />
@@ -123,6 +124,7 @@
               <input
                 type="number"
                 [(ngModel)]="product.quantity"
+                (ngModelChange)="calculateTotalCost()"
                 min="1"
                 placeholder="Enter quantity"
                 class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
@@ -170,7 +172,8 @@
                 <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">{{product.currency || '$'}}</span>
                 <input
                   type="text"
-                  [(ngModel)]="product.productValue"
+                  [value]="formatWithCommas(product.productValue)"
+                  (input)="onProductValueInput($event)"
                   placeholder="e.g., 1500"
                   class="w-full px-3 pl-12 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
                 />
@@ -366,7 +369,7 @@
                 {{ product.name }}
               </p>
               <div class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-                <p>{{ product.currency }} {{ product.cost }}</p>
+                <p>{{ product.currency }} {{ formatWithCommas(product.cost) }}</p>
                 @if (product.category && product.category !== '') {
                   <p>{{ product.category }}</p>
                 }

@@ -3,6 +3,7 @@ import { CommonModule, Location } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { PackageService } from '../../core/services/package.service';
+import { QrCodeService } from '../../core/services/qr-code.service';
 
 interface PackageDetails {
   uuid: string;
@@ -26,8 +27,18 @@ interface PackageProduct {
   product_name: string;
   product_cost: string;
   currency: string;
-  quantity: number;
   photos: string[] | null;
+  description?: string | null;
+  category?: string | null;
+  package_type?: string | null;
+  total_weight?: string | null;
+  total_volume?: string | null;
+  product_value?: string | null;
+  product_id?: string | null;
+  supplier_name?: string | null;
+  supplier_phone?: string | null;
+  supplier_contact_person?: string | null;
+  supplier_pickup_address?: string | null;
 }
 
 @Component({
@@ -42,12 +53,15 @@ export class PackageView implements OnInit {
   isLoading = true;
   errorMessage: string | null = null;
   packageUuid: string | null = null;
+  selectedProductUuid: string | null = null;
+  productDetailsMap = new Map<string, any>();
 
   constructor(
     private location: Location,
     private router: Router,
     private route: ActivatedRoute,
     private packageService: PackageService,
+    private qrCodeService: QrCodeService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -70,7 +84,8 @@ export class PackageView implements OnInit {
     this.packageService.getByUuid(this.packageUuid).subscribe({
       next: (res: any) => {
         console.log('[PackageView] Package response:', res);
-        this.packageData = res?.data?.package ?? null;
+        const pkg = res?.data?.package ?? null;
+        this.packageData = pkg ? { ...pkg, products: res?.data?.products ?? null } : null;
         this.isLoading = false;
         this.cdr.detectChanges();
       },
@@ -137,22 +152,41 @@ export class PackageView implements OnInit {
     this.location.back();
   }
 
-  calculateTotal(cost: string, quantity: number): number {
-    console.log('[PackageView] calculateTotal called with:', { cost, quantity });
-    console.log('[PackageView] Cost type:', typeof cost, 'Value:', cost);
-    console.log('[PackageView] Quantity type:', typeof quantity, 'Value:', quantity);
-    
-    const costNum = parseFloat(cost);
-    console.log('[PackageView] Parsed cost:', costNum, 'isNaN result:', isNaN(costNum));
-    
-    if (isNaN(costNum) || !quantity) {
-      console.log('[PackageView] Invalid values - cost:', cost, 'quantity:', quantity);
-      return 0;
+  selectProduct(uuid: string) {
+    if (this.selectedProductUuid === uuid) {
+      this.selectedProductUuid = null;
+      return;
     }
-    
-    const total = costNum * quantity;
-    console.log('[PackageView] Calculated total:', total, 'isNaN result:', isNaN(total));
-    return total;
+    this.selectedProductUuid = uuid;
+
+    // Fetch full product details if not already cached (same endpoint qr-view uses)
+    if (!this.productDetailsMap.has(uuid)) {
+      this.qrCodeService.getByUuid(uuid).subscribe({
+        next: (res: any) => {
+          const fullData = res?.data ?? null;
+          if (fullData) {
+            this.productDetailsMap.set(uuid, fullData);
+            this.cdr.detectChanges();
+          }
+        },
+        error: (err) => {
+          console.warn('[PackageView] Failed to fetch product details for', uuid, err);
+        },
+      });
+    }
+
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      const el = document.getElementById('product-' + uuid);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  }
+
+  getFullProduct(product: PackageProduct): any {
+    const full = this.productDetailsMap.get(product.uuid);
+    return full ? { ...product, ...full } : product;
   }
 
   formatDate(dateString: string): string {

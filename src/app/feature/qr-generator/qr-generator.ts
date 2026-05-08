@@ -400,7 +400,7 @@ private loadQrCodeForEdit(uuid: string) {
       
       this.product = {
         name: data.product_name || '',
-        cost: data.product_cost || '',
+        cost: String(data.product_cost || '').replace(/,/g, ''),
         currency: data.currency || 'USD',
         description: data.description || '',
         category: data.category || '',
@@ -408,7 +408,7 @@ private loadQrCodeForEdit(uuid: string) {
         quantity: data.quantity,
         totalWeight: data.total_weight || '',
         totalVolume: data.total_volume || '',
-        productValue: data.product_value || '',
+        productValue: String(data.product_value || '').replace(/,/g, ''),
         productId: data.product_id || '',
       };
 
@@ -468,6 +468,40 @@ private loadQrCodeForEdit(uuid: string) {
     this.qrUuid = null;
     this.editUuid = null;
     this.isEditMode = false;
+  }
+
+  formatWithCommas(value: string | number | null): string {
+    if (value === null || value === undefined || value === '') return '';
+    const str = String(value).replace(/,/g, '');
+    const num = parseFloat(str);
+    if (isNaN(num)) return String(value);
+    return num.toLocaleString('en-US');
+  }
+
+  onCostInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value.replace(/[^0-9]/g, '');
+    this.product.cost = raw;
+    input.value = this.formatWithCommas(raw);
+    this.calculateTotalCost();
+    this.cdr.detectChanges();
+  }
+
+  onProductValueInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value.replace(/[^0-9]/g, '');
+    this.product.productValue = raw;
+    input.value = this.formatWithCommas(raw);
+    this.cdr.detectChanges();
+  }
+
+  calculateTotalCost() {
+    const cost = parseFloat(this.product.cost) || 0;
+    const qty = this.product.quantity || 0;
+    if (cost > 0 && qty > 0) {
+      this.product.productValue = String(Math.round(cost * qty));
+    }
+    this.cdr.detectChanges();
   }
 
   scrollToQRCode() {

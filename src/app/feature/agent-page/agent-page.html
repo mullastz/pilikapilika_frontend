@@ -3,7 +3,7 @@
   <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-5xl mx-auto">
 
     <!-- LOADING STATE - SKELETON -->
-    <div *ngIf="isLoading" class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow overflow-hidden">
+    <div *ngIf="isLoading" class="bg-[#f5f5f5] dark:bg-[#0a0a0a] rounded-2xl overflow-hidden">
       <!-- Skeleton Header -->
       <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
         <div class="flex items-center gap-3 mb-4">
@@ -51,14 +51,14 @@
     </div>
 
     <!-- AGENT PROFILE CONTENT -->
-    <div *ngIf="agent && !isLoading" class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow overflow-hidden">
+    <div *ngIf="agent && !isLoading" class="bg-[#f5f5f5] dark:bg-[#0a0a0a] rounded-2xl overflow-hidden">
 
       <!-- HEADER -->
       <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
 
         <div class="flex items-center gap-3 mb-4">
           <button (click)="goBack()"
-            class="w-8 h-8 rounded-full bg-white/10 dark:bg-[#111] flex items-center justify-center shadow hover:scale-110 transition">
+            class="w-8 h-8 rounded-full bg-white/10 dark:bg-[#333] flex items-center justify-center shadow hover:scale-110 transition">
             <i class="fa-solid fa-arrow-left text-orange-500"></i>
           </button>
 
@@ -129,22 +129,22 @@
         <!-- STATS -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
 
-          <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
+          <div class="bg-orange-100 dark:bg-[#333] p-3 rounded-xl">
             <p class="text-sm text-gray-500">Deliveries</p>
             <p class="font-semibold dark:text-white">{{agent.total_deliveries || 0}}</p>
           </div>
 
-          <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
+          <div class="bg-orange-100 dark:bg-[#333] p-3 rounded-xl">
             <p class="text-sm text-gray-500">Avg Time</p>
             <p class="font-semibold dark:text-white">{{agent.avg_delivery_time || 'N/A'}}</p>
           </div>
 
-          <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
+          <div class="bg-orange-100 dark:bg-[#333] p-3 rounded-xl">
             <p class="text-sm text-gray-500">Base Price</p>
             <p class="font-semibold text-orange-500">{{agent.base_price ? '$' + agent.base_price : 'Contact'}}</p>
           </div>
 
-          <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
+          <div class="bg-orange-100 dark:bg-[#333] p-3 rounded-xl">
             <p class="text-sm text-gray-500">Success Rate</p>
             <p class="font-semibold dark:text-white">{{agent.success_rate || 0}}%</p>
           </div>
@@ -153,11 +153,11 @@
 
         <!-- PRICING DETAILS -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div class="bg-gray-50 dark:bg-[#111] p-3 rounded-xl">
+          <div class="bg-gray-50 dark:bg-[#333] p-3 rounded-xl">
             <p class="text-sm text-gray-500">Price per km</p>
             <p class="font-semibold dark:text-white">{{agent.price_per_km ? '$' + agent.price_per_km : 'Contact for pricing'}}</p>
           </div>
-          <div class="bg-gray-50 dark:bg-[#111] p-3 rounded-xl">
+          <div class="bg-gray-50 dark:bg-[#333] p-3 rounded-xl">
             <p class="text-sm text-gray-500">Max Distance</p>
             <p class="font-semibold dark:text-white">{{agent.max_delivery_distance ? agent.max_delivery_distance + ' km' : 'Contact'}}</p>
           </div>
@@ -179,7 +179,7 @@
           <h3 class="font-semibold mb-2 dark:text-white">Specializations</h3>
           <div class="flex flex-wrap gap-2">
             <span *ngFor="let s of agent.specializations"
-              class="bg-orange-200 dark:bg-[#111] px-3 py-1 rounded-full text-xs dark:text-white">
+              class="bg-orange-200 dark:bg-[#333] px-3 py-1 rounded-full text-xs dark:text-white">
               {{s}}
             </span>
           </div>

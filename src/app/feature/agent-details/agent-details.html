@@ -3,13 +3,13 @@
   <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-5xl mx-auto">
 
     <!-- CARD -->
-    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-4 sm:p-6 transition-colors">
+    <div class="bg-[#f5f5f5] dark:bg-[#0a0a0a] rounded-2xl transition-colors">
 
       <!-- HEADER -->
       <div class="flex items-center gap-3 mb-6">
         <button
           (click)="goBack()"
-          class="w-8 h-8 rounded-full bg-white/10 dark:bg-[#111] flex items-center justify-center shadow hover:scale-110 transition"
+          class="w-8 h-8 rounded-full bg-white/10 dark:bg-[#333] flex items-center justify-center shadow hover:scale-110 transition"
         >
           <i class="fa-solid fa-arrow-left text-orange-500"></i>
         </button>
@@ -24,22 +24,22 @@
         <h3 class="font-semibold mb-4 dark:text-white text-center">Performance Overview</h3>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
 
-          <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
+          <div class="bg-orange-100 dark:bg-[#333] p-3 rounded-xl">
             <p class="text-sm text-gray-500">Total Deliveries</p>
             <p class="font-semibold dark:text-white">{{ agent?.total_deliveries || 0 }}</p>
           </div>
 
-          <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
+          <div class="bg-orange-100 dark:bg-[#333] p-3 rounded-xl">
             <p class="text-sm text-gray-500">Rating</p>
             <p class="font-semibold dark:text-white">{{ agent?.rating || '0.0' }} / 5</p>
           </div>
 
-          <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
+          <div class="bg-orange-100 dark:bg-[#333] p-3 rounded-xl">
             <p class="text-sm text-gray-500">Reviews</p>
             <p class="font-semibold dark:text-white">{{ agent?.total_reviews || 0 }}</p>
           </div>
 
-          <div class="bg-orange-100 dark:bg-[#111] p-3 rounded-xl">
+          <div class="bg-orange-100 dark:bg-[#333] p-3 rounded-xl">
             <p class="text-sm text-gray-500">Success Rate</p>
             <p class="font-semibold dark:text-white">{{ agent?.success_rate || 0 }}%</p>
           </div>
@@ -71,7 +71,7 @@
             <label class="text-sm text-gray-500 dark:text-gray-400">Availability Status</label>
             <select
               formControlName="availability_status"
-              class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500 appearance-none cursor-pointer"
+              class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500 appearance-none cursor-pointer"
             >
               <option value="available">Available</option>
               <option value="busy">Busy</option>
@@ -85,7 +85,7 @@
             <input
               type="number"
               formControlName="base_price"
-              class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+              class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
               [class.ring-2]="agentForm.get('base_price')?.invalid && agentForm.get('base_price')?.touched"
               [class.ring-red-500]="agentForm.get('base_price')?.invalid && agentForm.get('base_price')?.touched"
               placeholder="e.g. 5000"
@@ -101,7 +101,7 @@
             <input
               type="number"
               formControlName="price_per_km"
-              class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+              class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
               placeholder="e.g. 500"
             />
           </div>
@@ -112,7 +112,7 @@
             <input
               type="number"
               formControlName="max_delivery_distance"
-              class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+              class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
               placeholder="e.g. 50"
             />
           </div>
@@ -123,7 +123,7 @@
             <input
               type="text"
               formControlName="avg_delivery_time"
-              class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+              class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
               placeholder="e.g. 30-45 mins"
             />
           </div>
@@ -145,7 +145,7 @@
             <div class="mt-2 flex flex-wrap gap-2">
               <label
                 *ngFor="let spec of specializationOptions"
-                class="flex items-center gap-2 bg-gray-100 dark:bg-[#111] px-3 py-2 rounded-xl cursor-pointer hover:bg-gray-200 dark:hover:bg-[#222] transition"
+                class="flex items-center gap-2 bg-gray-100 dark:bg-[#333] px-3 py-2 rounded-xl cursor-pointer hover:bg-gray-200 dark:hover:bg-[#222] transition"
               >
                 <input
                   type="checkbox"
@@ -184,7 +184,7 @@
             <input
               type="text"
               formControlName="id_number"
-              class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#111] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+              class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
               placeholder="National ID or Passport"
             />
           </div>

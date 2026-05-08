@@ -3,7 +3,7 @@
   <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-6xl mx-auto h-[calc(100vh-2rem)]">
 
     <!-- CARD -->
-    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow h-full flex flex-col sm:flex-row overflow-hidden">
+    <div class="bg-[#f5f5f5] dark:bg-[#0a0a0a] rounded-2xl h-full flex flex-col sm:flex-row overflow-hidden">
 
       <!-- CONVERSATIONS SIDEBAR -->
       <div
@@ -20,7 +20,7 @@
     <!-- LEFT SIDE: BACK BUTTON + TITLE -->
     <div class="flex items-center gap-3">
       <button (click)="goBack()"
-        class="w-8 h-8 rounded-full bg-white/10 dark:bg-[#111] flex items-center justify-center shadow hover:scale-110 transition">
+        class="w-8 h-8 rounded-full bg-white/10 dark:bg-[#333] flex items-center justify-center shadow hover:scale-110 transition">
         <i class="fa-solid fa-arrow-left text-orange-500"></i>
       </button>
 
@@ -68,7 +68,7 @@
     <input
       type="text"
       placeholder="Search conversations..."
-      class="w-full pl-9 pr-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+      class="w-full pl-9 pr-3 py-2 bg-gray-200 dark:bg-[#333] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
     />
   </div>
 
@@ -103,7 +103,7 @@
             *ngFor="let conversation of conversations"
             (click)="selectConversation(conversation.id)"
             class="p-4 border-b border-gray-100 dark:border-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#222] transition"
-            [ngClass]="{'bg-orange-50 dark:bg-[#1a1a1a]': activeConversationId === conversation.id}"
+            [ngClass]="{'bg-orange-50 dark:bg-[#0a0a0a]': activeConversationId === conversation.id}"
           >
             <div class="flex items-center gap-3">
 
@@ -115,7 +115,7 @@
                 />
                 <span
                   *ngIf="conversation.isOnline"
-                  class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-[#1a1a1a]"
+                  class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-[#0a0a0a]"
                 ></span>
               </div>
 
@@ -182,7 +182,7 @@
               />
               <span
                 *ngIf="activeConversation.isOnline"
-                class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-[#1a1a1a]"
+                class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-[#0a0a0a]"
               ></span>
             </div>
             <div>
@@ -240,7 +240,7 @@
               class="max-w-[80%] sm:max-w-[70%]"
               [ngClass]="{
                 'bg-orange-500 text-white rounded-2xl rounded-br-md': message.sender === 'agent',
-                'bg-gray-100 dark:bg-[#222] dark:text-white rounded-2xl rounded-bl-md': message.sender === 'customer'
+                'bg-gray-100 dark:bg-[#333] rounded-2xl rounded-bl-md': message.sender === 'customer'
               }"
             >
               <div class="px-4 py-2">
@@ -304,7 +304,7 @@
                 (keyup.enter)="sendMessage()"
                 [disabled]="isSendingMessage"
                 [placeholder]="isSendingMessage ? 'Sending...' : (connectionState.status !== 'connected' ? 'Connection lost...' : 'Type a message...')"
-                class="w-full px-4 py-2.5 bg-gray-100 dark:bg-[#111] rounded-full text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                class="w-full px-4 py-2.5 bg-gray-200 dark:bg-[#333] rounded-full text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <!-- SENDING INDICATOR -->
               <div 
