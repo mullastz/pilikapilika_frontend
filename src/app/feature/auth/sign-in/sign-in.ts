@@ -54,8 +54,12 @@ export class SignIn {
       next: (response) => {
         this.isLoading.set(false);
         this.toastService.success('Welcome back! Login successful.');
-        // Navigate to landing page
-        this.router.navigate(['/']);
+        // Redirect admins to dashboard, others to home
+        if (response.data?.is_admin) {
+          this.router.navigate(['/admin/dashboard']);
+        } else {
+          this.router.navigate(['/']);
+        }
       },
       error: (err: HttpErrorResponse) => {
         this.isLoading.set(false);

@@ -21,6 +21,18 @@ import { MyProducts } from './feature/my-products/my-products';
 import { PackageGenerator } from './feature/package-generator/package-generator';
 import { PackageView } from './feature/package-view/package-view';
 import { Home } from './feature/home/home';
+import { AdminGuard } from './core/guards/admin.guard';
+import { AdminLayout } from './feature/admin/layout/layout';
+import { AdminDashboard } from './feature/admin/dashboard/dashboard';
+import { AdminUsers } from './feature/admin/users/users';
+import { AdminAgents } from './feature/admin/agents/agents';
+import { AdminShipments } from './feature/admin/shipments/shipments';
+import { AdminQrCodes } from './feature/admin/qr-codes/qr-codes';
+import { AdminRegions } from './feature/admin/regions/regions';
+import { AdminMessages } from './feature/admin/messages/messages';
+import { AdminLogs } from './feature/admin/logs/logs';
+import { AdminSettings } from './feature/admin/settings/settings';
+import { AdminAccount } from './feature/admin/account/account';
 
 
 export const routes: Routes = [
@@ -46,5 +58,25 @@ export const routes: Routes = [
   { path: 'package-generator', component: PackageGenerator },
   { path: 'package/:uuid', component: PackageView },
   { path: 'account/my-products', component: MyProducts },
+
+  // Admin Routes
+  {
+    path: 'admin',
+    component: AdminLayout,
+    canActivate: [AdminGuard],
+    children: [
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'dashboard', component: AdminDashboard },
+      { path: 'users', component: AdminUsers },
+      { path: 'agents', component: AdminAgents },
+      { path: 'shipments', component: AdminShipments },
+      { path: 'qr-codes', component: AdminQrCodes },
+      { path: 'regions', component: AdminRegions },
+      { path: 'settings', component: AdminSettings },
+      { path: 'account', component: AdminAccount },
+      { path: 'messages', component: AdminMessages },
+      { path: 'logs', component: AdminLogs },
+    ]
+  },
 
 ];

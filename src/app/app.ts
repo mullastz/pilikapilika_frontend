@@ -1,5 +1,6 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, signal, inject } from '@angular/core';
+import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { MenuBar } from './shared/menu-bar/menu-bar';
 
@@ -11,6 +12,9 @@ import { MenuBar } from './shared/menu-bar/menu-bar';
 })
 export class App {
   protected readonly title = signal('PilikaPilika_Frontend');
+  showMenuBar = signal(true);
+  private router = inject(Router);
+
   ngOnInit() {
     const saved = localStorage.getItem('theme');
 
@@ -19,5 +23,10 @@ export class App {
     } else {
       document.documentElement.classList.remove('dark');
     }
+
+    this.showMenuBar.set(!this.router.url.startsWith('/admin'));
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((e: any) => {
+      this.showMenuBar.set(!e.url.startsWith('/admin'));
+    });
   }
 }

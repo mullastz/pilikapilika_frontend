@@ -1,0 +1,30 @@
+<div>
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Login Logs</h1>
+    <div class="relative">
+      <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+      <input
+        [(ngModel)]="searchQuery"
+        (keyup.enter)="onSearch()"
+        placeholder="Search logs..."
+        class="pl-9 pr-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-200 w-48 sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#FF7800]"
+      />
+    </div>
+  </div>
+
+  <app-data-table
+    [columns]="columns"
+    [rows]="logs()"
+    [loading]="loading()"
+    [actions]="false"
+  ></app-data-table>
+
+  <div class="flex items-center justify-between mt-4 text-sm text-gray-600 dark:text-gray-400">
+    <span>Total: {{ total() }}</span>
+    <div class="flex items-center gap-2">
+      <button [disabled]="currentPage() <= 1" (click)="prevPage()" class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#222] disabled:opacity-40 transition">Prev</button>
+      <span>Page {{ currentPage() }} / {{ lastPage() }}</span>
+      <button [disabled]="currentPage() >= lastPage()" (click)="nextPage()" class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#222] disabled:opacity-40 transition">Next</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,51 @@
+<div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+  <table class="w-full text-left text-sm">
+    <thead class="bg-gray-50 dark:bg-[#222] text-gray-600 dark:text-gray-300 uppercase text-xs font-semibold">
+      <tr>
+        <th *ngFor="let col of columns" class="px-4 py-3">{{ col.label }}</th>
+        <th *ngIf="actions" class="px-4 py-3 text-right">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+      @if (loading) {
+        <tr *ngFor="let _ of [1,2,3,4,5]">
+          <td *ngFor="let col of columns" class="px-4 py-3">
+            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
+          </td>
+          <td *ngIf="actions" class="px-4 py-3">
+            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-16 ml-auto"></div>
+          </td>
+        </tr>
+      } @else if (rows.length === 0) {
+        <tr>
+          <td [attr.colspan]="actions ? columns.length + 1 : columns.length" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+            {{ emptyMessage }}
+          </td>
+        </tr>
+      } @else {
+        <tr *ngFor="let row of rows" class="bg-white dark:bg-[#1a1a1a] hover:bg-gray-50 dark:hover:bg-[#222] transition-colors">
+          <td *ngFor="let col of columns" class="px-4 py-3 text-gray-800 dark:text-gray-200">
+            @if (getBadge(col, row); as badge) {
+              <span [class]="badge.class + ' px-2 py-0.5 rounded-full text-xs font-medium'">{{ badge.text }}</span>
+            } @else {
+              {{ getCellValue(col, row) }}
+            }
+          </td>
+          <td *ngIf="actions" class="px-4 py-3 text-right">
+            <div class="flex items-center justify-end gap-2">
+              <button (click)="view.emit(row)" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition" title="View">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+              <button (click)="edit.emit(row)" class="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition" title="Edit">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button (click)="delete.emit(row)" class="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

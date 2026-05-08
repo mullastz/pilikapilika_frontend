@@ -1,0 +1,174 @@
+<div class="p-6 max-w-4xl mx-auto">
+  <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">My Account</h2>
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-20">
+      <i class="fa-solid fa-circle-notch fa-spin text-3xl text-gray-400"></i>
+    </div>
+  } @else {
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-6">
+      <button
+        (click)="activeTab.set('profile')"
+        class="px-4 py-2 rounded-lg text-sm font-medium transition"
+        [class.bg-[#FF7800]]="activeTab() === 'profile'"
+        [class.text-white]="activeTab() === 'profile'"
+        [class.bg-gray-100]="activeTab() !== 'profile'"
+        [class.dark:bg-[#222]]="activeTab() !== 'profile'"
+        [class.text-gray-700]="activeTab() !== 'profile'"
+        [class.dark:text-gray-300]="activeTab() !== 'profile'"
+      >
+        <i class="fa-solid fa-user mr-2"></i>Personal Info
+      </button>
+      <button
+        (click)="activeTab.set('security')"
+        class="px-4 py-2 rounded-lg text-sm font-medium transition"
+        [class.bg-[#FF7800]]="activeTab() === 'security'"
+        [class.text-white]="activeTab() === 'security'"
+        [class.bg-gray-100]="activeTab() !== 'security'"
+        [class.dark:bg-[#222]]="activeTab() !== 'security'"
+        [class.text-gray-700]="activeTab() !== 'security'"
+        [class.dark:text-gray-300]="activeTab() !== 'security'"
+      >
+        <i class="fa-solid fa-lock mr-2"></i>Security
+      </button>
+    </div>
+
+    @if (activeTab() === 'profile') {
+      <div class="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-5">
+        <!-- Avatar + Basic -->
+        <div class="flex items-center gap-4 pb-5 border-b border-gray-100 dark:border-gray-700">
+          <div class="w-16 h-16 rounded-full bg-[#FF7800] text-white flex items-center justify-center text-xl font-bold">
+            {{ (user()?.firstname?.[0] || '') + (user()?.lastname?.[0] || '') }}
+          </div>
+          <div>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ user()?.firstname }} {{ user()?.lastname }}</p>
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#FF7800]/10 text-[#FF7800] dark:bg-[#FF7800]/20">
+              {{ user()?.role }}
+            </span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">First Name</label>
+            <input [(ngModel)]="profileData().firstname" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Last Name</label>
+            <input [(ngModel)]="profileData().lastname" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+            <input type="email" [(ngModel)]="profileData().email" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+            <input [(ngModel)]="profileData().phone" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gender</label>
+          <select [(ngModel)]="profileData().gender" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200">
+            <option value="">Select gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Region</label>
+            <input [(ngModel)]="profileData().region" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">District</label>
+            <input [(ngModel)]="profileData().district" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ward</label>
+            <input [(ngModel)]="profileData().ward" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
+          <textarea [(ngModel)]="profileData().address" rows="2" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200"></textarea>
+        </div>
+
+        <div class="pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-end">
+          <button
+            (click)="saveProfile()"
+            [disabled]="savingProfile()"
+            class="px-4 py-2 bg-[#FF7800] text-white rounded-lg hover:bg-orange-600 transition disabled:opacity-50 flex items-center gap-2"
+          >
+            @if (savingProfile()) {
+              <i class="fa-solid fa-circle-notch fa-spin"></i>
+            } @else {
+              <i class="fa-solid fa-save"></i>
+            }
+            Save Profile
+          </button>
+        </div>
+      </div>
+
+      <!-- Account Status Card -->
+      <div class="mt-6 bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 uppercase tracking-wide">Account Status</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+          <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+            <span class="text-gray-500">Role</span>
+            <span class="text-gray-900 dark:text-white font-medium">{{ user()?.role }}</span>
+          </div>
+          <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+            <span class="text-gray-500">Email Verified</span>
+            <span class="font-medium" [class.text-green-600]="user()?.is_email_verified" [class.text-red-500]="!user()?.is_email_verified">
+              {{ user()?.is_email_verified ? 'Yes' : 'No' }}
+            </span>
+          </div>
+          <div class="flex justify-between py-2">
+            <span class="text-gray-500">Joined</span>
+            <span class="text-gray-900 dark:text-white">{{ user()?.created_at | date:'mediumDate' }}</span>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (activeTab() === 'security') {
+      <div class="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-5">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Change Password</h3>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Current Password</label>
+          <input type="password" [(ngModel)]="passwordData().current_password" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Password</label>
+          <input type="password" [(ngModel)]="passwordData().new_password" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm New Password</label>
+          <input type="password" [(ngModel)]="passwordData().new_password_confirmation" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+        </div>
+        <div class="flex justify-end pt-2">
+          <button
+            (click)="changePassword()"
+            [disabled]="savingPassword()"
+            class="px-4 py-2 bg-[#FF7800] text-white rounded-lg hover:bg-orange-600 transition disabled:opacity-50 flex items-center gap-2"
+          >
+            @if (savingPassword()) {
+              <i class="fa-solid fa-circle-notch fa-spin"></i>
+            } @else {
+              <i class="fa-solid fa-key"></i>
+            }
+            Update Password
+          </button>
+        </div>
+      </div>
+    }
+  }
+</div>

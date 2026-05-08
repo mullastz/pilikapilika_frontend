@@ -2,4 +2,6 @@
 
 <app-toast />
 <router-outlet />
-<app-menu-bar />
+@if (showMenuBar()) {
+  <app-menu-bar />
+}

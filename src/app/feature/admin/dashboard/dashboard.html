@@ -1,0 +1,81 @@
+<div>
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+    <button
+      (click)="loadStats()"
+      class="px-4 py-2 bg-[#FF7800] text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition flex items-center gap-2"
+      [disabled]="loading()"
+    >
+      <i [class]="loading() ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-rotate-right'"></i>
+      Refresh
+    </button>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+    @if (loading()) {
+      <div *ngFor="let _ of [1,2,3,4,5,6]" class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow p-4 h-24 animate-pulse"></div>
+    } @else {
+      <app-stat-card
+        *ngFor="let card of statCards()"
+        [icon]="card.icon"
+        [label]="card.label"
+        [value]="card.value"
+        [color]="card.color"
+      ></app-stat-card>
+    }
+  </div>
+
+  <!-- Charts & Details -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Signups Chart -->
+    <div class="lg:col-span-2 bg-white dark:bg-[#1a1a1a] rounded-xl shadow p-5">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Sign-ups (Last 7 Days)</h2>
+      <div class="h-64">
+        <canvas id="signupsChart" class="w-full h-full"></canvas>
+      </div>
+    </div>
+
+    <!-- Users by Role -->
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow p-5">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Users by Role</h2>
+      @if (!loading() && stats()) {
+        <div class="space-y-3">
+          <div *ngFor="let role of stats()!.charts.users_by_role" class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full"
+              [class.bg-blue-500]="role.role === 'Buyer'"
+              [class.bg-green-500]="role.role === 'Seller'"
+              [class.bg-purple-500]="role.role === 'Admin'"
+              [class.bg-orange-500]="role.role === 'Owner'"
+              [class.bg-gray-400]="!['Buyer','Seller','Admin','Owner'].includes(role.role)"
+            ></div>
+            <span class="text-sm text-gray-600 dark:text-gray-300 w-16">{{ role.role }}</span>
+            <div class="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div class="h-full rounded-full transition-all"
+                [class.bg-blue-500]="role.role === 'Buyer'"
+                [class.bg-green-500]="role.role === 'Seller'"
+                [class.bg-purple-500]="role.role === 'Admin'"
+                [class.bg-orange-500]="role.role === 'Owner'"
+                [class.bg-gray-400]="!['Buyer','Seller','Admin','Owner'].includes(role.role)"
+                [style.width.%]="(role.count / (stats()?.totals?.users || 1)) * 100"
+              ></div>
+            </div>
+            <span class="text-sm font-semibold text-gray-900 dark:text-white w-8 text-right">{{ role.count }}</span>
+          </div>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-3">
+          <div class="text-center">
+            <p class="text-xs text-gray-500 dark:text-gray-400">New Users Today</p>
+            <p class="text-xl font-bold text-gray-900 dark:text-white">{{ stats()?.today?.new_users || 0 }}</p>
+          </div>
+          <div class="text-center">
+            <p class="text-xs text-gray-500 dark:text-gray-400">New Packages Today</p>
+            <p class="text-xl font-bold text-gray-900 dark:text-white">{{ stats()?.today?.new_packages || 0 }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

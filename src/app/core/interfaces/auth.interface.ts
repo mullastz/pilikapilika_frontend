@@ -82,6 +82,7 @@ export interface User {
   role: string;
   is_email_verified: boolean;
   is_agent_verified: boolean;
+  is_admin: boolean;
   is_profile_complete: boolean;
   email_verified_at: string | null;
   agent_verified_at: string | null;

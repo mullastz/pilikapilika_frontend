@@ -1,0 +1,109 @@
+<div>
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Regions & Districts</h1>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-2 mb-4 border-b border-gray-200 dark:border-gray-700">
+    <button
+      (click)="activeTab.set('regions')"
+      [class.text-[#FF7800]]="activeTab() === 'regions'"
+      [class.border-b-2]="activeTab() === 'regions'"
+      [class.border-[#FF7800]]="activeTab() === 'regions'"
+      class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition"
+    >
+      Regions ({{ regions().length }})
+    </button>
+    <button
+      (click)="activeTab.set('districts')"
+      [class.text-[#FF7800]]="activeTab() === 'districts'"
+      [class.border-b-2]="activeTab() === 'districts'"
+      [class.border-[#FF7800]]="activeTab() === 'districts'"
+      class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition"
+    >
+      Districts ({{ districts().length }})
+    </button>
+  </div>
+
+  @if (activeTab() === 'regions') {
+    <!-- Create Region -->
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow p-4 mb-4 flex gap-2">
+      <input [(ngModel)]="newRegionName" placeholder="New region name..." class="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF7800]" />
+      <button (click)="createRegion()" class="px-4 py-2 bg-[#FF7800] text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition">Add</button>
+    </div>
+
+    <!-- Regions List -->
+    @if (loading()) {
+      <div class="space-y-2">
+        <div *ngFor="let _ of [1,2,3]" class="h-12 bg-gray-100 dark:bg-[#222] rounded-xl animate-pulse"></div>
+      </div>
+    } @else {
+      <div class="space-y-2">
+        <div *ngFor="let region of regions()" class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow p-4">
+          @if (editingRegion()?.id === region.id) {
+            <div class="flex gap-2">
+              <input [(ngModel)]="editingRegion()!.name" class="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+              <button (click)="updateRegion()" class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition">Save</button>
+              <button (click)="editingRegion.set(null)" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300 transition dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">Cancel</button>
+            </div>
+          } @else {
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-semibold text-gray-900 dark:text-white">{{ region.name }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ getDistrictsForRegion(region.id).length }} districts</p>
+              </div>
+              <div class="flex gap-2">
+                <button (click)="editingRegion.set(region)" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"><i class="fa-solid fa-pen text-sm"></i></button>
+                <button (click)="deleteRegion(region.id)" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"><i class="fa-solid fa-trash text-sm"></i></button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  } @else {
+    <!-- Create District -->
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow p-4 mb-4 flex gap-2 flex-wrap">
+      <select [(ngModel)]="newDistrictRegionId" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200">
+        <option [ngValue]="null">Select region...</option>
+        <option *ngFor="let r of regions()" [ngValue]="r.id">{{ r.name }}</option>
+      </select>
+      <input [(ngModel)]="newDistrictName" placeholder="District name..." class="flex-1 min-w-[150px] px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF7800]" />
+      <button (click)="createDistrict()" class="px-4 py-2 bg-[#FF7800] text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition">Add</button>
+    </div>
+
+    <!-- Districts List -->
+    <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-gray-50 dark:bg-[#222] text-gray-600 dark:text-gray-300 text-xs font-semibold uppercase">
+          <tr><th class="px-4 py-3">District</th><th class="px-4 py-3">Region</th><th class="px-4 py-3 text-right">Actions</th></tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          <tr *ngFor="let d of districts()" class="bg-white dark:bg-[#1a1a1a]">
+            @if (editingDistrict()?.id === d.id) {
+              <td class="px-4 py-3">
+                <input [(ngModel)]="editingDistrict()!.name" class="w-full px-2 py-1 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm" />
+              </td>
+              <td class="px-4 py-3">
+                <select [(ngModel)]="editingDistrict()!.region_id" class="w-full px-2 py-1 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm">
+                  <option *ngFor="let r of regions()" [ngValue]="r.id">{{ r.name }}</option>
+                </select>
+              </td>
+              <td class="px-4 py-3 text-right">
+                <button (click)="updateDistrict()" class="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition mr-1"><i class="fa-solid fa-check"></i></button>
+                <button (click)="editingDistrict.set(null)" class="p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition"><i class="fa-solid fa-xmark"></i></button>
+              </td>
+            } @else {
+              <td class="px-4 py-3 text-gray-800 dark:text-gray-200">{{ d.name }}</td>
+              <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ regions().find(r => r.id === d.region_id)?.name || '-' }}</td>
+              <td class="px-4 py-3 text-right">
+                <button (click)="editingDistrict.set(d)" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition mr-1"><i class="fa-solid fa-pen"></i></button>
+                <button (click)="deleteDistrict(d.id)" class="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition"><i class="fa-solid fa-trash"></i></button>
+              </td>
+            }
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
