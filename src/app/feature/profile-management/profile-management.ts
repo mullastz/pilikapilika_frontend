@@ -51,14 +51,6 @@ export class ProfileManagement implements OnInit {
       iconBgColor: 'bg-orange-500'
     },
     {
-      id: 'history',
-      title: 'History',
-      icon: 'fa-clock-rotate-left',
-      bgColor: 'bg-orange-200',
-      darkBgColor: 'dark:bg-[#111]',
-      iconBgColor: 'bg-orange-500'
-    },
-    {
       id: 'help',
       title: 'Help Center',
       icon: 'fa-circle-question',

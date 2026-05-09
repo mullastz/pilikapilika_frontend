@@ -1,5 +1,5 @@
 <!-- Navbar -->
-<div class="absolute top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 flex items-center justify-between bg-white/10 backdrop-blur-lg px-3 sm:px-6 py-2 sm:py-3 rounded-full border border-white/20 z-50">
+<div class="absolute top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 flex items-center justify-between bg-white/10 backdrop-blur-lg px-3 sm:px-6 py-2 sm:py-3 rounded-full border border-white/20">
 
     <h1 class="text-orange-400 font-lobster font-bold text-lg sm:text-xl cursor-pointer" routerLink="/">Pilikapilika</h1>
 
@@ -27,7 +27,7 @@
 
             <!-- Dropdown Menu -->
             @if (isProfileDropdownOpen()) {
-              <div class="fixed sm:absolute right-2 sm:right-0 top-16 sm:top-auto sm:mt-2 w-[calc(100vw-1rem)] sm:w-56 max-w-xs bg-white dark:bg-[#1a1a1a] rounded-xl shadow-2xl border border-gray-200 dark:border-[#2a2a2a] py-2 z-9999 max-h-[80vh] overflow-y-auto">
+              <div class="fixed sm:absolute right-2 sm:right-0 top-16 sm:top-auto sm:mt-2 w-[calc(100vw-1rem)] sm:w-56 max-w-xs bg-white dark:bg-[#1a1a1a] rounded-xl shadow-2xl border border-gray-200 dark:border-[#2a2a2a] py-2 max-h-[80vh] overflow-y-auto">
 
                 <!-- Account Section -->
                 <div class="px-4 py-2 border-b border-gray-100 dark:border-[#2a2a2a]">
@@ -46,10 +46,10 @@
                   <span class="whitespace-nowrap">details</span>
                 </a>
 
-                <a routerLink="/account/history" (click)="closeProfileDropdown()"
+                <a routerLink="/account/my-products" (click)="closeProfileDropdown()"
                    class="flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-[#2a2a2a] transition">
-                  <i class="fa-solid fa-clock-rotate-left text-orange-500 w-5"></i>
-                  <span class="whitespace-nowrap">History</span>
+                  <i class="fa-solid fa-box text-orange-500 w-5"></i>
+                  <span class="whitespace-nowrap">My Products</span>
                 </a>
 
                 <a routerLink="/account/shipping" (click)="closeProfileDropdown()"

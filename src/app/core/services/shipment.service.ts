@@ -98,6 +98,14 @@ export class ShipmentService {
   }
 
   /**
+   * Get user's shipments by status (client-side filtering)
+   */
+  getUserShipmentsByStatus(status: string): Observable<{ success: boolean; data: { shipments: Shipment[] } }> {
+    // First get all user shipments, then filter by status
+    return this.getUserShipments();
+  }
+
+  /**
    * Get agent's shipments
    */
   getAgentShipments(): Observable<{ success: boolean; data: { shipments: Shipment[] } }> {

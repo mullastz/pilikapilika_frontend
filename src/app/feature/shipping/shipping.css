@@ -61,6 +61,51 @@
   transform: scale(1.05);
 }
 
+/* Custom scrollbar for modal */
+.modal-scrollbar::-webkit-scrollbar {
+  width: 12px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-track {
+  background: #2a2a2a;
+  border-radius: 12px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb {
+  background: #fb923c;
+  border-radius: 12px;
+  border: 2px solid #2a2a2a;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #f97316;
+}
+
+.modal-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #fb923c #2a2a2a;
+}
+
+/* Dark mode scrollbar */
+.dark .modal-scrollbar::-webkit-scrollbar-track {
+  background: #2a2a2a;
+  border-radius: 12px;
+}
+
+.dark .modal-scrollbar::-webkit-scrollbar-thumb {
+  background: #fb923c;
+  border-radius: 12px;
+  border: 2px solid #2a2a2a;
+}
+
+.dark .modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #f97316;
+}
+
+.dark .modal-scrollbar {
+  scrollbar-color: #fb923c #2a2a2a;
+}
+
 /* Responsive adjustments */
 @media (max-width: 640px) {
   .tab-button {
@@ -79,5 +124,12 @@
   
   .action-buttons button {
     width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    max-width: 95vw;
+    margin: 1rem;
   }
 }

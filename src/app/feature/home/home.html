@@ -56,14 +56,14 @@
     </div>
     </section>
 
-  <!-- Active Shipments (Mock Data) -->
-  @if (activeShipments.length > 0) {
+  <!-- Active Shipments -->
+  @if (!isLoadingShipments && activeShipments.length > 0) {
   <section class="px-4 sm:px-6 py-4">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
        Active Shipments
       </h2>
-      <button (click)="toastService.info('Full shipment history coming soon')" class="text-[#FF7800] text-sm font-medium hover:underline">
+      <button (click)="router.navigate(['/account/shipping'])" class="text-[#FF7800] text-sm font-medium hover:underline">
         View all
       </button>
     </div>
@@ -73,11 +73,7 @@
       <div (click)="viewShipmentDetails(shipment.id)" class="min-w-[280px] sm:min-w-[320px] bg-white dark:bg-[#1a1a1a] rounded-xl shadow p-4 cursor-pointer hover:shadow-lg transition-shadow shrink-0">
         <div class="flex items-start gap-3">
           <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-[#2a2a2a] flex items-center justify-center overflow-hidden shrink-0">
-            @if (shipment.agent_image) {
-              <img [src]="shipment.agent_image" class="w-full h-full object-cover" />
-            } @else {
-              <i class="fa-solid fa-truck text-gray-400"></i>
-            }
+            <i class="fa-solid fa-truck text-gray-400"></i>
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between gap-2">
@@ -87,17 +83,17 @@
               </span>
             </div>
             <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
-              {{ shipment.from_location }} → {{ shipment.to_location }}
+              {{ getShipmentLocation(shipment).from }} → {{ getShipmentLocation(shipment).to }}
             </p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Agent: {{ shipment.agent_name }} • {{ shipment.estimated_delivery }}
+              Agent: {{ getAgentName(shipment) }} • {{ getEstimatedDelivery(shipment) }}
             </p>
             <!-- Progress Bar -->
             <div class="mt-3">
               <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div [class]="getProgressBarColor(shipment.status)" class="h-full rounded-full transition-all duration-500" [style.width.%]="shipment.progress_percent"></div>
+                <div [class]="getProgressBarColor(shipment.status)" class="h-full rounded-full transition-all duration-500" [style.width.%]="getShipmentProgress(shipment)"></div>
               </div>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">{{ shipment.progress_percent }}%</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">{{ getShipmentProgress(shipment) }}%</p>
             </div>
           </div>
         </div>
@@ -107,21 +103,27 @@
   </section>
   }
 
-        <!-- Loading State - Skeleton Cards -->
-        <div *ngIf="isLoadingAgents" class="flex gap-3 sm:gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth">
-            <div *ngFor="let i of [1,2,3,4,5,6]" class="min-w-[140px] sm:min-w-[220px] bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-3 sm:p-4">
-                <!-- Skeleton Avatar -->
-                <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full mx-auto mb-2 sm:mb-3 bg-gray-200 dark:bg-[#333] animate-pulse"></div>
-                <!-- Skeleton Name -->
-                <div class="h-4 bg-gray-200 dark:bg-[#333] rounded mx-auto mb-2 w-3/4 animate-pulse"></div>
-                <!-- Skeleton Rating -->
-                <div class="h-3 bg-gray-200 dark:bg-[#333] rounded mx-auto mb-2 w-1/2 animate-pulse"></div>
-                <!-- Skeleton Location -->
-                <div class="h-3 bg-gray-200 dark:bg-[#333] rounded mx-auto mb-3 w-2/3 animate-pulse"></div>
-                <!-- Skeleton Price -->
-                <div class="h-3 bg-gray-200 dark:bg-[#333] rounded mx-auto w-1/2 animate-pulse"></div>
+        <!-- Loading State - Shipment Skeleton -->
+        @if (isLoadingShipments) {
+        <div class="px-4 sm:px-6 py-4">
+          <div class="flex items-center justify-between mb-4">
+            <div class="h-6 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            <div class="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          </div>
+          <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth -mx-4 px-4">
+            <div *ngFor="let i of [1,2,3]" class="min-w-[280px] sm:min-w-[320px] bg-white dark:bg-[#1a1a1a] rounded-xl shadow p-4">
+              <div class="flex items-start gap-3">
+                <div class="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                <div class="flex-1 space-y-2">
+                  <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 animate-pulse"></div>
+                  <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 animate-pulse"></div>
+                  <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-full animate-pulse"></div>
+                </div>
+              </div>
             </div>
+          </div>
         </div>
+        }
 
   <!-- Nearby Agents -->
   @if (!isLoadingAgents && nearbyAgents.length > 0) {
@@ -294,22 +296,130 @@
   </section>
   }
 
-  <!-- No Agents State -->
-  @if (!isLoadingAgents && allAgents.length === 0) {
-  <div class="px-4 sm:px-6 py-12">
+  <!-- Empty State for Shipments -->
+  @if (!isLoadingShipments && activeShipments.length === 0) {
+  <div class="px-4 sm:px-6 py-8">
     <div class="text-center">
       <div class="w-16 h-16 bg-gray-100 dark:bg-[#1a1a1a] rounded-full flex items-center justify-center mx-auto mb-4">
-        <i class="fa-solid fa-users text-2xl text-gray-400"></i>
+        <i class="fa-solid fa-box text-2xl text-gray-400"></i>
       </div>
-      <p class="text-gray-500 dark:text-gray-400">No agents available at the moment.</p>
-      <button (click)="loadAgents()" class="mt-4 text-[#FF7800] font-medium hover:underline">
-        Try again
-      </button>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Active Shipments</h3>
+      <p class="text-gray-500 dark:text-gray-400 mb-4">You don't have any active shipments at the moment.</p>
+      <div class="flex gap-3 justify-center">
+        <button (click)="router.navigate(['/search'])" class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
+          <i class="fa-solid fa-search mr-2"></i>Find Agents
+        </button>
+        <button (click)="router.navigate(['/shipping'])" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+          <i class="fa-solid fa-history mr-2"></i>View History
+        </button>
+      </div>
     </div>
   </div>
   }
 
+        <!-- Loading State - Agent Skeleton Cards -->
+        @if (isLoadingAgents) {
+        <div class="flex gap-3 sm:gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth">
+            <div *ngFor="let i of [1,2,3,4,5,6]" class="min-w-[140px] sm:min-w-[220px] bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-3 sm:p-4">
+                <!-- Skeleton Avatar -->
+                <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full mx-auto mb-2 sm:mb-3 bg-gray-200 dark:bg-[#333] animate-pulse"></div>
+                <!-- Skeleton Name -->
+                <div class="h-4 bg-gray-200 dark:bg-[#333] rounded mx-auto mb-2 w-3/4 animate-pulse"></div>
+                <!-- Skeleton Rating -->
+                <div class="h-3 bg-gray-200 dark:bg-[#333] rounded mx-auto mb-2 w-1/2 animate-pulse"></div>
+                <!-- Skeleton Location -->
+                <div class="h-3 bg-gray-200 dark:bg-[#333] rounded mx-auto mb-3 w-2/3 animate-pulse"></div>
+                <!-- Skeleton Price -->
+                <div class="h-3 bg-gray-200 dark:bg-[#333] rounded mx-auto w-1/2 animate-pulse"></div>
+            </div>
+        </div>
+        }
 
+  <!-- Recent Products -->
+  @if (!isLoadingProducts && recentProducts.length > 0) {
+  <section class="px-4 sm:px-6 py-4">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+       Recent Products
+      </h2>
+      <button (click)="router.navigate(['/my-products'])" class="text-[#FF7800] text-sm font-medium hover:underline">
+        View all
+      </button>
+    </div>
+
+    <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth -mx-4 px-4">
+      @for (product of recentProducts; track product.uuid) {
+      <div (click)="router.navigate(['/my-products'])" class="min-w-[140px] sm:min-w-[160px] bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-3 cursor-pointer hover:shadow-lg hover:scale-105 transition-all shrink-0">
+        <!-- Product Image -->
+        <div class="h-24 bg-gray-100 dark:bg-[#111] relative rounded-lg overflow-hidden mb-2">
+          <img
+            *ngIf="product.photos && product.photos.length > 0"
+            [src]="product.photos[0]"
+            [alt]="product.product_name"
+            class="w-full h-full object-cover"
+            onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0iI2UwZUVGRiIvPjwvc3ZnPg=='"
+          />
+          <!-- Fade overlay -->
+          <div class="absolute inset-0 bg-linear-to-t from-white/80 via-white/40 to-transparent dark:from-[#1a1a1a]/80 dark:via-[#1a1a1a]/40"></div>
+          <div
+            *ngIf="!product.photos || product.photos.length === 0"
+            class="absolute inset-0 flex items-center justify-center text-gray-400"
+          >
+            <i class="fa-solid fa-image text-xl"></i>
+          </div>
+        </div>
+
+        <!-- Product Info -->
+        <h4 class="text-center font-medium text-sm dark:text-white truncate">{{ product.product_name }}</h4>
+        <div class="flex justify-center items-center gap-1 text-xs text-gray-400 mt-1">
+          <i class="fa-solid fa-tag"></i>
+          <span class="truncate">{{ product.currency }} {{ product.product_cost }}</span>
+        </div>
+        <p class="text-xs text-gray-400 text-center mt-1 truncate">{{ product.supplier_name }}</p>
+      </div>
+      }
+    </div>
+  </section>
+  }
+
+  <!-- Loading State - Products Skeleton -->
+  @if (isLoadingProducts) {
+  <div class="px-4 sm:px-6 py-4">
+    <div class="flex items-center justify-between mb-4">
+      <div class="h-6 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+      <div class="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+    </div>
+    <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth -mx-4 px-4">
+      <div *ngFor="let i of [1,2,3]" class="min-w-[140px] sm:min-w-[160px] bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-3">
+        <div class="h-24 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-2"></div>
+        <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mx-auto mb-2 animate-pulse"></div>
+        <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded mx-auto mb-1 animate-pulse"></div>
+        <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded mx-auto animate-pulse"></div>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Empty State for Products -->
+  @if (!isLoadingProducts && recentProducts.length === 0) {
+  <div class="px-4 sm:px-6 py-8">
+    <div class="text-center">
+      <div class="w-16 h-16 bg-gray-100 dark:bg-[#1a1a1a] rounded-full flex items-center justify-center mx-auto mb-4">
+        <i class="fa-solid fa-box-open text-2xl text-gray-400"></i>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Products Yet</h3>
+      <p class="text-gray-500 dark:text-gray-400 mb-4">You haven't created any products yet.</p>
+      <div class="flex gap-3 justify-center">
+        <button (click)="router.navigate(['/qr-generator'])" class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
+          <i class="fa-solid fa-plus mr-2"></i>Create Product
+        </button>
+        <button (click)="router.navigate(['/my-products'])" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+          <i class="fa-solid fa-box mr-2"></i>My Products
+        </button>
+      </div>
+    </div>
+  </div>
+  }
 
 </div>
 

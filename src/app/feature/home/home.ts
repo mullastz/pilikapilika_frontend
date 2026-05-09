@@ -4,22 +4,12 @@ import { Router, RouterModule } from '@angular/router';
 import { AgentService } from '../../core/services/agent.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
+import { ShipmentService, Shipment } from '../../core/services/shipment.service';
+import { QrCodeService } from '../../core/services/qr-code.service';
 import { Agent, User } from '../../core/interfaces/auth.interface';
 import { Footer } from '../../shared/footer/footer';
 import { Header } from '../../shared/header/header';
 
-interface Shipment {
-  id: string;
-  tracking_number: string;
-  from_location: string;
-  to_location: string;
-  status: 'pending' | 'in_transit' | 'delivered' | 'cancelled';
-  progress_percent: number;
-  agent_name: string;
-  agent_image?: string;
-  estimated_delivery: string;
-  created_at: string;
-}
 
 @Component({
   selector: 'app-home',
@@ -31,6 +21,8 @@ interface Shipment {
 export class Home implements OnInit {
   currentUser: User | null = null;
   isLoadingAgents = true;
+  isLoadingShipments = true;
+  isLoadingProducts = true;
 
   // Services exposed for template
   protected toastService: ToastService;
@@ -46,61 +38,19 @@ export class Home implements OnInit {
   newAgents: Agent[] = [];
   verifiedAgents: Agent[] = [];
 
+  // Shipments and Products
+  activeShipments: Shipment[] = [];
+  recentProducts: any[] = [];
+
   // Track displayed agents to prevent repetition
   private displayedAgentIds: Set<number> = new Set();
-
-  // Activities for desktop
-  activities = [
-    { icon: 'fa-solid fa-user', label: 'Become Agent', route: '/sign-up' },
-    { icon: 'fa-solid fa-qrcode', label: 'Generate QRcode', route: '/qr-generator' },
-    { icon: 'fa-solid fa-magnifying-glass', label: 'Search Agent', route: '/search' },
-    { icon: 'fa-solid fa-location-crosshairs', label: 'Track Shipping', route: '/account/shipping' },
-    { icon: 'fa-solid fa-handshake', label: 'Negotiate', route: '/search' }
-  ];
-
-  // Mock shipments for UI visualization
-  activeShipments: Shipment[] = [
-    {
-      id: 'ship-001',
-      tracking_number: 'PKG-2847',
-      from_location: 'Dar es Salaam',
-      to_location: 'Arusha',
-      status: 'in_transit',
-      progress_percent: 70,
-      agent_name: 'Ali Hassan',
-      agent_image: 'assets/landingpage_images/profile4.jpg',
-      estimated_delivery: '2 days',
-      created_at: '2026-04-25'
-    },
-    {
-      id: 'ship-002',
-      tracking_number: 'PKG-1902',
-      from_location: 'Mwanza',
-      to_location: 'Dar es Salaam',
-      status: 'pending',
-      progress_percent: 15,
-      agent_name: 'John Mwanga',
-      estimated_delivery: 'Pending pickup',
-      created_at: '2026-04-27'
-    },
-    {
-      id: 'ship-003',
-      tracking_number: 'PKG-1055',
-      from_location: 'Arusha',
-      to_location: 'Dar es Salaam',
-      status: 'delivered',
-      progress_percent: 100,
-      agent_name: 'Grace Joseph',
-      agent_image: 'assets/landingpage_images/profile1.webp',
-      estimated_delivery: 'Delivered',
-      created_at: '2026-04-20'
-    }
-  ];
 
   constructor(
     protected router: Router,
     private agentService: AgentService,
     private authService: AuthService,
+    private shipmentService: ShipmentService,
+    private qrCodeService: QrCodeService,
     toastService: ToastService,
     private cdr: ChangeDetectorRef
   ) {
@@ -110,6 +60,8 @@ export class Home implements OnInit {
   ngOnInit(): void {
     this.loadCurrentUser();
     this.loadAgents();
+    this.loadShipments();
+    this.loadProducts();
   }
 
   loadCurrentUser(): void {
@@ -267,5 +219,98 @@ export class Home implements OnInit {
 
   trackByAgentId(index: number, agent: Agent): number {
     return agent.id;
+  }
+
+  loadShipments(): void {
+    this.isLoadingShipments = true;
+    this.shipmentService.getUserShipments().subscribe({
+      next: (response) => {
+        if (response.success) {
+          // Get active shipments (not cancelled or delivered)
+          this.activeShipments = response.data.shipments
+            .filter(shipment => !['cancelled', 'delivered'].includes(shipment.status))
+            .slice(0, 5); // Show only 5 most recent
+        }
+        this.isLoadingShipments = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error loading shipments:', err);
+        this.isLoadingShipments = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  loadProducts(): void {
+    this.isLoadingProducts = true;
+    this.qrCodeService.getAll().subscribe({
+      next: (res: any) => {
+        console.log('[Home] Products response:', res);
+        this.recentProducts = res?.data ?? [];
+        this.recentProducts = this.recentProducts.slice(0, 5); // Show only 5 most recent
+        this.isLoadingProducts = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('[Home] Error loading products:', err);
+        this.isLoadingProducts = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // Activities for desktop
+  activities = [
+    { icon: 'fa-solid fa-user', label: 'Become Agent', route: '/sign-up' },
+    { icon: 'fa-solid fa-qrcode', label: 'Generate QRcode', route: '/qr-generator' },
+    { icon: 'fa-solid fa-magnifying-glass', label: 'Search Agent', route: '/search' },
+    { icon: 'fa-solid fa-location-crosshairs', label: 'Track Shipping', route: '/account/shipping' },
+    { icon: 'fa-solid fa-handshake', label: 'Negotiate', route: '/search' }
+  ];
+
+  // Helper methods for template
+  getShipmentProgress(shipment: Shipment): number {
+    switch (shipment.status) {
+      case 'pending_confirmation':
+        return 10;
+      case 'confirmed':
+        return 25;
+      case 'in_transit':
+        return 70;
+      case 'delivered':
+        return 100;
+      default:
+        return 0;
+    }
+  }
+
+  getShipmentLocation(shipment: Shipment): { from: string; to: string } {
+    return {
+      from: shipment.pickup_address?.split(',')[0] || 'Unknown',
+      to: shipment.destination_address?.split(',')[0] || 'Unknown'
+    };
+  }
+
+  getAgentName(shipment: Shipment): string {
+    if (shipment.agent) {
+      return `${shipment.agent.firstname} ${shipment.agent.lastname}`;
+    }
+    return 'Unassigned';
+  }
+
+  getEstimatedDelivery(shipment: Shipment): string {
+    switch (shipment.status) {
+      case 'pending_confirmation':
+        return 'Pending confirmation';
+      case 'confirmed':
+        return 'Confirmed';
+      case 'in_transit':
+        return 'In transit';
+      case 'delivered':
+        return 'Delivered';
+      default:
+        return 'Unknown';
+    }
   }
 }

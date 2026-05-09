@@ -57,6 +57,30 @@
                 </div>
             </div>
 
+            <!-- USER TABS -->
+            <div *ngIf="!isAgent()" class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm mb-6">
+                <div class="flex overflow-x-auto scrollbar-hide">
+                    <button 
+                        *ngFor="let tab of userTabs"
+                        (click)="switchTab(tab.id)"
+                        class="flex-1 min-w-[120px] px-3 py-3 text-sm font-medium border-b-2 transition-colors duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
+                        [class]="activeTab() === tab.id ? 
+                            'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20' : 
+                            'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#333]'"
+                    >
+                        <i class="fa-solid {{tab.icon}}"></i>
+                        <span class="hidden sm:inline">{{tab.label}}</span>
+                        <span class="sm:hidden">
+                            <ng-container [ngSwitch]="tab.id">
+                                <ng-container *ngSwitchCase="'pending_confirmation'">Pending</ng-container>
+                                <ng-container *ngSwitchCase="'in_transit'">In Transit</ng-container>
+                                <ng-container *ngSwitchDefault>{{tab.label.split(' ')[0]}}</ng-container>
+                            </ng-container>
+                        </span>
+                    </button>
+                </div>
+            </div>
+
             <!-- LOADING STATE -->
             <div *ngIf="loading()" class="text-center py-20">
                 <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
@@ -88,7 +112,16 @@
                             <ng-container *ngSwitchDefault>No shipments found.</ng-container>
                         </ng-container>
                     </ng-container>
-                    <ng-template #userEmpty>You haven't booked any shipments yet.</ng-template>
+                    <ng-template #userEmpty>
+                        <ng-container [ngSwitch]="activeTab()">
+                            <ng-container *ngSwitchCase="'pending_confirmation'">No pending shipments waiting for confirmation.</ng-container>
+                            <ng-container *ngSwitchCase="'confirmed'">No confirmed shipments at the moment.</ng-container>
+                            <ng-container *ngSwitchCase="'in_transit'">No shipments currently in transit.</ng-container>
+                            <ng-container *ngSwitchCase="'delivered'">No delivered shipments yet.</ng-container>
+                            <ng-container *ngSwitchCase="'cancelled'">No cancelled shipments found.</ng-container>
+                            <ng-container *ngSwitchDefault>You haven't booked any shipments yet.</ng-container>
+                        </ng-container>
+                    </ng-template>
                 </p>
                 <a *ngIf="!isAgent()" href="/agents" class="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition inline-block">
                     Find Agents
@@ -170,12 +203,20 @@
 
                     <!-- ACTION BUTTONS -->
                     <div class="mt-3 flex flex-wrap gap-2 justify-end">
-                        
+
+                        <!-- View Details Button -->
+                        <button
+                            (click)="openViewModal(shipment)"
+                            class="px-3 py-2 bg-white dark:bg-[#222] border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-[#333] transition flex items-center gap-2">
+                            <i class="fa-solid fa-eye text-orange-500"></i>
+                            View
+                        </button>
+
                         <!-- Track Button (only for My Shippings tab and normal users) -->
                         <button 
                             *ngIf="!isAgent() || activeTab() === 'my_shippings'"
                             (click)="trackShipment(shipment)"
-                            class="text-orange-500 text-sm hover:underline font-medium">
+                            class="text-orange-500 text-sm hover:underline font-medium self-center">
                             Track Shipment
                         </button>
 
@@ -261,3 +302,448 @@
     </div>
 
 </div>
+
+<!-- Confirmation Modal -->
+@if (confirmModalOpen()) {
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeConfirmModal()">
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 max-w-sm w-full shadow-2xl" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ confirmModalConfig().title }}</h3>
+        <button (click)="closeConfirmModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+      <p class="text-sm text-gray-600 dark:text-gray-300 mb-6">{{ confirmModalConfig().message }}</p>
+      <div class="flex gap-3">
+        <button (click)="closeConfirmModal()" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-400 rounded-lg hover:bg-gray-100 transition">
+          Cancel
+        </button>
+        <button (click)="executeConfirmedAction()" class="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
+          Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- View Shipment Details Modal -->
+@if (viewModalOpen()) {
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeViewModal()">
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl max-w-4xl w-full shadow-2xl max-h-[90vh] overflow-y-auto modal-scrollbar" (click)="$event.stopPropagation()">
+
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-[#1a1a1a] rounded-t-2xl z-10">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Shipment Details</h3>
+        <button (click)="closeViewModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Loading State -->
+      @if (viewModalLoading()) {
+        <div class="p-6 space-y-6">
+          <div class="space-y-3">
+            <div class="h-5 w-40 bg-gray-200 dark:bg-gray-700 rounded mb-3 animate-pulse"></div>
+            <div class="bg-gray-50 dark:bg-[#111] rounded-xl p-4 space-y-3">
+              <div class="flex justify-between"><div class="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div><div class="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div></div>
+              <div class="flex justify-between"><div class="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div><div class="h-4 w-28 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div></div>
+              <div class="flex justify-between"><div class="h-4 w-28 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div><div class="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div></div>
+            </div>
+          </div>
+          <div class="space-y-3">
+            <div class="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded mb-3 animate-pulse"></div>
+            <div class="bg-gray-50 dark:bg-[#111] rounded-xl p-4 space-y-3">
+              <div class="flex justify-between"><div class="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div><div class="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div></div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Error State -->
+      @if (viewModalError() && !viewModalLoading()) {
+        <div class="p-6 text-center">
+          <i class="fa-solid fa-circle-exclamation text-red-500 text-3xl mb-3"></i>
+          <p class="text-red-600 dark:text-red-400">{{viewModalError()}}</p>
+        </div>
+      }
+
+      <!-- Content -->
+      <ng-container *ngIf="selectedShipmentDetail() as s">
+        <div class="p-6 space-y-6">
+
+          <!-- Shipment Information -->
+          <div>
+            <h2 class="text-base font-semibold text-orange-500 mb-3 flex items-center gap-2">
+              <i class="fa-solid fa-truck-fast"></i> Shipment Information
+            </h2>
+            <div class="bg-orange-50 dark:bg-[#111] rounded-xl p-4 space-y-3">
+
+              <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                <span class="text-sm text-gray-500">Title</span>
+                <span class="text-sm font-medium dark:text-white text-right">{{s.title || 'Untitled Shipment'}}</span>
+              </div>
+              <ng-container *ngIf="s.description">
+                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                  <span class="text-sm text-gray-500">Description</span>
+                  <span class="text-sm font-medium dark:text-white text-right">{{s.description}}</span>
+                </div>
+              </ng-container>
+              <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                <span class="text-sm text-gray-500">Tracking #</span>
+                <span class="text-sm font-medium dark:text-white">{{s.tracking_number}}</span>
+              </div>
+              <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                <span class="text-sm text-gray-500">Status</span>
+                <span class="text-xs px-2 py-0.5 rounded-full" [ngClass]="getStatusClass(s.status)">{{formatStatus(s.status)}}</span>
+              </div>
+              <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                <span class="text-sm text-gray-500">From</span>
+                <span class="text-sm font-medium dark:text-white text-right">{{s.pickup_address}}</span>
+              </div>
+              <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                <span class="text-sm text-gray-500">To</span>
+                <span class="text-sm font-medium dark:text-white text-right">{{s.destination_address}}</span>
+              </div>
+              <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                <span class="text-sm text-gray-500">Estimated Price</span>
+                <span class="text-sm font-medium text-orange-500">${{s.estimated_price}}</span>
+              </div>
+              <ng-container *ngIf="s.actual_price">
+                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                  <span class="text-sm text-gray-500">Actual Price</span>
+                  <span class="text-sm font-medium text-orange-500">${{s.actual_price}}</span>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="s.notes">
+                <div class="flex justify-between">
+                  <span class="text-sm text-gray-500">Notes</span>
+                  <span class="text-sm font-medium dark:text-white text-right">{{s.notes}}</span>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+
+          <!-- People Info -->
+          <div>
+            <h2 class="text-base font-semibold text-orange-500 mb-3 flex items-center gap-2">
+              <i class="fa-solid fa-users"></i> People
+            </h2>
+            <div class="bg-orange-50 dark:bg-[#111] rounded-xl p-4 space-y-3">
+              <ng-container *ngIf="s.user">
+                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                  <span class="text-sm text-gray-500">Customer</span>
+                  <span class="text-sm font-medium dark:text-white">{{s.user.firstname}} {{s.user.lastname}}</span>
+                </div>
+                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                  <span class="text-sm text-gray-500">Customer Email</span>
+                  <span class="text-sm font-medium dark:text-white">{{s.user.email}}</span>
+                </div>
+                <ng-container *ngIf="s.user.phone">
+                  <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <span class="text-sm text-gray-500">Customer Phone</span>
+                    <span class="text-sm font-medium dark:text-white">{{s.user.phone}}</span>
+                  </div>
+                </ng-container>
+              </ng-container>
+              <ng-container *ngIf="s.agent">
+                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                  <span class="text-sm text-gray-500">Agent</span>
+                  <span class="text-sm font-medium dark:text-white">{{s.agent.firstname}} {{s.agent.lastname}}</span>
+                </div>
+                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                  <span class="text-sm text-gray-500">Agent Email</span>
+                  <span class="text-sm font-medium dark:text-white">{{s.agent.email}}</span>
+                </div>
+                <ng-container *ngIf="s.agent.phone">
+                  <div class="flex justify-between">
+                    <span class="text-sm text-gray-500">Agent Phone</span>
+                    <span class="text-sm font-medium dark:text-white">{{s.agent.phone}}</span>
+                  </div>
+                </ng-container>
+              </ng-container>
+            </div>
+          </div>
+
+          <!-- Dates -->
+          <div>
+            <h2 class="text-base font-semibold text-orange-500 mb-3 flex items-center gap-2">
+              <i class="fa-solid fa-calendar"></i> Timeline
+            </h2>
+            <div class="bg-orange-50 dark:bg-[#111] rounded-xl p-4 space-y-3">
+              <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                <span class="text-sm text-gray-500">Created</span>
+                <span class="text-sm font-medium dark:text-white">{{formatDate(s.created_at)}}</span>
+              </div>
+
+              <ng-container *ngIf="s.confirmed_at">
+                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                  <span class="text-sm text-gray-500">Confirmed</span>
+                  <span class="text-sm font-medium dark:text-white">{{formatDate(s.confirmed_at)}}</span>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="s.picked_up_at">
+                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                  <span class="text-sm text-gray-500">Picked Up</span>
+                  <span class="text-sm font-medium dark:text-white">{{formatDate(s.picked_up_at)}}</span>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="s.delivered_at">
+                <div class="flex justify-between">
+                  <span class="text-sm text-gray-500">Delivered</span>
+                  <span class="text-sm font-medium dark:text-white">{{formatDate(s.delivered_at)}}</span>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+
+          <!-- Products -->
+          <ng-container *ngIf="s.products && s.products.length > 0">
+            <div>
+              <h2 class="text-base font-semibold text-orange-500 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-cubes"></i> Products ({{s.products.length}})
+              </h2>
+              <div class="space-y-3">
+                <ng-container *ngFor="let product of s.products">
+                  <div [id]="'product-' + product.id" class="bg-orange-50 dark:bg-[#111] rounded-xl overflow-hidden transition-all duration-300" [class.ring-2]="selectedProductUuid() === product.id" [class.ring-orange-400]="selectedProductUuid() === product.id">
+                    <!-- Product Header (Clickable) -->
+                    <div (click)="selectProduct(product.id)" class="p-4 cursor-pointer hover:bg-orange-100 dark:hover:bg-[#1a1a1a] transition-colors">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                          <img *ngIf="product.photos && product.photos.length > 0" [src]="product.photos[0]" [alt]="product.product_name" class="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-700" onerror="this.style.display='none'" />
+                          <div *ngIf="!product.photos || product.photos.length === 0" class="w-12 h-12 rounded-lg bg-gray-100 dark:bg-[#111] flex items-center justify-center border border-gray-200 dark:border-gray-700">
+                            <i class="fa-solid fa-image text-gray-400"></i>
+                          </div>
+                          <div>
+                            <p class="font-medium text-gray-900 dark:text-white">{{product.product_name}}</p>
+                          </div>
+                        </div>
+                        <div class="text-right">
+                          <i class="fa-solid text-gray-400 mt-1 transition-transform duration-200" [class.fa-chevron-down]="selectedProductUuid() !== product.id" [class.fa-chevron-up]="selectedProductUuid() === product.id"></i>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Expanded Product Details -->
+                    <ng-container *ngIf="selectedProductUuid() === product.id">
+                      <div class="border-t border-gray-200 dark:border-gray-700 p-4 space-y-6 animate-fade-in">
+                        <ng-container *ngIf="getFullProduct(product) as full">
+                          <div>
+                            <h2 class="text-base font-semibold text-orange-500 mb-3 flex items-center gap-2">
+                              <i class="fa-solid fa-box"></i> Product Information
+                            </h2>
+                            <div class="bg-orange-50 dark:bg-[#111] rounded-xl p-4 space-y-3">
+
+                              <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                                <span class="text-sm text-gray-500">Product Name</span>
+                                <span class="text-sm font-medium dark:text-white">{{full.product_name}}</span>
+                              </div>
+                              <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                                <span class="text-sm text-gray-500">Cost Per Product</span>
+                                <span class="text-sm font-medium dark:text-white">{{full.currency}} {{full.product_cost}}</span>
+                              </div>
+                              <ng-container *ngIf="full.product_id">
+                                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                                  <span class="text-sm text-gray-500">Product ID</span>
+                                  <span class="text-sm font-medium dark:text-white">{{full.product_id}}</span>
+                                </div>
+                              </ng-container>
+                              <ng-container *ngIf="full.category">
+                                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                                  <span class="text-sm text-gray-500">Category</span>
+                                  <span class="text-sm font-medium dark:text-white">{{full.category}}</span>
+                                </div>
+                              </ng-container>
+                              <ng-container *ngIf="full.package_type">
+                                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                                  <span class="text-sm text-gray-500">Package Type</span>
+                                  <span class="text-sm font-medium dark:text-white">{{full.package_type}}</span>
+                                </div>
+                              </ng-container>
+                              <ng-container *ngIf="full.quantity !== null">
+                                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                                  <span class="text-sm text-gray-500">Quantity</span>
+                                  <span class="text-sm font-medium dark:text-white">{{full.quantity}}</span>
+                                </div>
+                              </ng-container>
+                              <ng-container *ngIf="full.total_weight">
+                                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                                  <span class="text-sm text-gray-500">Total Weight</span>
+                                  <span class="text-sm font-medium dark:text-white">{{full.total_weight}} kg</span>
+                                </div>
+                              </ng-container>
+                              <ng-container *ngIf="full.total_volume">
+                                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                                  <span class="text-sm text-gray-500">Total Volume</span>
+                                  <span class="text-sm font-medium dark:text-white">{{full.total_volume}} m³</span>
+                                </div>
+                              </ng-container>
+                              <ng-container *ngIf="full.product_value">
+                                <div class="flex justify-between">
+                                  <span class="text-sm text-gray-500">Total Cost</span>
+                                  <span class="text-sm font-medium dark:text-white">{{full.currency}} {{full.product_value}}</span>
+                                </div>
+                              </ng-container>
+                            </div>
+                          </div>
+
+                          <ng-container *ngIf="full.description">
+                            <div>
+                              <h2 class="text-base font-semibold text-orange-500 mb-2">Description</h2>
+                              <p class="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-[#111] rounded-xl p-4">{{full.description}}</p>
+                            </div>
+                          </ng-container>
+
+                          <ng-container *ngIf="full.supplier_name">
+                            <div>
+                              <h2 class="text-base font-semibold text-orange-500 mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-building"></i> Supplier Information
+                              </h2>
+                              <div class="bg-orange-50 dark:bg-[#111] rounded-xl p-4 space-y-3">
+                                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                                  <span class="text-sm text-gray-500">Supplier Name</span>
+                                  <span class="text-sm font-medium dark:text-white">{{full.supplier_name}}</span>
+                                </div>
+                                <ng-container *ngIf="full.supplier_contact_person">
+                                  <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                                    <span class="text-sm text-gray-500">Contact Person</span>
+                                    <span class="text-sm font-medium dark:text-white">{{full.supplier_contact_person}}</span>
+                                  </div>
+                                </ng-container>
+                                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                                  <span class="text-sm text-gray-500">Phone</span>
+                                  <span class="text-sm font-medium dark:text-white">{{full.supplier_phone}}</span>
+                                </div>
+                                <ng-container *ngIf="full.supplier_pickup_address">
+                                  <div class="flex justify-between">
+                                    <span class="text-sm text-gray-500">Pickup Address</span>
+                                    <span class="text-sm font-medium dark:text-white text-right">{{full.supplier_pickup_address}}</span>
+                                  </div>
+                                </ng-container>
+                              </div>
+                            </div>
+                          </ng-container>
+
+                          <ng-container *ngIf="full.photos && full.photos.length > 0">
+                            <div>
+                              <h2 class="text-base font-semibold text-orange-500 mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-images"></i> Photos ({{full.photos.length}})
+                              </h2>
+                              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                <div *ngFor="let photo of full.photos" class="aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-[#111]">
+                                  <img [src]="photo" class="w-full h-full object-cover" alt="Product photo" />
+                                </div>
+                              </div>
+                            </div>
+                          </ng-container>
+
+                          <ng-container *ngIf="full.qr_data">
+                            <div>
+                              <h2 class="text-base font-semibold text-orange-500 mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-qrcode"></i> QR Code
+                              </h2>
+                              <div class="bg-orange-50 dark:bg-[#111] rounded-xl p-6">
+                                <!-- QR Code Display -->
+                                <div class="flex justify-center mb-4">
+                                  <div class="bg-white p-4 rounded-xl inline-block">
+                                    <qrcode
+                                      [qrdata]="full.qr_data"
+                                      [width]="200"
+                                      [errorCorrectionLevel]="'M'"
+                                    ></qrcode>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </ng-container>
+
+                          <div class="text-xs text-gray-400 text-center pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <ng-container *ngIf="full.created_at">
+                              Generated on {{formatDate(full.created_at)}}
+                            </ng-container>
+                            <ng-container *ngIf="full.updated_at && full.updated_at !== full.created_at">
+                              &nbsp;&middot;&nbsp;Updated on {{formatDate(full.updated_at)}}
+                            </ng-container>
+                          </div>
+                        </ng-container>
+                      </div>
+                    </ng-container>
+                  </div>
+                </ng-container>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- Packages -->
+          <ng-container *ngIf="s.packages && s.packages.length > 0">
+            <div>
+              <h2 class="text-base font-semibold text-orange-500 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-box-open"></i> Packages ({{s.packages.length}})
+              </h2>
+              <div class="space-y-3">
+                <ng-container *ngFor="let pkg of s.packages">
+                  <div class="bg-orange-50 dark:bg-[#111] rounded-xl p-4 space-y-2">
+                    <div class="flex justify-between">
+                      <span class="text-sm font-medium dark:text-white">{{pkg.name || 'Unnamed Package'}}</span>
+                    </div>
+                    <ng-container *ngIf="pkg.description">
+                      <p class="text-xs text-gray-500 dark:text-gray-400">{{pkg.description}}</p>
+                    </ng-container>
+                    <ng-container *ngIf="pkg.pickup_address">
+                      <div class="flex justify-between">
+                        <span class="text-xs text-gray-500">From</span>
+                        <span class="text-xs font-medium dark:text-white text-right">{{pkg.pickup_address}}</span>
+                      </div>
+                    </ng-container>
+                    <ng-container *ngIf="pkg.destination_address">
+                      <div class="flex justify-between">
+                        <span class="text-xs text-gray-500">To</span>
+                        <span class="text-xs font-medium dark:text-white text-right">{{pkg.destination_address}}</span>
+                      </div>
+                    </ng-container>
+
+                    <ng-container *ngIf="pkg.package_type">
+                      <div class="flex justify-between">
+                        <span class="text-xs text-gray-500">Type</span>
+                        <span class="text-xs font-medium dark:text-white">{{pkg.package_type}}</span>
+                      </div>
+                    </ng-container>
+                    <ng-container *ngIf="pkg.total_value && +pkg.total_value > 0">
+                      <div class="flex justify-between">
+                        <span class="text-xs text-gray-500">Value</span>
+                        <span class="text-xs font-medium text-orange-500">{{pkg.currency}} {{pkg.total_value}}</span>
+                      </div>
+                    </ng-container>
+                    <ng-container *ngIf="pkg.photos && pkg.photos.length > 0">
+                      <div class="pt-2">
+                        <span class="text-xs text-gray-500 mb-1 block">Photos ({{pkg.photos.length}})</span>
+                        <div class="grid grid-cols-3 gap-2">
+                          <div *ngFor="let photo of pkg.photos" class="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-[#111]">
+                            <img [src]="photo" class="w-full h-full object-cover" alt="Package photo" />
+                          </div>
+                        </div>
+                      </div>
+                    </ng-container>
+
+                    <ng-container *ngIf="pkg.created_at">
+                      <div class="flex justify-between pt-1 border-t border-gray-200 dark:border-gray-700">
+                        <span class="text-xs text-gray-500">Created</span>
+                        <span class="text-xs font-medium dark:text-white">{{formatDate(pkg.created_at)}}</span>
+                      </div>
+                    </ng-container>
+                    <ng-container *ngIf="pkg.updated_at">
+                      <div class="flex justify-between">
+                        <span class="text-xs text-gray-500">Updated</span>
+                        <span class="text-xs font-medium dark:text-white">{{formatDate(pkg.updated_at)}}</span>
+                      </div>
+                    </ng-container>
+                  </div>
+                </ng-container>
+              </div>
+            </div>
+          </ng-container>
+
+        </div>
+      </ng-container>
+    </div>
+  </div>
+}
