@@ -212,14 +212,7 @@
                             View
                         </button>
 
-                        <!-- Track Button (only for My Shippings tab and normal users) -->
-                        <button 
-                            *ngIf="!isAgent() || activeTab() === 'my_shippings'"
-                            (click)="trackShipment(shipment)"
-                            class="text-orange-500 text-sm hover:underline font-medium self-center">
-                            Track Shipment
-                        </button>
-
+                        
                         <!-- Agent Action Buttons -->
                         <ng-container *ngIf="isAgent() && activeTab() !== 'my_shippings'">
                             <!-- Confirm Button (for pending shipments) -->
