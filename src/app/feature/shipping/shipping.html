@@ -6,57 +6,250 @@
         <div class="bg-[#f5f5f5] dark:bg-[#0a0a0a] rounded-2xl">
 
             <!-- HEADER -->
-            <div class="flex items-center gap-3 mb-6">
+            <div class="flex items-center justify-between mb-6">
+
+                <div class="flex items-center gap-3">
+                    <button 
+                        (click)="goBack()"
+                        class="w-8 h-8 rounded-full bg-white/10 dark:bg-[#333] flex items-center justify-center shadow hover:scale-110 transition"
+                    >
+                        <i class="fa-solid fa-arrow-left text-orange-500"></i>
+                    </button>
+
+                    <h1 class="text-lg sm:text-xl font-bold dark:text-white">
+                        <ng-container *ngIf="isAgent(); else userTitle">Agent Dashboard</ng-container>
+                        <ng-template #userTitle>My Shipping</ng-template>
+                    </h1>
+                </div>
 
                 <button 
-                    (click)="goBack()"
-                    class="w-8 h-8 rounded-full bg-white/10 dark:bg-[#333] flex items-center justify-center shadow hover:scale-110 transition"
+                    (click)="refreshShipments()"
+                    [disabled]="loading()"
+                    class="px-3 py-1 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2"
                 >
-                    <i class="fa-solid fa-arrow-left text-orange-500"></i>
+                    <div *ngIf="loading()" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                    Refresh
                 </button>
-
-                <h1 class="text-lg sm:text-xl font-bold dark:text-white">
-                    My Shipping
-                </h1>
 
             </div>
 
-            <!-- LIST -->
-            <div class="flex flex-col gap-4">
+            <!-- AGENT TABS -->
+            <div *ngIf="isAgent()" class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm mb-6">
+                <div class="flex overflow-x-auto scrollbar-hide">
+                    <button 
+                        *ngFor="let tab of agentTabs"
+                        (click)="switchTab(tab.id)"
+                        class="flex-1 min-w-[140px] px-3 py-3 text-sm font-medium border-b-2 transition-colors duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
+                        [class]="activeTab() === tab.id ? 
+                            'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20' : 
+                            'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#333]'"
+                    >
+                        <i class="fa-solid {{tab.icon}}"></i>
+                        <span class="hidden sm:inline">{{tab.label}}</span>
+                        <span class="sm:hidden">
+                            <ng-container [ngSwitch]="tab.id">
+                                <ng-container *ngSwitchCase="'my_shippings'">My Shippings</ng-container>
+                                <ng-container *ngSwitchCase="'in_transit'">In Transit</ng-container>
+                                <ng-container *ngSwitchDefault>{{tab.label.split(' ')[0]}}</ng-container>
+                            </ng-container>
+                        </span>
+                    </button>
+                </div>
+            </div>
 
-                <div *ngFor="let item of shipments"
-                     class="bg-gray-200 dark:bg-[#333] rounded-xl p-4 hover:scale-[1.01] transition">
+            <!-- LOADING STATE -->
+            <div *ngIf="loading()" class="text-center py-20">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                <p class="mt-4 text-gray-600 dark:text-gray-400">Loading your shipments...</p>
+            </div>
+
+            <!-- ERROR STATE -->
+            <div *ngIf="error() && !loading()" class="text-center py-20">
+                <i class="fa-solid fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+                <p class="text-red-500 mb-4">{{error()}}</p>
+                <button (click)="refreshShipments()" class="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition">
+                    Try Again
+                </button>
+            </div>
+
+            <!-- EMPTY STATE -->
+            <div *ngIf="!loading() && !error() && shipments().length === 0" class="text-center py-20">
+                <i class="fa-solid fa-box text-4xl text-gray-400 mb-4"></i>
+                <h3 class="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">No Shipments Found</h3>
+                <p class="text-gray-500 dark:text-gray-500 mb-6">
+                    <ng-container *ngIf="isAgent(); else userEmpty">
+                        <ng-container [ngSwitch]="activeTab()">
+                            <ng-container *ngSwitchCase="'pending_confirmation'">No shipment requests waiting for confirmation.</ng-container>
+                            <ng-container *ngSwitchCase="'confirmed'">No confirmed shipments at the moment.</ng-container>
+                            <ng-container *ngSwitchCase="'in_transit'">No shipments currently in transit.</ng-container>
+                            <ng-container *ngSwitchCase="'delivered'">No delivered shipments yet.</ng-container>
+                            <ng-container *ngSwitchCase="'my_shippings'">No shipments booked to other agents.</ng-container>
+                            <ng-container *ngSwitchCase="'cancelled'">No cancelled or rejected shipments found.</ng-container>
+                            <ng-container *ngSwitchDefault>No shipments found.</ng-container>
+                        </ng-container>
+                    </ng-container>
+                    <ng-template #userEmpty>You haven't booked any shipments yet.</ng-template>
+                </p>
+                <a *ngIf="!isAgent()" href="/agents" class="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition inline-block">
+                    Find Agents
+                </a>
+            </div>
+
+            <!-- SHIPMENTS LIST -->
+            <div *ngIf="!loading() && !error() && shipments().length > 0" class="flex flex-col gap-4">
+
+                <div *ngFor="let shipment of shipments()"
+                     class="bg-white dark:bg-[#1a1a1a] rounded-xl p-4 hover:scale-[1.01] transition shadow-sm">
 
                     <!-- TOP -->
-                    <div class="flex justify-between items-center mb-2">
+                    <div class="flex justify-between items-center mb-3">
 
-                        <h3 class="font-semibold dark:text-white text-sm sm:text-base">
-                            {{item.title}}
-                        </h3>
+                        <div class="flex-1">
+                            <h3 class="font-semibold dark:text-white text-sm sm:text-base mb-1">
+                                {{shipment.title || 'Untitled Shipment'}}
+                            </h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                Tracking: {{shipment.tracking_number}}
+                            </p>
+                        </div>
 
                         <!-- STATUS BADGE -->
                         <span 
-                          class="text-xs px-3 py-1 rounded-full"
-                          [ngClass]="getStatusClass(item.status)">
-                          {{item.status}}
+                          class="text-xs px-3 py-1 rounded-full whitespace-nowrap"
+                          [ngClass]="getStatusClass(shipment.status)">
+                          {{formatStatus(shipment.status)}}
                         </span>
 
                     </div>
 
                     <!-- DETAILS -->
-                    <div class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 space-y-1">
+                    <div class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 space-y-1 mb-3">
 
-                        <p><strong>From:</strong> {{item.from}}</p>
-                        <p><strong>To:</strong> {{item.to}}</p>
-                        <p><strong>Price:</strong> <span class="text-orange-500">{{item.price}}</span></p>
+                        <ng-container *ngIf="isAgent(); else userDetails">
+                            <ng-container [ngSwitch]="activeTab()">
+                                <ng-container *ngSwitchCase="'my_shippings'">
+                                    <p *ngIf="shipment.agent"><strong>Agent:</strong> {{shipment.agent.firstname}} {{shipment.agent.lastname}}</p>
+                                </ng-container>
+                                <ng-container *ngSwitchDefault>
+                                    <p><strong>Customer:</strong> {{shipment.user?.firstname}} {{shipment.user?.lastname}}</p>
+                                </ng-container>
+                            </ng-container>
+                        </ng-container>
+                        <ng-template #userDetails>
+                            <p *ngIf="shipment.agent"><strong>Agent:</strong> {{shipment.agent.firstname}} {{shipment.agent.lastname}}</p>
+                        </ng-template>
+                        
+                        <p><strong>From:</strong> {{shipment.pickup_address}}</p>
+                        <p><strong>To:</strong> {{shipment.destination_address}}</p>
+                        <p><strong>Price:</strong> <span class="text-orange-500">${{shipment.estimated_price}}</span></p>
+                        <p *ngIf="isAgent() && shipment.user && shipment.user.phone"><strong>Phone:</strong> {{shipment.user.phone}}</p>
 
                     </div>
 
-                    <!-- ACTION -->
-                    <div class="mt-3 flex justify-end">
-                        <button class="text-orange-500 text-sm hover:underline">
-                            Track
+                    <!-- ADDITIONAL INFO -->
+                    <div *ngIf="shipment.status === 'pending_confirmation'" class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-3">
+                        <p class="text-xs text-yellow-800 dark:text-yellow-200">
+                            <ng-container *ngIf="isAgent(); else userPending">
+                                <ng-container [ngSwitch]="activeTab()">
+                                    <ng-container *ngSwitchCase="'my_shippings'">
+                                        <i class="fa-solid fa-clock mr-1"></i>
+                                        Waiting for agent confirmation. You'll receive an email when confirmed.
+                                    </ng-container>
+                                    <ng-container *ngSwitchDefault>
+                                        <i class="fa-solid fa-clock mr-1"></i>
+                                        Customer is waiting for your confirmation. Please review and confirm this shipment.
+                                    </ng-container>
+                                </ng-container>
+                            </ng-container>
+                            <ng-template #userPending>
+                                <i class="fa-solid fa-clock mr-1"></i>
+                                Waiting for agent confirmation. You'll receive an email when confirmed.
+                            </ng-template>
+                        </p>
+                    </div>
+
+                    <!-- ACTION BUTTONS -->
+                    <div class="mt-3 flex flex-wrap gap-2 justify-end">
+                        
+                        <!-- Track Button (only for My Shippings tab and normal users) -->
+                        <button 
+                            *ngIf="!isAgent() || activeTab() === 'my_shippings'"
+                            (click)="trackShipment(shipment)"
+                            class="text-orange-500 text-sm hover:underline font-medium">
+                            Track Shipment
                         </button>
+
+                        <!-- Agent Action Buttons -->
+                        <ng-container *ngIf="isAgent() && activeTab() !== 'my_shippings'">
+                            <!-- Confirm Button (for pending shipments) -->
+                            <button 
+                                *ngIf="canConfirm(shipment)"
+                                (click)="confirmShipmentAction(shipment)"
+                                [disabled]="isUpdating(shipment.id)"
+                                class="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
+                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                                <i class="fa-solid fa-check"></i>
+                                Confirm
+                            </button>
+
+                            <!-- Reject Button (for pending shipments) -->
+                            <button 
+                                *ngIf="canConfirm(shipment)"
+                                (click)="rejectShipmentAction(shipment)"
+                                [disabled]="isUpdating(shipment.id)"
+                                class="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
+                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                                <i class="fa-solid fa-times"></i>
+                                Reject
+                            </button>
+
+                            <!-- Mark as In Transit Button (for confirmed shipments) -->
+                            <button 
+                                *ngIf="canMarkInTransit(shipment)"
+                                (click)="markAsInTransitAction(shipment)"
+                                [disabled]="isUpdating(shipment.id)"
+                                class="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
+                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                                <i class="fa-solid fa-truck"></i>
+                                In Transit
+                            </button>
+
+                            <!-- Cancel Button (for confirmed/in-transit shipments) -->
+                            <button 
+                                *ngIf="canCancel(shipment) && !canConfirm(shipment)"
+                                (click)="cancelShipmentAction(shipment)"
+                                [disabled]="isUpdating(shipment.id)"
+                                class="px-4 py-2 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
+                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                                <i class="fa-solid fa-times"></i>
+                                Cancel
+                            </button>
+
+                            <!-- Mark as Delivered Button (for in-transit shipments) -->
+                            <button 
+                                *ngIf="canMarkDelivered(shipment)"
+                                (click)="markAsDeliveredAction(shipment)"
+                                [disabled]="isUpdating(shipment.id)"
+                                class="px-4 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
+                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                                <i class="fa-solid fa-check-double"></i>
+                                Delivered
+                            </button>
+                        </ng-container>
+
+                        <!-- Customer Action Buttons -->
+                        <ng-container *ngIf="!isAgent()">
+                            <!-- Cancel Button (for pending/confirmed/in-transit shipments) -->
+                            <button 
+                                *ngIf="canCancel(shipment)"
+                                (click)="cancelShipmentAction(shipment)"
+                                [disabled]="isUpdating(shipment.id)"
+                                class="px-4 py-2 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
+                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                                <i class="fa-solid fa-times"></i>
+                                Cancel
+                            </button>
+                        </ng-container>
                     </div>
 
                 </div>

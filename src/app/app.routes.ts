@@ -20,6 +20,7 @@ import { QrView } from './feature/qr-view/qr-view';
 import { MyProducts } from './feature/my-products/my-products';
 import { PackageGenerator } from './feature/package-generator/package-generator';
 import { PackageView } from './feature/package-view/package-view';
+import { BookShipment } from './feature/book-shipment/book-shipment';
 import { Home } from './feature/home/home';
 import { AdminGuard } from './core/guards/admin.guard';
 import { AdminLayout } from './feature/admin/layout/layout';
@@ -33,6 +34,8 @@ import { AdminMessages } from './feature/admin/messages/messages';
 import { AdminLogs } from './feature/admin/logs/logs';
 import { AdminSettings } from './feature/admin/settings/settings';
 import { AdminAccount } from './feature/admin/account/account';
+import { AgentShipping } from './feature/agent-shipping/agent-shipping';
+import { AgentGuard } from './core/guards/agent.guard';
 
 
 export const routes: Routes = [
@@ -57,6 +60,7 @@ export const routes: Routes = [
   { path: 'qr/:uuid', component: QrView },
   { path: 'package-generator', component: PackageGenerator },
   { path: 'package/:uuid', component: PackageView },
+  { path: 'book-shipment/:agentId', component: BookShipment },
   { path: 'account/my-products', component: MyProducts },
 
   // Admin Routes

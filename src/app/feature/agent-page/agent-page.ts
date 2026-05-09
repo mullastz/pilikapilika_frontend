@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Footer } from '../../shared/footer/footer';
 import { AgentService } from '../../core/services/agent.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Agent } from '../../core/interfaces/auth.interface';
 import { ToastService } from '../../core/services/toast.service';
 
@@ -31,6 +32,7 @@ export class AgentPage implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private agentService: AgentService,
+    private authService: AuthService,
     private toastService: ToastService,
     private cdr: ChangeDetectorRef
   ) {}
@@ -103,5 +105,25 @@ export class AgentPage implements OnInit {
         name: this.getFullName()
       }
     });
+  }
+
+  bookShipment(): void {
+    if (!this.agent) {
+      this.toastService.error('Agent information not available');
+      return;
+    }
+
+    // Check if user is authenticated
+    if (!this.authService.isAuthenticated()) {
+      this.toastService.error('Please login to book a shipment');
+      this.router.navigate(['/sign-in'], { 
+        queryParams: { returnUrl: this.router.url } 
+      });
+      return;
+    }
+
+    // Navigate to book shipment page with agent ID
+    const agentId = this.agent.uuid || this.agent.id.toString();
+    this.router.navigate(['/book-shipment', agentId]);
   }
 }
