@@ -152,19 +152,19 @@
 
       <!-- RIGHT SIDE - Sign In Form -->
       <div class="w-1/2 bg-white dark:bg-[#0a0a0a] flex flex-col">
-        <div class="flex-1 px-14 xl:px-20 py-5 overflow-y-auto">
+        <div class="flex-1 px-14 xl:px-20 py-3 overflow-hidden">
           <!-- Logo -->
-          <div class="mb-10">
-            <h1 class="text-4xl font-lobster font-bold text-[#FF7800]">Pilika Pilika</h1>
+          <div class="mb-3">
+            <h1 class="text-3xl font-lobster font-bold text-[#FF7800]">Pilika Pilika</h1>
           </div>
 
           <!-- Heading -->
-          <h2 class="text-3xl font-semibold text-gray-900 dark:text-white mb-12">
+          <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-8">
             Hello, welcome back!
           </h2>
 
           <!-- Sign In Form -->
-          <form [formGroup]="signInForm" (ngSubmit)="onSubmit()" class="space-y-6">
+          <form [formGroup]="signInForm" (ngSubmit)="onSubmit()" class="space-y-5">
 
             <!-- Email or Username -->
             <div class="relative">
@@ -172,7 +172,7 @@
               <div class="relative">
                 <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
                 <input formControlName="login" type="text"
-                       class="w-full pl-12 pr-4 py-4 bg-gray-100 dark:bg-gray-800 dark:text-white border border-gray-300 dark:border-gray-700 rounded-xl focus:border-[#FF7800] outline-none transition-all"
+                       class="w-full pl-12 pr-4 py-3 bg-gray-100 dark:bg-gray-800 dark:text-white border border-gray-300 dark:border-gray-700 rounded-xl focus:border-[#FF7800] outline-none transition-all"
                        placeholder="you@example.com or username" />
               </div>
               @if (f['login'].touched && f['login'].hasError('required')) {
@@ -186,7 +186,7 @@
               <div class="relative">
                 <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800] dark:text-[#FF7800]"></i>
                 <input [type]="showPassword() ? 'text' : 'password'" formControlName="password"
-                       class="w-full pl-12 pr-12 py-4 bg-gray-100 dark:bg-gray-800 dark:text-white border border-gray-300 dark:border-gray-700 rounded-xl focus:border-[#FF7800] outline-none transition-all"
+                       class="w-full pl-12 pr-12 py-3 bg-gray-100 dark:bg-gray-800 dark:text-white border border-gray-300 dark:border-gray-700 rounded-xl focus:border-[#FF7800] outline-none transition-all"
                        placeholder="••••••••" />
                 <button type="button" (click)="togglePasswordVisibility()"
                         class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
@@ -209,7 +209,7 @@
             <!-- Sign In Button -->
             <button type="submit"
                     [disabled]="signInForm.invalid || isLoading()"
-                    class="w-full py-2.5 bg-[#FF7800] text-white font-semibold rounded-full mt-10 hover:bg-orange-600 transition-all disabled:opacity-70">
+                    class="w-full py-2.5 bg-[#FF7800] text-white font-semibold rounded-full mt-3 hover:bg-orange-600 transition-all disabled:opacity-70">
               <span *ngIf="!isLoading()">Sign In</span>
               <span *ngIf="isLoading()">Signing in...</span>
             </button>
