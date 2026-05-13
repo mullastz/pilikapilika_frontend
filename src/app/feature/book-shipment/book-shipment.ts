@@ -316,4 +316,10 @@ export class BookShipment implements OnInit {
   goBack(): void {
     this.router.navigate(['/agent/' + this.agentId()]);
   }
+
+  formatPrice(value: number | null | undefined, currency: string | null | undefined): string {
+    if (value === null || value === undefined) return 'Contact';
+    const cur = currency || 'TZS';
+    return `${cur} ${value.toLocaleString('en-US')}`;
+  }
 }

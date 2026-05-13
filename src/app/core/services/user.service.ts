@@ -31,6 +31,12 @@ export class UserService {
     return this.api.put<UpdateProfileResponse>('me', data);
   }
 
+  uploadProfilePhoto(file: File): Observable<{ data: User; profile_photo_url: string; message: string }> {
+    const formData = new FormData();
+    formData.append('photo', file);
+    return this.api.postFormData<{ data: User; profile_photo_url: string; message: string }>('me/photo', formData);
+  }
+
   updateUserById(id: number, data: UpdateProfileRequest): Observable<UpdateProfileResponse> {
     return this.api.put<UpdateProfileResponse>(`users/${id}`, data);
   }

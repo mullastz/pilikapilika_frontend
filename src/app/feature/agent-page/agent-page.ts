@@ -42,7 +42,7 @@ export class AgentPage implements OnInit {
     const id = this.route.snapshot.paramMap.get('id');
     console.log('Agent ID from route:', id);
     if (id) {
-      this.loadAgent(+id);
+      this.loadAgent(id);
     } else {
       this.error = 'No agent ID provided';
       this.isLoading = false;
@@ -50,31 +50,71 @@ export class AgentPage implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['-1']);
+    window.history.back();
   }
 
-  loadAgent(id: number): void {
+  loadAgent(id: string): void {
     console.log('Loading agent:', id);
     this.isLoading = true;
-    this.agentService.getPublicAgentProfile(id).subscribe({
-      next: (agent: Agent) => {
-        console.log('Agent loaded successfully:', agent);
-        this.agent = agent;
+
+    // UUID contains hyphens; numeric IDs do not
+    const isUuid = id.includes('-');
+
+    if (isUuid) {
+      // Use the public endpoint which already supports UUID lookup
+      this.agentService.getPublicAgentProfile(id as any).subscribe({
+        next: (agent: Agent) => {
+          console.log('Agent loaded successfully:', agent);
+          this.agent = agent;
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        },
+        error: (err: any) => {
+          console.error('Error loading agent:', err);
+          this.error = err.error?.message || 'Failed to load agent profile';
+          this.toastService.error(this.error || 'Failed to load agent profile');
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      const numericId = parseInt(id, 10);
+      if (isNaN(numericId)) {
+        this.error = 'Invalid agent ID';
         this.isLoading = false;
-        this.cdr.detectChanges(); // Trigger change detection
-      },
-      error: (err: any) => {
-        console.error('Error loading agent:', err);
-        this.error = err.error?.message || 'Failed to load agent profile';
-        this.toastService.error(this.error || 'Failed to load agent profile');
-        this.isLoading = false;
-        this.cdr.detectChanges(); // Trigger change detection
+        return;
       }
-    });
+      this.agentService.getPublicAgentProfile(numericId).subscribe({
+        next: (agent: Agent) => {
+          console.log('Agent loaded successfully:', agent);
+          this.agent = agent;
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        },
+        error: (err: any) => {
+          console.error('Error loading agent:', err);
+          this.error = err.error?.message || 'Failed to load agent profile';
+          this.toastService.error(this.error || 'Failed to load agent profile');
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        }
+      });
+    }
   }
 
   getTransportIcon(method: string): string {
     return this.transportIcons[method] || 'fa-solid fa-truck';
+  }
+
+  formatWithCommas(value: number | null | undefined): string {
+    if (value === null || value === undefined) return '';
+    return value.toLocaleString('en-US');
+  }
+
+  formatPrice(value: number | null | undefined, currency: string | null | undefined): string {
+    if (value === null || value === undefined) return 'Contact';
+    const cur = currency || 'TZS';
+    return `${cur} ${this.formatWithCommas(value)}`;
   }
 
   getFullName(): string {

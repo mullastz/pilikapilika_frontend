@@ -25,6 +25,12 @@ export class ApiService {
     );
   }
 
+  postFormData<T>(endpoint: string, formData: FormData): Observable<T> {
+    return this.http.post<T>(`${this.baseUrl}/${endpoint}`, formData).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   put<T>(endpoint: string, data: unknown): Observable<T> {
     return this.http.put<T>(`${this.baseUrl}/${endpoint}`, data).pipe(
       catchError(this.handleError)

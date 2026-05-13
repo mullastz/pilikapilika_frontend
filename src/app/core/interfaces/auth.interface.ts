@@ -79,6 +79,7 @@ export interface User {
   district: string | null;
   ward: string | null;
   address: string | null;
+  profile_photo: string | null;
   role: string;
   is_email_verified: boolean;
   is_agent_verified: boolean;
@@ -96,6 +97,7 @@ export interface AgentProfile {
   user_id?: number;
   availability_status: 'available' | 'busy' | 'offline';
   base_price: number | null;
+  currency: string;
   price_per_km: number | null;
   max_delivery_distance: number | null;
   avg_delivery_time: string | null;
@@ -118,6 +120,7 @@ export interface AgentProfile {
 export interface Agent extends User {
   availability_status: 'available' | 'busy' | 'offline';
   base_price: number | null;
+  currency: string;
   price_per_km: number | null;
   max_delivery_distance: number | null;
   avg_delivery_time: string | null;
@@ -177,6 +180,7 @@ export interface UpdateProfileResponse {
 export interface UpdateAgentProfileRequest {
   availability_status?: 'available' | 'busy' | 'offline';
   base_price?: number;
+  currency?: string;
   price_per_km?: number | null;
   max_delivery_distance?: number | null;
   avg_delivery_time?: string | null;

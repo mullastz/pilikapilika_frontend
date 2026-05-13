@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -14,12 +14,21 @@ import { User, UpdateProfileRequest, UpdateProfileResponse } from '../../core/in
   styleUrl: './manage-account.css',
 })
 export class ManageAccount implements OnInit {
+  @ViewChild('photoInput') photoInput!: ElementRef<HTMLInputElement>;
+
   profileForm: FormGroup;
   user: User | null = null;
   isLoading = false;
   isSaving = false;
   passwordChangeRequested = false;
   isRequestingPasswordChange = false;
+
+  // Photo upload state
+  photoPreview: string | null = null;
+  selectedPhotoFile: File | null = null;
+  isUploadingPhoto = false;
+
+  readonly FALLBACK_PHOTO = 'assets/landingpage_images/profile1.webp';
 
   genderOptions = ['Male', 'Female', 'Other'];
 
@@ -42,7 +51,6 @@ export class ManageAccount implements OnInit {
       ward: ['', Validators.maxLength(255)],
       address: ['', Validators.maxLength(500)],
     });
-
   }
 
   ngOnInit(): void {
@@ -68,7 +76,6 @@ export class ManageAccount implements OnInit {
           if (response.profile.is_complete) {
             this.authService.setProfileComplete();
           } else {
-            // If backend says incomplete, update local storage
             localStorage.setItem('profile_completion', JSON.stringify({
               is_complete: false,
               missing_fields: response.profile.missing_fields || []
@@ -101,6 +108,90 @@ export class ManageAccount implements OnInit {
     });
   }
 
+  // ── Photo handling ──────────────────────────────────────────────
+
+  get currentPhotoSrc(): string {
+    // Priority: local preview > server photo > fallback
+    return this.photoPreview ?? this.user?.profile_photo ?? this.FALLBACK_PHOTO;
+  }
+
+  triggerPhotoInput(): void {
+    this.photoInput.nativeElement.click();
+  }
+
+  onPhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) return;
+
+    // Validate type
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      this.toastService.error('Only JPEG, PNG, or WebP images are allowed.');
+      return;
+    }
+
+    // Validate size (2 MB)
+    if (file.size > 2 * 1024 * 1024) {
+      this.toastService.error('Image must be smaller than 2 MB.');
+      return;
+    }
+
+    this.selectedPhotoFile = file;
+
+    // Show local preview immediately
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.photoPreview = reader.result as string;
+      this.cdr.detectChanges();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  uploadPhoto(): void {
+    if (!this.selectedPhotoFile) return;
+
+    this.isUploadingPhoto = true;
+    this.cdr.detectChanges();
+
+    this.userService.uploadProfilePhoto(this.selectedPhotoFile).subscribe({
+      next: (response) => {
+        this.isUploadingPhoto = false;
+        this.user = response.data;
+        // Clear the local preview — the server URL is now in user.profile_photo
+        this.photoPreview = null;
+        this.selectedPhotoFile = null;
+        // Reset file input so the same file can be re-selected if needed
+        if (this.photoInput?.nativeElement) {
+          this.photoInput.nativeElement.value = '';
+        }
+        // Persist updated user to local storage
+        this.authService.saveUser(response.data);
+        this.toastService.success('Profile photo updated!');
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        this.isUploadingPhoto = false;
+        const msg = err.error?.message || 'Failed to upload photo. Please try again.';
+        this.toastService.error(msg);
+        this.cdr.detectChanges();
+        console.error('Photo upload error:', err);
+      }
+    });
+  }
+
+  cancelPhotoSelection(): void {
+    this.photoPreview = null;
+    this.selectedPhotoFile = null;
+    if (this.photoInput?.nativeElement) {
+      this.photoInput.nativeElement.value = '';
+    }
+    this.cdr.detectChanges();
+  }
+
+  // ── Form submit ─────────────────────────────────────────────────
+
   onSubmit(): void {
     if (this.profileForm.invalid) {
       this.profileForm.markAllAsTouched();
@@ -125,7 +216,6 @@ export class ManageAccount implements OnInit {
       next: (response) => {
         this.isSaving = false;
         this.user = response.data;
-        // Update profile completion status based on backend response
         if (response.profile?.is_complete) {
           this.authService.setProfileComplete();
         }
@@ -146,9 +236,6 @@ export class ManageAccount implements OnInit {
     this.location.back();
   }
 
-  /**
-   * Request password change via secure link
-   */
   requestPasswordChange(): void {
     if (!this.user?.email) {
       this.toastService.error('No email found. Please reload your profile.');
@@ -159,7 +246,7 @@ export class ManageAccount implements OnInit {
     this.cdr.detectChanges();
 
     this.authService.forgotPassword(this.user.email).subscribe({
-      next: (response) => {
+      next: () => {
         this.isRequestingPasswordChange = false;
         this.passwordChangeRequested = true;
         this.toastService.success('Password reset email sent! Check your inbox.');

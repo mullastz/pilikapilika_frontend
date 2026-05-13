@@ -33,7 +33,7 @@
           </div>
           <div>
             <p class="font-medium dark:text-white">{{ agent()?.firstname }} {{ agent()?.lastname }}</p>
-            <p class="text-sm text-gray-500">Base Price: ${{ agent()?.base_price || 'Contact' }}</p>
+            <p class="text-sm text-gray-500">Base Price: {{ formatPrice(agent()?.base_price, agent()?.currency) }}</p>
           </div>
         </div>
       </div>
@@ -192,7 +192,7 @@
                 </div>
               </div>
               <div class="text-right">
-                <p class="text-sm font-medium text-orange-500">{{ product.currency }}{{ product.price }}</p>
+                <p class="text-sm font-medium text-orange-500">{{ formatPrice(product.price, product.currency) }}</p>
               </div>
             </div>
           </div>
