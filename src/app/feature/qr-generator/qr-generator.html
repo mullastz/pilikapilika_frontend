@@ -15,10 +15,11 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-      <!-- Form Section -->
+
+      <!-- ── Form Section ── -->
       <div class="lg:col-span-2 space-y-6">
 
-        <!-- PRODUCT DETAILS SECTION -->
+        <!-- PRODUCT DETAILS -->
         <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-6 sm:p-8">
           <h2 class="text-base font-semibold text-orange-500 mb-4 flex items-center gap-2">
             <i class="fa-solid fa-box"></i>
@@ -36,41 +37,6 @@
                 type="text"
                 [(ngModel)]="product.name"
                 placeholder="Enter product name..."
-                class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
-              />
-            </div>
-
-            <!-- Cost per Product -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Cost per Product <span class="text-red-500">*</span>
-              </label>
-              <div class="flex gap-2">
-                <select
-                  [(ngModel)]="product.currency"
-                  class="px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
-                >
-                  <option *ngFor="let cur of currencies" [value]="cur">{{cur}}</option>
-                </select>
-                <input
-                  type="text"
-                  [value]="formatWithCommas(product.cost)"
-                  (input)="onCostInput($event)"
-                  placeholder="e.g., 1500"
-                  class="flex-1 px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
-                />
-              </div>
-            </div>
-
-            <!-- Product ID -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Product ID
-              </label>
-              <input
-                type="text"
-                [(ngModel)]="product.productId"
-                placeholder="Auto-generated or enter custom ID"
                 class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
               />
             </div>
@@ -98,7 +64,7 @@
                 class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
               >
                 <option value="">Select Category</option>
-                <option *ngFor="let cat of categories" [value]="cat">{{cat}}</option>
+                <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
               </select>
             </div>
 
@@ -112,7 +78,7 @@
                 class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
               >
                 <option value="">Select Package Type</option>
-                <option *ngFor="let type of packageTypes" [value]="type">{{type}}</option>
+                <option *ngFor="let type of packageTypes" [value]="type">{{ type }}</option>
               </select>
             </div>
 
@@ -124,7 +90,6 @@
               <input
                 type="number"
                 [(ngModel)]="product.quantity"
-                (ngModelChange)="calculateTotalCost()"
                 min="1"
                 placeholder="Enter quantity"
                 class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
@@ -143,7 +108,7 @@
                   placeholder="e.g., 25"
                   class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition pr-12"
                 />
-                <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">kg</span>
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">kg</span>
               </div>
             </div>
 
@@ -159,137 +124,123 @@
                   placeholder="e.g., 0.5"
                   class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition pr-16"
                 />
-                <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">m³</span>
-              </div>
-            </div>
-
-            <!-- Product Value -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Total Cost
-              </label>
-              <div class="relative">
-                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">{{product.currency || '$'}}</span>
-                <input
-                  type="text"
-                  [value]="formatWithCommas(product.productValue)"
-                  (input)="onProductValueInput($event)"
-                  placeholder="e.g., 1500"
-                  class="w-full px-3 pl-12 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
-                />
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">m³</span>
               </div>
             </div>
 
           </div>
         </div>
 
-        <!-- SUPPLIER INFORMATION SECTION -->
+        <!-- ASSIGN AGENT -->
         <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-6 sm:p-8">
-          <h2 class="text-base font-semibold text-orange-500 mb-4 flex items-center gap-2">
-            <i class="fa-solid fa-building"></i>
-            Fill Product Supplier Information
+          <h2 class="text-base font-semibold text-orange-500 mb-1 flex items-center gap-2">
+            <i class="fa-solid fa-user-tie"></i>
+            Assign Agent
           </h2>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+            Optionally assign a verified agent to handle this product's delivery.
+          </p>
 
-          <div class="bg-orange-50 dark:bg-[#111] rounded-xl p-4 space-y-4">
+          <!-- Selected agent badge -->
+          <div *ngIf="selectedAgent" class="flex items-center gap-3 bg-orange-50 dark:bg-[#111] border border-orange-200 dark:border-orange-800 rounded-xl p-3 mb-3">
+            <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white flex-shrink-0">
+              <i class="fa-solid fa-user text-sm"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-sm dark:text-white truncate">
+                {{ selectedAgent.firstname }} {{ selectedAgent.lastname }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                {{ selectedAgent.district && selectedAgent.region ? (selectedAgent.district + ', ' + selectedAgent.region) : (selectedAgent.district || selectedAgent.region || '') }}
+                <ng-container *ngIf="selectedAgent.base_price">
+                  · {{ selectedAgent.currency || 'TZS' }} {{ formatWithCommas(selectedAgent.base_price) }}
+                </ng-container>
+              </p>
+            </div>
+            <button
+              type="button"
+              (click)="clearAgent()"
+              class="text-gray-400 hover:text-red-500 transition flex-shrink-0"
+              aria-label="Remove agent"
+            >
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
 
-            <!-- Supplier Name -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Supplier Name <span class="text-red-500">*</span>
-              </label>
+          <!-- Search input -->
+          <div *ngIf="!selectedAgent" class="relative">
+            <div class="relative">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
               <input
                 type="text"
-                [(ngModel)]="supplier.name"
-                placeholder="Enter supplier name"
-                class="w-full px-3 py-2 bg-white dark:bg-[#222] rounded-lg text-sm dark:text-white border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                [(ngModel)]="agentSearchQuery"
+                (focus)="onAgentSearchFocus()"
+                (blur)="onAgentSearchBlur()"
+                placeholder="Search agents by name or location..."
+                class="w-full pl-9 pr-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
               />
+              <span *ngIf="isLoadingAgents" class="absolute right-3 top-1/2 -translate-y-1/2">
+                <i class="fa-solid fa-circle-notch fa-spin text-orange-500 text-sm"></i>
+              </span>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <!-- Contact Person -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Contact Person
-                </label>
-                <input
-                  type="text"
-                  [(ngModel)]="supplier.contactPerson"
-                  placeholder="Enter contact person"
-                  class="w-full px-3 py-2 bg-white dark:bg-[#222] rounded-lg text-sm dark:text-white border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
-                />
+            <!-- Dropdown -->
+            <div
+              *ngIf="showAgentDropdown"
+              class="absolute z-20 w-full mt-1 bg-white dark:bg-[#222] rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 max-h-56 overflow-y-auto"
+            >
+              <div *ngIf="filteredAgents.length === 0" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                No verified agents found
               </div>
-
-              <!-- Phone -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Phone <span class="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  [(ngModel)]="supplier.phone"
-                  placeholder="Enter phone number"
-                  class="w-full px-3 py-2 bg-white dark:bg-[#222] rounded-lg text-sm dark:text-white border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
-                />
-              </div>
+              <button
+                *ngFor="let agent of filteredAgents"
+                type="button"
+                (mousedown)="selectAgent(agent)"
+                class="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 dark:hover:bg-[#333] transition text-left"
+              >
+                <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white flex-shrink-0">
+                  <i class="fa-solid fa-user text-xs"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium dark:text-white truncate">
+                    {{ agent.firstname }} {{ agent.lastname }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {{ getAgentLocation(agent) }}
+                    <ng-container *ngIf="agent.base_price">
+                      · {{ agent.currency || 'TZS' }} {{ formatWithCommas(agent.base_price) }}
+                    </ng-container>
+                  </p>
+                </div>
+                <i class="fa-solid fa-check-circle text-green-500 text-xs flex-shrink-0" title="Verified"></i>
+              </button>
             </div>
-
-            <!-- Pickup Address -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Pickup Address
-              </label>
-              <input
-                type="text"
-                [(ngModel)]="supplier.pickupAddress"
-                placeholder="Enter pickup address"
-                class="w-full px-3 py-2 bg-white dark:bg-[#222] rounded-lg text-sm dark:text-white border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
-              />
-            </div>
-
           </div>
         </div>
 
-        <!-- PRODUCT PHOTOS SECTION -->
+        <!-- PRODUCT PHOTOS -->
         <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-6 sm:p-8">
           <h2 class="text-base font-semibold text-orange-500 mb-4 flex items-center gap-2">
             <i class="fa-solid fa-camera"></i>
             Upload Product Photos
           </h2>
 
-          <!-- Upload Area -->
           <div
             *ngIf="productPhotos.length < 12"
             class="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 text-center hover:border-orange-500 transition cursor-pointer mb-4"
             (click)="$any($event.target).querySelector('input')?.click()"
           >
             <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-3"></i>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
-              Click to upload product photos (bulk allowed)
-            </p>
-            <p class="text-xs text-gray-400">
-              Supports: JPG, PNG, WEBP (Max 5MB each) — {{productPhotos.length}} / 12 uploaded
-            </p>
-            <input
-              #fileInput
-              type="file"
-              accept="image/*"
-              multiple
-              (change)="onPhotoUpload($event)"
-              class="hidden"
-            />
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">Click to upload product photos (bulk allowed)</p>
+            <p class="text-xs text-gray-400">Supports: JPG, PNG, WEBP (Max 5MB each) — {{ productPhotos.length }} / 12 uploaded</p>
+            <input #fileInput type="file" accept="image/*" multiple (change)="onPhotoUpload($event)" class="hidden" />
           </div>
 
-          <p *ngIf="productPhotos.length >= 12" class="text-xs text-orange-500 text-center mb-4">
-            Maximum 12 photos reached.
-          </p>
+          <p *ngIf="productPhotos.length >= 12" class="text-xs text-orange-500 text-center mb-4">Maximum 12 photos reached.</p>
 
-          <!-- Photo Previews Grid -->
           <div *ngIf="productPhotos.length > 0" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
             <div *ngFor="let photo of productPhotos; let i = index" class="relative group">
-              <img
-                [src]="photo.preview"
-                class="w-full h-24 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
-              />
+              <img [src]="photo.preview" class="w-full h-24 object-cover rounded-lg border border-gray-200 dark:border-gray-700" />
               <button
                 (click)="removePhoto(i)"
                 class="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
@@ -299,23 +250,17 @@
             </div>
           </div>
 
-          <!-- Clear All -->
           <div *ngIf="productPhotos.length > 0" class="mt-3 text-right">
-            <button
-              (click)="clearAllPhotos()"
-              class="text-xs text-red-500 hover:text-red-600 underline"
-            >
-              Clear all photos
-            </button>
+            <button (click)="clearAllPhotos()" class="text-xs text-red-500 hover:text-red-600 underline">Clear all photos</button>
           </div>
         </div>
 
-        <!-- Error Message -->
+        <!-- Error -->
         <div *ngIf="errorMessage" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p class="text-sm text-red-600 dark:text-red-400">{{errorMessage}}</p>
+          <p class="text-sm text-red-600 dark:text-red-400">{{ errorMessage }}</p>
         </div>
 
-        <!-- GENERATE/UPDATE BUTTON -->
+        <!-- Generate / Update button -->
         <div *ngIf="!generatedQR || isEditMode" class="pt-4">
           <button
             (click)="generateQR()"
@@ -327,11 +272,11 @@
             {{ isLoading ? (isEditMode ? 'Updating...' : 'Generating...') : (isEditMode ? 'Update QR Code' : 'Generate QR Code') }}
           </button>
           <p *ngIf="!isFormValid()" class="text-xs text-gray-500 text-center mt-2">
-            Please fill in all required fields (marked with *)
+            Please enter a product name to continue
           </p>
         </div>
 
-        <!-- CANCEL EDIT BUTTON -->
+        <!-- Cancel edit -->
         <div *ngIf="isEditMode" class="pt-2">
           <button
             (click)="goBack()"
@@ -341,38 +286,33 @@
             Cancel Edit
           </button>
         </div>
+
       </div>
 
-      <!-- QR Code Display -->
+      <!-- ── QR Code Panel ── -->
       <div class="lg:col-span-1">
-        <!-- QR Code Section (shown after generation) -->
+
+        <!-- Generated -->
         <div *ngIf="generatedQR" #qrCodeSection id="qrCodeSection" class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-6 sticky top-6">
-          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-            Product QR Code
-          </h3>
-          
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Product QR Code</h3>
+
           <div class="space-y-4">
-            <!-- QR Code -->
             <div class="flex justify-center">
               <div class="bg-white p-4 rounded-xl inline-block">
-                <qrcode
-                  [qrdata]="generatedQR"
-                  [width]="200"
-                  [errorCorrectionLevel]="'M'"
-                ></qrcode>
+                <qrcode [qrdata]="generatedQR" [width]="200" [errorCorrectionLevel]="'M'"></qrcode>
               </div>
             </div>
 
-            <!-- Product Info Summary -->
+            <!-- Summary -->
             <div class="bg-gray-50 dark:bg-[#111] rounded-xl p-4">
-              <p class="font-medium text-gray-900 dark:text-white mb-2">
-                {{ product.name }}
-              </p>
+              <p class="font-medium text-gray-900 dark:text-white mb-2">{{ product.name }}</p>
               <div class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-                <p>{{ product.currency }} {{ formatWithCommas(product.cost) }}</p>
-                @if (product.category && product.category !== '') {
-                  <p>{{ product.category }}</p>
-                }
+                <p *ngIf="product.category">{{ product.category }}</p>
+                <p *ngIf="product.quantity">Qty: {{ product.quantity }}</p>
+                <p *ngIf="selectedAgent" class="flex items-center gap-1 text-orange-500">
+                  <i class="fa-solid fa-user-tie text-xs"></i>
+                  {{ selectedAgent.firstname }} {{ selectedAgent.lastname }}
+                </p>
               </div>
             </div>
 
@@ -385,13 +325,13 @@
               >
                 @if (isDownloading) {
                   <i class="fa-solid fa-circle-notch fa-spin"></i>
-                  <span>Downloading...</span>
+                  <span>Generating PDF...</span>
                 } @else {
-                  <i class="fa-solid fa-download"></i>
-                  <span>Download QR</span>
+                  <i class="fa-solid fa-file-pdf"></i>
+                  <span>Download PDF</span>
                 }
               </button>
-              
+
               <button
                 (click)="shareQR()"
                 class="w-full py-3 bg-gray-200 dark:bg-[#222] text-gray-700 dark:text-white rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-[#333] transition flex items-center justify-center gap-2"
@@ -420,14 +360,11 @@
           </div>
         </div>
 
-        <!-- Placeholder Section (shown before generation) -->
+        <!-- Placeholder -->
         <div *ngIf="!generatedQR" class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-6 sticky top-6">
-          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-            Product QR Code Preview
-          </h3>
-          
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Product QR Code Preview</h3>
+
           <div class="space-y-4">
-            <!-- QR Code Placeholder -->
             <div class="flex justify-center">
               <div class="w-52 h-52 bg-gray-100 dark:bg-[#111] rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700">
                 <div class="text-center">
@@ -437,51 +374,38 @@
               </div>
             </div>
 
-            <!-- Product Info Preview -->
-            <div class="bg-gray-50 dark:bg-[#111] rounded-xl p-4">
-              <div class="flex items-center gap-2 mb-2">
+            <div class="bg-gray-50 dark:bg-[#111] rounded-xl p-4 space-y-2">
+              <div class="flex items-center gap-2">
                 <div class="w-4 h-4 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
-                <p class="font-medium text-gray-500 dark:text-gray-400">Product Name</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Product Name</p>
               </div>
-              <div class="text-sm text-gray-400 dark:text-gray-500 space-y-1">
-                <div class="flex items-center gap-2">
-                  <div class="w-3 h-3 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
-                  <p>Price will appear here</p>
-                </div>
-                <div class="flex items-center gap-2">
-                  <div class="w-3 h-3 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
-                  <p>Category will appear here</p>
-                </div>
+              <div class="flex items-center gap-2">
+                <div class="w-3 h-3 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+                <p class="text-xs text-gray-400 dark:text-gray-500">Category will appear here</p>
               </div>
             </div>
 
-            <!-- Preview Actions -->
             <div class="space-y-3">
               <div class="w-full py-3 bg-gray-100 dark:bg-[#222] text-gray-400 rounded-xl font-medium flex items-center justify-center gap-2 cursor-not-allowed">
-                <i class="fa-solid fa-download"></i>
-                Download QR
+                <i class="fa-solid fa-file-pdf"></i> Download PDF
               </div>
-              
               <div class="w-full py-3 bg-gray-100 dark:bg-[#222] text-gray-400 rounded-xl font-medium flex items-center justify-center gap-2 cursor-not-allowed">
-                <i class="fa-solid fa-share"></i>
-                Share
+                <i class="fa-solid fa-share"></i> Share
               </div>
-
               <div class="w-full py-3 bg-gray-100 dark:bg-[#222] text-gray-400 rounded-xl font-medium flex items-center justify-center gap-2 cursor-not-allowed">
-                <i class="fa-solid fa-paper-plane"></i>
-                Send to Agent
+                <i class="fa-solid fa-paper-plane"></i> Send to Agent
               </div>
             </div>
 
-            <!-- Instructions -->
             <div class="text-center pt-4 border-t border-gray-200 dark:border-gray-700">
-              <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+              <p class="text-sm text-gray-500 dark:text-gray-400">
                 <i class="fa-solid fa-info-circle mr-1"></i>
-                Fill in the form and click "Generate QR Code" to create your product QR code
+                Enter a product name and click "Generate QR Code"
               </p>
             </div>
           </div>
         </div>
+
       </div>
     </div>
   </div>

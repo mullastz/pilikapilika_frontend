@@ -4,27 +4,20 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { QrCodeService, QrCodeResponse } from '../../core/services/qr-code.service';
+import { AgentService } from '../../core/services/agent.service';
+import { AuthService } from '../../core/services/auth.service';
+import { Agent } from '../../core/interfaces/auth.interface';
 import { environment } from '../../../environments/environment';
+import jsPDF from 'jspdf';
 
 interface ProductDetails {
   name: string;
-  cost: string;
-  currency: string;
   description: string;
   category: string;
   packageType: string;
   quantity: number | null;
   totalWeight: string;
   totalVolume: string;
-  productValue: string;
-  productId: string;
-}
-
-interface SupplierInfo {
-  name: string;
-  contactPerson: string;
-  phone: string;
-  pickupAddress: string;
 }
 
 @Component({
@@ -42,37 +35,29 @@ export class QrGenerator implements OnInit {
     private location: Location,
     private router: Router,
     private qrCodeService: QrCodeService,
+    private agentService: AgentService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit() {
     this.checkEditMode();
+    this.loadAgents();
   }
 
   product: ProductDetails = {
     name: '',
-    cost: '',
-    currency: 'USD',
     description: '',
     category: '',
     packageType: '',
     quantity: null,
     totalWeight: '',
     totalVolume: '',
-    productValue: '',
-    productId: '',
-  };
-
-  supplier: SupplierInfo = {
-    name: '',
-    contactPerson: '',
-    phone: '',
-    pickupAddress: '',
   };
 
   productPhotos: { file: File; preview: string; isExisting?: boolean }[] = [];
-  removedExistingPhotos: string[] = []; // Track URLs of removed existing photos
+  removedExistingPhotos: string[] = [];
   generatedQR: string | null = null;
   showActions = false;
   isLoading = false;
@@ -82,76 +67,111 @@ export class QrGenerator implements OnInit {
   editUuid: string | null = null;
   isEditMode = false;
 
-  currencies = ['USD', 'TSH', 'EUR', 'GBP'];
+  // Agent assignment
+  agents: Agent[] = [];
+  agentSearchQuery = '';
+  showAgentDropdown = false;
+  selectedAgent: Agent | null = null;
+  isLoadingAgents = false;
 
   categories = [
-    'Electronics',
-    'Fashion',
-    'Home Appliances',
-    'Toys',
-    'Auto Parts',
-    'Beauty & Health',
-    'Sports',
-    'Books',
-    'Other',
+    'Electronics', 'Fashion', 'Home Appliances', 'Toys',
+    'Auto Parts', 'Beauty & Health', 'Sports', 'Books', 'Other',
   ];
 
-  packageTypes = [
-    'Box',
-    'Carton',
-    'Pallet',
-    'Envelope',
-    'Crate',
-    'Bag',
-    'Container',
-  ];
+  packageTypes = ['Box', 'Carton', 'Pallet', 'Envelope', 'Crate', 'Bag', 'Container'];
+
+  // ── Agent search ────────────────────────────────────────────────
+
+  get filteredAgents(): Agent[] {
+    const q = this.agentSearchQuery.toLowerCase().trim();
+    if (!q) return this.agents;
+    return this.agents.filter(a =>
+      `${a.firstname} ${a.lastname}`.toLowerCase().includes(q) ||
+      (a.region || '').toLowerCase().includes(q) ||
+      (a.district || '').toLowerCase().includes(q),
+    );
+  }
+
+  loadAgents(): void {
+    this.isLoadingAgents = true;
+    this.agentService.getAvailableAgents().subscribe({
+      next: (agents) => {
+        this.agents = agents;
+        this.isLoadingAgents = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isLoadingAgents = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  selectAgent(agent: Agent): void {
+    this.selectedAgent = agent;
+    this.agentSearchQuery = `${agent.firstname} ${agent.lastname}`;
+    this.showAgentDropdown = false;
+    this.cdr.detectChanges();
+  }
+
+  getAgentLocation(agent: Agent): string {
+    const parts = [agent.district, agent.region].filter(v => !!v);
+    return parts.length ? parts.join(', ') : 'Location not set';
+  }
+
+  clearAgent(): void {
+    this.selectedAgent = null;
+    this.agentSearchQuery = '';
+    this.cdr.detectChanges();
+  }
+
+  onAgentSearchFocus(): void {
+    this.showAgentDropdown = true;
+  }
+
+  onAgentSearchBlur(): void {
+    // Delay so click on dropdown item registers first
+    setTimeout(() => {
+      this.showAgentDropdown = false;
+      this.cdr.detectChanges();
+    }, 200);
+  }
+
+  // ── Photos ──────────────────────────────────────────────────────
 
   onPhotoUpload(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const remainingSlots = 12 - this.productPhotos.length;
       const filesToProcess = Math.min(input.files.length, remainingSlots);
-
       if (input.files.length > remainingSlots) {
         alert(`You can upload at most 12 images. Only the first ${filesToProcess} will be added.`);
       }
-
       for (let i = 0; i < filesToProcess; i++) {
         const file = input.files[i];
         if (!file.type.startsWith('image/')) continue;
-
         const reader = new FileReader();
         reader.onload = (e) => {
-          this.productPhotos.push({
-            file,
-            preview: e.target?.result as string,
-          });
+          this.productPhotos.push({ file, preview: e.target?.result as string });
           this.cdr.detectChanges();
         };
         reader.readAsDataURL(file);
       }
     }
-    // Reset input so the same file can be selected again
     input.value = '';
-    // Also reset the ViewChild reference to ensure change detection
-    if (this.fileInput) {
-      this.fileInput.nativeElement.value = '';
-    }
+    if (this.fileInput) this.fileInput.nativeElement.value = '';
   }
 
   removePhoto(index: number) {
     const photo = this.productPhotos[index];
-    if (photo.isExisting && photo.preview) {
-      // Add to removed existing photos list
-      this.removedExistingPhotos.push(photo.preview);
-    }
-    // Remove from display array
+    if (photo.isExisting && photo.preview) this.removedExistingPhotos.push(photo.preview);
     this.productPhotos.splice(index, 1);
   }
 
-  clearAllPhotos() {
-    this.productPhotos = [];
-  }
+  clearAllPhotos() { this.productPhotos = []; }
+
+  // ── QR generation ───────────────────────────────────────────────
 
   generateQR() {
     if (!this.isFormValid()) return;
@@ -160,307 +180,275 @@ export class QrGenerator implements OnInit {
 
     const formData = new FormData();
     formData.append('product_name', this.product.name.trim());
-    formData.append('product_cost', this.product.cost.trim());
-    formData.append('currency', this.product.currency);
 
-    if (this.product.description.trim()) {
-      formData.append('description', this.product.description.trim());
-    }
-    if (this.product.category) {
-      formData.append('category', this.product.category);
-    }
-    if (this.product.packageType) {
-      formData.append('package_type', this.product.packageType);
-    }
-    if (this.product.quantity !== null && this.product.quantity > 0) {
+    if (this.product.description.trim()) formData.append('description', this.product.description.trim());
+    if (this.product.category)          formData.append('category', this.product.category);
+    if (this.product.packageType)       formData.append('package_type', this.product.packageType);
+    if (this.product.quantity !== null && this.product.quantity > 0)
       formData.append('quantity', String(this.product.quantity));
-    }
-    if (this.product.totalWeight.trim()) {
-      formData.append('total_weight', this.product.totalWeight.trim());
-    }
-    if (this.product.totalVolume.trim()) {
-      formData.append('total_volume', this.product.totalVolume.trim());
-    }
-    if (this.product.productValue.trim()) {
-      formData.append('product_value', this.product.productValue.trim());
-    }
-    if (this.product.productId.trim()) {
-      formData.append('product_id', this.product.productId.trim());
-    }
+    if (this.product.totalWeight.trim()) formData.append('total_weight', this.product.totalWeight.trim());
+    if (this.product.totalVolume.trim()) formData.append('total_volume', this.product.totalVolume.trim());
+    if (this.selectedAgent)             formData.append('assigned_agent_uuid', this.selectedAgent.uuid);
 
-    formData.append('supplier_name', this.supplier.name.trim());
-    formData.append('supplier_phone', this.supplier.phone.trim());
-
-    if (this.supplier.contactPerson.trim()) {
-      formData.append('supplier_contact_person', this.supplier.contactPerson.trim());
-    }
-    if (this.supplier.pickupAddress.trim()) {
-      formData.append('supplier_pickup_address', this.supplier.pickupAddress.trim());
-    }
-
-    // Only append actual files, not placeholder files
     this.productPhotos.forEach((photo) => {
-      if (photo.file.size > 0) { // Only append real files, not placeholders
-        formData.append('photos[]', photo.file);
-      }
+      if (photo.file.size > 0) formData.append('photos[]', photo.file);
     });
+    this.removedExistingPhotos.forEach((url) => formData.append('removed_photos[]', url));
 
-    // Add removed existing photos to inform backend to delete them
-    if (this.removedExistingPhotos.length > 0) {
-      this.removedExistingPhotos.forEach((photoUrl) => {
-        formData.append('removed_photos[]', photoUrl);
-      });
-    }
+    const handleSuccess = (qrData: string, uuid: string) => {
+      this.isLoading = false;
+      this.qrUuid = uuid;
+      this.generatedQR = qrData;
+      this.showActions = true;
+      this.cdr.detectChanges();
+      setTimeout(() => this.scrollToQRCode(), 300);
+    };
+
+    const handleError = (err: any) => {
+      this.isLoading = false;
+      const msg = err?.error?.message || err?.error?.errors?.photos?.[0] || 'Failed to save QR code. Please try again.';
+      setTimeout(() => { this.errorMessage = msg; this.cdr.detectChanges(); });
+    };
+
+    const buildUrl = (origin: string, uuid: string) => {
+      const appUrl = /localhost|127\.0\.0\.1/.test(origin)
+        ? environment.apiUrl.replace('/api/v1', '').replace(':8000', ':4200')
+        : origin;
+      return `${appUrl}/qr/${uuid}`;
+    };
 
     if (this.editUuid) {
-      // Update existing QR code
       formData.append('_method', 'PUT');
       this.qrCodeService.update(this.editUuid, formData).subscribe({
         next: (response: any) => {
-          this.isLoading = false;
-          // Handle both response structures (for update, data might be direct)
           const qrData = response.data?.qr_code || response.data;
-          this.qrUuid = qrData.uuid;
-          const origin = window.location.origin;
-          const appUrl =
-            /localhost|127\.0\.0\.1/.test(origin)
-              ? environment.apiUrl.replace('/api/v1', '').replace(':8000', ':4200')
-              : origin;
-          this.generatedQR = `${appUrl}/qr/${qrData.uuid}`;
-          this.showActions = true;
-          this.cdr.detectChanges();
-          
-          // Auto-scroll to QR code section after update
-          setTimeout(() => {
-            this.scrollToQRCode();
-          }, 300);
+          handleSuccess(buildUrl(window.location.origin, qrData.uuid), qrData.uuid);
         },
-        error: (err) => {
-          this.isLoading = false;
-          // Extract error message properly
-          const errorMsg = err?.error?.message || 
-                         err?.error?.errors?.photos?.[0] ||
-                         err?.error?.errors?.[0] ||
-                         'Failed to update QR code. Please try again.';
-          
-          // Use setTimeout to avoid ExpressionChangedAfterItHasBeenCheckedError
-          setTimeout(() => {
-            this.errorMessage = errorMsg;
-            this.cdr.detectChanges();
-          });
-        },
+        error: handleError,
       });
     } else {
-      // Create new QR code
       this.qrCodeService.store(formData).subscribe({
         next: (response: QrCodeResponse) => {
-        this.isLoading = false;
-        this.qrUuid = response.data.qr_code.uuid;
-        this.cdr.detectChanges();
-        const origin = window.location.origin;
-        // If running on localhost/127.0.0.1, derive public URL from API server IP
-        const appUrl =
-          /localhost|127\.0\.0\.1/.test(origin)
-            ? environment.apiUrl.replace('/api/v1', '').replace(':8000', ':4200')
-            : origin;
-        this.generatedQR = `${appUrl}/qr/${response.data.qr_code.uuid}`;
-        this.showActions = true;
-        this.cdr.detectChanges();
-        
-        // Auto-scroll to QR code section after generation
-        setTimeout(() => {
-          this.scrollToQRCode();
-        }, 300);
-      },
-      error: (err) => {
-        this.isLoading = false;
-        // Extract error message properly
-        const errorMsg = err?.error?.message || 
-                       err?.error?.errors?.photos?.[0] ||
-                       err?.error?.errors?.[0] ||
-                       'Failed to generate QR code. Please try again.';
-        
-        // Use setTimeout to avoid ExpressionChangedAfterItHasBeenCheckedError
-        setTimeout(() => {
-          this.errorMessage = errorMsg;
-          this.cdr.detectChanges();
-        });
-      },
-    });
+          handleSuccess(buildUrl(window.location.origin, response.data.qr_code.uuid), response.data.qr_code.uuid);
+        },
+        error: handleError,
+      });
     }
   }
 
   isFormValid(): boolean {
-    return (
-      this.product.name.trim() !== '' &&
-      this.product.cost.trim() !== '' &&
-      this.product.currency !== '' &&
-      this.supplier.name.trim() !== '' &&
-      this.supplier.phone.trim() !== ''
-    );
+    return this.product.name.trim() !== '';
   }
 
-  downloadQR() {
+  // ── PDF download ────────────────────────────────────────────────
+
+  async downloadQR() {
     if (this.isDownloading) return;
-    
     this.isDownloading = true;
     this.cdr.detectChanges();
-    
-    const canvas = document.querySelector('qrcode canvas') as HTMLCanvasElement;
-    if (!canvas) {
+
+    try {
+      const canvas = document.querySelector('qrcode canvas') as HTMLCanvasElement;
+      if (!canvas) throw new Error('QR canvas not found');
+
+      const qrDataUrl = canvas.toDataURL('image/png');
+      const currentUser = this.authService.getUser();
+      const agent = this.selectedAgent;
+
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const margin = 15;
+      const contentW = pageW - margin * 2;
+      let y = margin;
+
+      // ── Header bar ──
+      doc.setFillColor(249, 115, 22); // orange-500
+      doc.rect(0, 0, pageW, 18, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(13);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PilikaPilika — Product QR Code', margin, 12);
+      y = 26;
+
+      // ── QR code image (centred) ──
+      const qrSize = 50;
+      const qrX = (pageW - qrSize) / 2;
+      doc.addImage(qrDataUrl, 'PNG', qrX, y, qrSize, qrSize);
+      y += qrSize + 4;
+
+      // QR link below image
+      doc.setFontSize(7);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont('helvetica', 'normal');
+      const qrLink = this.generatedQR || '';
+      doc.text(qrLink, pageW / 2, y, { align: 'center' });
+      y += 8;
+
+      // ── Section helper ──
+      const drawSection = (title: string, rows: [string, string][]) => {
+        if (!rows.length) return;
+        // Section title
+        doc.setFillColor(255, 237, 213); // orange-100
+        doc.rect(margin, y, contentW, 7, 'F');
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(194, 65, 12); // orange-700
+        doc.text(title, margin + 2, y + 5);
+        y += 9;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        rows.forEach(([label, value], i) => {
+          if (!value) return;
+          const bg = i % 2 === 0 ? [249, 250, 251] : [255, 255, 255];
+          doc.setFillColor(bg[0], bg[1], bg[2]);
+          doc.rect(margin, y, contentW, 6.5, 'F');
+          doc.setTextColor(107, 114, 128); // gray-500
+          doc.text(label, margin + 2, y + 4.5);
+          doc.setTextColor(17, 24, 39); // gray-900
+          doc.text(value, margin + 45, y + 4.5);
+          y += 6.5;
+        });
+        y += 4;
+      };
+
+      // ── Product Details ──
+      const productRows: [string, string][] = [
+        ['Product Name', this.product.name],
+        ['Description',  this.product.description || ''],
+        ['Category',     this.product.category || ''],
+        ['Package Type', this.product.packageType || ''],
+        ['Quantity',     this.product.quantity ? String(this.product.quantity) : ''],
+        ['Total Weight', this.product.totalWeight ? `${this.product.totalWeight} kg` : ''],
+        ['Total Volume', this.product.totalVolume ? `${this.product.totalVolume} m³` : ''],
+      ].filter(([, v]) => !!v) as [string, string][];
+      drawSection('Product Details', productRows);
+
+      // ── Agent Details ──
+      if (agent) {
+        const agentRows: [string, string][] = [
+          ['Name',     `${agent.firstname || ''} ${agent.lastname || ''}`.trim()],
+          ['Email',    agent.email || ''],
+          ['Phone',    agent.phone || ''],
+          ['Location', [agent.district, agent.region].filter(Boolean).join(', ')],
+          ['Address',  agent.address || ''],
+        ].filter(([, v]) => !!v) as [string, string][];
+        drawSection('Assigned Agent', agentRows);
+      }
+
+      // ── Customer Details ──
+      if (currentUser) {
+        const customerRows: [string, string][] = [
+          ['Name',  `${currentUser.firstname || ''} ${currentUser.lastname || ''}`.trim()],
+          ['Email', currentUser.email || ''],
+          ['Phone', currentUser.phone || ''],
+        ].filter(([, v]) => !!v) as [string, string][];
+        drawSection('Customer Details', customerRows);
+      }
+
+      // ── Footer ──
+      const pageH = doc.internal.pageSize.getHeight();
+      doc.setFillColor(249, 115, 22);
+      doc.rect(0, pageH - 10, pageW, 10, 'F');
+      doc.setFontSize(7);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Generated on ${new Date().toLocaleDateString()} · PilikaPilika`, pageW / 2, pageH - 4, { align: 'center' });
+
+      // Sanitise product name for use as filename (remove chars invalid in filenames)
+      const safeName = (this.product.name || 'product')
+        .trim()
+        .replace(/[\\/:*?"<>|]/g, '')
+        .replace(/\s+/g, '_')
+        .substring(0, 80);
+
+      doc.save(`${safeName}.pdf`);
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
       this.isDownloading = false;
       this.cdr.detectChanges();
-      alert('QR code not ready for download.');
-      return;
     }
-
-    // Simulate download process with animation
-    setTimeout(() => {
-      const link = document.createElement('a');
-      link.download = `QR-${this.qrUuid || 'product'}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-      
-      // Reset download state after a short delay
-      setTimeout(() => {
-        this.isDownloading = false;
-        this.cdr.detectChanges();
-      }, 1000);
-    }, 500);
   }
+
+  // ── Share ───────────────────────────────────────────────────────
 
   shareQR() {
     const shareUrl = this.generatedQR || '';
-    const shareText = `Product: ${this.product.name}\nCost: ${this.product.currency} ${this.product.cost}\nSupplier: ${this.supplier.name}\nPhone: ${this.supplier.phone}\nView details: ${shareUrl}`;
+    const shareText = `Product: ${this.product.name}\nView details: ${shareUrl}`;
     if (navigator.share) {
-      navigator
-        .share({
-          title: 'Product QR Code',
-          text: shareText,
-          url: shareUrl,
-        })
-        .catch(() => {
-          this.copyToClipboard();
-        });
+      navigator.share({ title: 'Product QR Code', text: shareText, url: shareUrl })
+        .catch(() => this.copyToClipboard());
     } else {
       this.copyToClipboard();
     }
   }
 
   private copyToClipboard() {
-    const text = this.generatedQR || '';
-    navigator.clipboard.writeText(text).then(() => {
-      alert('QR code link copied to clipboard!');
+    navigator.clipboard.writeText(this.generatedQR || '').then(() => alert('QR code link copied to clipboard!'));
+  }
+
+  goBack() { this.location.back(); }
+
+  sendToAgent() {
+    this.router.navigate(['/messages'], {
+      state: { productInfo: { product: this.product, qrData: this.generatedQR, qrUuid: this.qrUuid } },
     });
   }
 
-goBack() {
-  this.location.back();
-}
-
-sendToAgent() {
-  this.router.navigate(['/messages'], {
-    state: {
-      productInfo: {
-        product: this.product,
-        supplier: this.supplier,
-        qrData: this.generatedQR,
-        qrUuid: this.qrUuid,
-      },
-    },
-  });
-}
-
-checkEditMode() {
-  const editUuid = this.route.snapshot.queryParamMap.get('edit');
-  console.log('[QrGenerator] Edit mode check:', { editUuid });
-  if (editUuid) {
-    this.isEditMode = true;
-    this.isLoading = true;
-    this.editUuid = editUuid;
-    this.loadQrCodeForEdit(editUuid);
-  }
-}
-
-private loadQrCodeForEdit(uuid: string) {
-  // Reset removed photos array when loading for edit
-  this.removedExistingPhotos = [];
-  
-  this.qrCodeService.getByUuid(uuid).subscribe({
-    next: (response: any) => {
-      console.log('[QrGenerator] API response:', response);
-      const data = response?.data;
-      
-      if (!data) {
-        console.error('[QrGenerator] No QR code data found in response:', response);
-        this.isLoading = false;
-        this.isEditMode = false;
-        return;
-      }
-      
-      this.product = {
-        name: data.product_name || '',
-        cost: String(data.product_cost || '').replace(/,/g, ''),
-        currency: data.currency || 'USD',
-        description: data.description || '',
-        category: data.category || '',
-        packageType: data.package_type || '',
-        quantity: data.quantity,
-        totalWeight: data.total_weight || '',
-        totalVolume: data.total_volume || '',
-        productValue: String(data.product_value || '').replace(/,/g, ''),
-        productId: data.product_id || '',
-      };
-
-      this.supplier = {
-        name: data.supplier_name || '',
-        contactPerson: data.supplier_contact_person || '',
-        phone: data.supplier_phone || '',
-        pickupAddress: data.supplier_pickup_address || '',
-      };
-
-      // Load photos if they exist
-      if (data.photos && data.photos.length > 0) {
-        this.productPhotos = data.photos.map((url: string) => ({
-          file: new File([], 'placeholder'), // Placeholder for display
-          preview: url,
-          isExisting: true // Mark as existing photo
-        }));
-      }
-
-      this.qrUuid = data.uuid;
-      this.generatedQR = data.qr_data;
-      this.isLoading = false;
-      this.cdr.detectChanges();
-    },
-    error: (err: any) => {
-      console.error('Failed to load QR code for edit:', err);
-      this.isLoading = false;
-      this.isEditMode = false;
+  checkEditMode() {
+    const editUuid = this.route.snapshot.queryParamMap.get('edit');
+    if (editUuid) {
+      this.isEditMode = true;
+      this.isLoading = true;
+      this.editUuid = editUuid;
+      this.loadQrCodeForEdit(editUuid);
     }
-  });
-}
+  }
+
+  private loadQrCodeForEdit(uuid: string) {
+    this.removedExistingPhotos = [];
+    this.qrCodeService.getByUuid(uuid).subscribe({
+      next: (response: any) => {
+        const data = response?.data;
+        if (!data) { this.isLoading = false; this.isEditMode = false; return; }
+
+        this.product = {
+          name:        data.product_name || '',
+          description: data.description  || '',
+          category:    data.category     || '',
+          packageType: data.package_type || '',
+          quantity:    data.quantity,
+          totalWeight: data.total_weight || '',
+          totalVolume: data.total_volume || '',
+        };
+
+        if (data.photos?.length) {
+          this.productPhotos = data.photos.map((url: string) => ({
+            file: new File([], 'placeholder'),
+            preview: url,
+            isExisting: true,
+          }));
+        }
+
+        // Restore assigned agent if present
+        if (data.assigned_agent_uuid) {
+          const found = this.agents.find(a => a.uuid === data.assigned_agent_uuid);
+          if (found) this.selectAgent(found);
+        }
+
+        this.qrUuid = data.uuid;
+        this.generatedQR = data.qr_data;
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => { this.isLoading = false; this.isEditMode = false; },
+    });
+  }
 
   resetForm() {
-    this.product = {
-      name: '',
-      cost: '',
-      currency: 'USD',
-      description: '',
-      category: '',
-      packageType: '',
-      quantity: null,
-      totalWeight: '',
-      totalVolume: '',
-      productValue: '',
-      productId: '',
-    };
-    this.supplier = {
-      name: '',
-      contactPerson: '',
-      phone: '',
-      pickupAddress: '',
-    };
+    this.product = { name: '', description: '', category: '', packageType: '', quantity: null, totalWeight: '', totalVolume: '' };
     this.productPhotos = [];
     this.generatedQR = null;
     this.showActions = false;
@@ -468,6 +456,8 @@ private loadQrCodeForEdit(uuid: string) {
     this.qrUuid = null;
     this.editUuid = null;
     this.isEditMode = false;
+    this.selectedAgent = null;
+    this.agentSearchQuery = '';
   }
 
   formatWithCommas(value: string | number | null): string {
@@ -478,69 +468,15 @@ private loadQrCodeForEdit(uuid: string) {
     return num.toLocaleString('en-US');
   }
 
-  onCostInput(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const raw = input.value.replace(/[^0-9]/g, '');
-    this.product.cost = raw;
-    input.value = this.formatWithCommas(raw);
-    this.calculateTotalCost();
-    this.cdr.detectChanges();
-  }
-
-  onProductValueInput(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const raw = input.value.replace(/[^0-9]/g, '');
-    this.product.productValue = raw;
-    input.value = this.formatWithCommas(raw);
-    this.cdr.detectChanges();
-  }
-
-  calculateTotalCost() {
-    const cost = parseFloat(this.product.cost) || 0;
-    const qty = this.product.quantity || 0;
-    if (cost > 0 && qty > 0) {
-      this.product.productValue = String(Math.round(cost * qty));
-    }
-    this.cdr.detectChanges();
-  }
-
   scrollToQRCode() {
-    // Try multiple methods to ensure scrolling works
     setTimeout(() => {
-      // Method 1: Try ViewChild reference first
-      if (this.qrCodeSection && this.qrCodeSection.nativeElement) {
-        this.qrCodeSection.nativeElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
+      if (this.qrCodeSection?.nativeElement) {
+        this.qrCodeSection.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
-      
-      // Method 2: Fallback to getElementById
-      const qrElement = document.getElementById('qrCodeSection');
-      if (qrElement) {
-        qrElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
-        return;
-      }
-      
-      // Method 3: Look for any QR code section
-      const qrSection = document.querySelector('div[class*="bg-white"][class*="dark:bg-[#1a1a1a]"][class*="rounded-2xl"]:has(qrcode)');
-      if (qrSection) {
-        qrSection.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
-        return;
-      }
-      
-      // Method 4: Last resort - scroll to bottom of page
-      window.scrollTo({
-        top: document.body.scrollHeight,
-        behavior: 'smooth'
-      });
+      const el = document.getElementById('qrCodeSection');
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }, 100);
   }
 }
