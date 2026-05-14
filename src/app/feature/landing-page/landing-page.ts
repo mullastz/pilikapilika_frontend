@@ -98,11 +98,9 @@ export class LandingPage implements OnInit {
   }
 
 activities = [
-  { icon: 'fa-solid fa-user', label: 'Become Agent', route: '/sign-up' },
   { icon: 'fa-solid fa-qrcode', label: 'Generate QRcode', route: '/qr-generator' },
   { icon: 'fa-solid fa-magnifying-glass', label: 'Search Agent', route: '/search' },
-  { icon: 'fa-solid fa-location-crosshairs', label: 'Track Shipping', route: '/account/shipping' },
-  { icon: 'fa-solid fa-handshake', label: 'Negotiate', route: '/search' }, // same page
+  { icon: 'fa-solid fa-location-crosshairs', label: 'Track Shipping', route: '/account/shipping' }
 ];
 
 testimonials = [

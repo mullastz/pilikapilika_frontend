@@ -22,7 +22,7 @@
       <!-- STATS OVERVIEW (Read-only) - AT TOP -->
       <div class="mb-6">
         <h3 class="font-semibold mb-4 dark:text-white text-center">Performance Overview</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+        <div class="grid grid-cols-3 gap-4 text-center">
 
           <div class="bg-orange-100 dark:bg-[#333] p-3 rounded-xl">
             <p class="text-sm text-gray-500">Total Deliveries</p>
@@ -37,11 +37,6 @@
           <div class="bg-orange-100 dark:bg-[#333] p-3 rounded-xl">
             <p class="text-sm text-gray-500">Reviews</p>
             <p class="font-semibold dark:text-white">{{ agent?.total_reviews || 0 }}</p>
-          </div>
-
-          <div class="bg-orange-100 dark:bg-[#333] p-3 rounded-xl">
-            <p class="text-sm text-gray-500">Success Rate</p>
-            <p class="font-semibold dark:text-white">{{ agent?.success_rate || 0 }}%</p>
           </div>
 
         </div>
@@ -106,35 +101,6 @@
             </div>
           </div>
 
-          <!-- PRICE PER KM -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Price Per KM
-            </label>
-            <div class="flex gap-2">
-              <span class="px-3 py-2 bg-gray-200 dark:bg-[#333] rounded-xl text-sm text-gray-500 dark:text-gray-400 flex items-center select-none whitespace-nowrap">
-                {{ agentForm.get('currency')?.value || 'TZS' }}
-              </span>
-              <input
-                type="text"
-                [value]="formatWithCommas(pricePerKmRaw)"
-                (input)="onPricePerKmInput($event)"
-                placeholder="e.g. 500"
-                class="flex-1 px-3 py-2 bg-gray-200 dark:bg-[#333] rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-orange-500 transition"
-              />
-            </div>
-          </div>
-
-          <!-- MAX DELIVERY DISTANCE -->
-          <div>
-            <label class="text-sm text-gray-500 dark:text-gray-400">Max Delivery Distance (km)</label>
-            <input
-              type="number"
-              formControlName="max_delivery_distance"
-              class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="e.g. 50"
-            />
-          </div>
 
           <!-- AVERAGE DELIVERY TIME -->
           <div>

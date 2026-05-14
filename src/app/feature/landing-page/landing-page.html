@@ -60,12 +60,9 @@
     <section class="px-4 sm:px-6 py-4 sm:py-6">
     <div class="flex justify-between items-center mb-4 sm:mb-6">
         <h3 class="text-lg sm:text-xl text-center font-bold dark:text-white transition-colors">Activities</h3>
-        <button class="bg-orange-500 text-white px-15 sm:px-20 py-1.5 sm:py-2 rounded-full hover:scale-110 transition text-sm sm:text-base">
-        See all
-        </button>
     </div>
 
-    <div class="grid grid-cols-5 gap-2 sm:gap-4 text-center">
+    <div class="grid grid-cols-3 gap-2 sm:gap-4 text-center">
         <div *ngFor="let item of activities" (click)="goTo(item.route)" class="flex flex-col items-center hover:scale-110 transition cursor-pointer">
         
         <!-- KEEP THIS WRAPPER (this gives you the circle) -->

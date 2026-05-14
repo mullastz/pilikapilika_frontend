@@ -30,7 +30,6 @@ export class AgentDetails implements OnInit {
 
   /** Raw numeric strings kept in sync with the formatted inputs */
   basePriceRaw = '';
-  pricePerKmRaw = '';
 
   currencies = ['TZS', 'USD', 'EUR', 'GBP', 'KES', 'UGX'];
 
@@ -41,14 +40,8 @@ export class AgentDetails implements OnInit {
   ];
 
   transportOptions = [
-    { value: 'motorcycle', label: 'Motorcycle',    icon: 'fa-solid fa-motorcycle'    },
-    { value: 'bicycle',    label: 'Bicycle',        icon: 'fa-solid fa-bicycle'        },
-    { value: 'car',        label: 'Car',            icon: 'fa-solid fa-car'            },
-    { value: 'van',        label: 'Van',            icon: 'fa-solid fa-van-shuttle'    },
-    { value: 'truck',      label: 'Truck',          icon: 'fa-solid fa-truck'          },
-    { value: 'air',        label: 'Air Freight',    icon: 'fa-solid fa-plane'          },
-    { value: 'sea',        label: 'Sea Freight',    icon: 'fa-solid fa-ship'           },
-    { value: 'local',      label: 'Local Delivery', icon: 'fa-solid fa-person-walking' },
+    { value: 'air', label: 'Air Freight', icon: 'fa-solid fa-plane' },
+    { value: 'sea', label: 'Sea Freight', icon: 'fa-solid fa-ship' },
   ];
 
   constructor(
@@ -64,8 +57,6 @@ export class AgentDetails implements OnInit {
       availability_status: ['available'],
       base_price:           [null, [Validators.required, Validators.min(0)]],
       currency:             ['TZS'],
-      price_per_km:         [null, [Validators.min(0)]],
-      max_delivery_distance:[null, [Validators.min(0)]],
       avg_delivery_time:    ['',   Validators.maxLength(50)],
       bio:                  ['',   Validators.maxLength(1000)],
       id_number:            ['',   Validators.maxLength(50)],
@@ -95,14 +86,6 @@ export class AgentDetails implements OnInit {
     this.cdr.detectChanges();
   }
 
-  onPricePerKmInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const raw = input.value.replace(/[^0-9]/g, '');
-    this.pricePerKmRaw = raw;
-    this.agentForm.get('price_per_km')?.setValue(raw ? parseFloat(raw) : null, { emitEvent: false });
-    input.value = this.formatWithCommas(raw);
-    this.cdr.detectChanges();
-  }
 
   // ── Data loading ────────────────────────────────────────────────
 
@@ -177,22 +160,18 @@ export class AgentDetails implements OnInit {
   }
 
   populateForm(agent: any): void {
-    const basePriceVal  = agent.base_price  ?? null;
-    const pricePerKmVal = agent.price_per_km ?? null;
+    const basePriceVal = agent.base_price ?? null;
 
     // Keep raw strings in sync so the formatted inputs display correctly
-    this.basePriceRaw  = basePriceVal  !== null ? String(basePriceVal).replace(/,/g, '')  : '';
-    this.pricePerKmRaw = pricePerKmVal !== null ? String(pricePerKmVal).replace(/,/g, '') : '';
+    this.basePriceRaw = basePriceVal !== null ? String(basePriceVal).replace(/,/g, '') : '';
 
     this.agentForm.patchValue({
-      availability_status:  agent.availability_status  || 'available',
-      base_price:           basePriceVal,
-      currency:             agent.currency             || 'TZS',
-      price_per_km:         pricePerKmVal,
-      max_delivery_distance:agent.max_delivery_distance,
-      avg_delivery_time:    agent.avg_delivery_time    || '',
-      bio:                  agent.bio                  || '',
-      id_number:            agent.id_number            || '',
+      availability_status: agent.availability_status || 'available',
+      base_price: basePriceVal,
+      currency: agent.currency || 'TZS',
+      avg_delivery_time: agent.avg_delivery_time || '',
+      bio: agent.bio || '',
+      id_number: agent.id_number || '',
     });
 
     this.selectedSpecializations = agent.specializations   || [];
@@ -216,16 +195,14 @@ export class AgentDetails implements OnInit {
     }
 
     const agentUpdateData: UpdateAgentProfileRequest = {
-      availability_status:  formValue.availability_status,
-      base_price:           formValue.base_price,
-      currency:             formValue.currency,
-      price_per_km:         formValue.price_per_km         || null,
-      max_delivery_distance:formValue.max_delivery_distance || null,
-      avg_delivery_time:    formValue.avg_delivery_time    || null,
-      bio:                  formValue.bio                  || null,
-      id_number:            formValue.id_number            || null,
-      specializations:      this.selectedSpecializations,
-      transport_methods:    this.selectedTransport,
+      availability_status: formValue.availability_status,
+      base_price: formValue.base_price,
+      currency: formValue.currency,
+      avg_delivery_time: formValue.avg_delivery_time || null,
+      bio: formValue.bio || null,
+      id_number: formValue.id_number || null,
+      specializations: this.selectedSpecializations,
+      transport_methods: this.selectedTransport,
     };
 
     this.agentService.updateAgentProfile(userId, agentUpdateData).subscribe({
