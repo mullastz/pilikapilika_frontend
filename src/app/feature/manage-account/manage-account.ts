@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { ToastService } from '../../core/services/toast.service';
+import { AddressService, Address, CreateAddressRequest, UpdateAddressRequest } from '../../core/services/address.service';
 import { User, UpdateProfileRequest, UpdateProfileResponse } from '../../core/interfaces/auth.interface';
 
 @Component({
@@ -28,6 +29,17 @@ export class ManageAccount implements OnInit {
   selectedPhotoFile: File | null = null;
   isUploadingPhoto = false;
 
+  // Addresses state
+  addresses: Address[] = [];
+  isLoadingAddresses = false;
+  isSavingAddress = false;
+  isEditingAddress = false;
+  editingAddressId: number | null = null;
+  showAddressForm = false;
+
+  // Address form
+  addressForm: FormGroup;
+
   readonly FALLBACK_PHOTO = 'assets/landingpage_images/profile1.webp';
 
   genderOptions = ['Male', 'Female', 'Other'];
@@ -37,6 +49,7 @@ export class ManageAccount implements OnInit {
     private fb: FormBuilder,
     private authService: AuthService,
     private userService: UserService,
+    private addressService: AddressService,
     private cdr: ChangeDetectorRef,
     private toastService: ToastService
   ) {
@@ -51,10 +64,17 @@ export class ManageAccount implements OnInit {
       ward: ['', Validators.maxLength(255)],
       address: ['', Validators.maxLength(500)],
     });
+
+    this.addressForm = this.fb.group({
+      label: [''],
+      address_line: ['', [Validators.required, Validators.maxLength(500)]],
+      is_default: [false],
+    });
   }
 
   ngOnInit(): void {
     this.loadUserProfile();
+    this.loadAddresses();
   }
 
   loadUserProfile(): void {
@@ -262,10 +282,145 @@ export class ManageAccount implements OnInit {
     });
   }
 
+  // ── Address Management ───────────────────────────────────────────
+
+  loadAddresses(): void {
+    this.isLoadingAddresses = true;
+    this.addressService.getAddresses().subscribe({
+      next: (response) => {
+        this.addresses = response.data || [];
+        this.isLoadingAddresses = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error loading addresses:', err);
+        this.toastService.error('Failed to load addresses. Please try again.');
+        this.isLoadingAddresses = false;
+      }
+    });
+  }
+
+  showAddAddressForm(): void {
+    this.isEditingAddress = false;
+    this.editingAddressId = null;
+    this.addressForm.reset({
+      label: '',
+      address_line: '',
+      is_default: false,
+    });
+    this.showAddressForm = true;
+  }
+
+  editAddress(address: Address): void {
+    this.isEditingAddress = true;
+    this.editingAddressId = address.id;
+    this.addressForm.patchValue({
+      label: address.label || '',
+      address_line: address.address_line,
+      is_default: address.is_default,
+    });
+    this.showAddressForm = true;
+  }
+
+  cancelAddressForm(): void {
+    this.showAddressForm = false;
+    this.isEditingAddress = false;
+    this.editingAddressId = null;
+    this.addressForm.reset();
+  }
+
+  saveAddress(): void {
+    if (this.addressForm.invalid) {
+      this.addressForm.markAllAsTouched();
+      return;
+    }
+
+    this.isSavingAddress = true;
+    const formValue = this.addressForm.getRawValue();
+
+    if (this.isEditingAddress && this.editingAddressId) {
+      // Update existing address
+      const updateData: UpdateAddressRequest = {
+        label: formValue.label || undefined,
+        address_line: formValue.address_line,
+        is_default: formValue.is_default,
+      };
+
+      this.addressService.updateAddress(this.editingAddressId, updateData).subscribe({
+        next: (response) => {
+          this.isSavingAddress = false;
+          this.toastService.success('Address updated successfully!');
+          this.loadAddresses();
+          this.cancelAddressForm();
+        },
+        error: (err: any) => {
+          this.isSavingAddress = false;
+          const errorMsg = err.error?.message || 'Failed to update address. Please try again.';
+          this.toastService.error(errorMsg);
+        }
+      });
+    } else {
+      // Create new address
+      const createData: CreateAddressRequest = {
+        label: formValue.label || undefined,
+        address_line: formValue.address_line,
+        is_default: formValue.is_default,
+      };
+
+      this.addressService.createAddress(createData).subscribe({
+        next: (response) => {
+          this.isSavingAddress = false;
+          this.toastService.success('Address added successfully!');
+          this.loadAddresses();
+          this.cancelAddressForm();
+        },
+        error: (err: any) => {
+          this.isSavingAddress = false;
+          const errorMsg = err.error?.message || 'Failed to add address. Please try again.';
+          this.toastService.error(errorMsg);
+        }
+      });
+    }
+  }
+
+  deleteAddress(id: number): void {
+    if (!confirm('Are you sure you want to delete this address?')) {
+      return;
+    }
+
+    this.addressService.deleteAddress(id).subscribe({
+      next: (response) => {
+        this.toastService.success('Address deleted successfully!');
+        this.loadAddresses();
+      },
+      error: (err: any) => {
+        const errorMsg = err.error?.message || 'Failed to delete address. Please try again.';
+        this.toastService.error(errorMsg);
+      }
+    });
+  }
+
+  setDefaultAddress(id: number): void {
+    this.addressService.setDefaultAddress(id).subscribe({
+      next: (response) => {
+        this.toastService.success('Default address updated successfully!');
+        this.loadAddresses();
+      },
+      error: (err: any) => {
+        const errorMsg = err.error?.message || 'Failed to set default address. Please try again.';
+        this.toastService.error(errorMsg);
+      }
+    });
+  }
+
+  // ── Form Getters ─────────────────────────────────────────────────────
+
   get firstname() { return this.profileForm.get('firstname'); }
   get lastname() { return this.profileForm.get('lastname'); }
   get gender() { return this.profileForm.get('gender'); }
   get phone() { return this.profileForm.get('phone'); }
   get ward() { return this.profileForm.get('ward'); }
   get address() { return this.profileForm.get('address'); }
+
+  get addressLine() { return this.addressForm.get('address_line'); }
 }

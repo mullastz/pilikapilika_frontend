@@ -6,6 +6,7 @@ import { QRCodeComponent } from 'angularx-qrcode';
 import { QrCodeService, QrCodeResponse } from '../../core/services/qr-code.service';
 import { AgentService } from '../../core/services/agent.service';
 import { AuthService } from '../../core/services/auth.service';
+import { AddressService, Address } from '../../core/services/address.service';
 import { Agent } from '../../core/interfaces/auth.interface';
 import { environment } from '../../../environments/environment';
 import jsPDF from 'jspdf';
@@ -37,6 +38,7 @@ export class QrGenerator implements OnInit {
     private qrCodeService: QrCodeService,
     private agentService: AgentService,
     private authService: AuthService,
+    private addressService: AddressService,
     private cdr: ChangeDetectorRef,
     private route: ActivatedRoute,
   ) {}
@@ -44,6 +46,7 @@ export class QrGenerator implements OnInit {
   ngOnInit() {
     this.checkEditMode();
     this.loadAgents();
+    this.loadAddresses();
   }
 
   product: ProductDetails = {
@@ -73,6 +76,11 @@ export class QrGenerator implements OnInit {
   showAgentDropdown = false;
   selectedAgent: Agent | null = null;
   isLoadingAgents = false;
+
+  // Address selection
+  addresses: Address[] = [];
+  selectedAddress: Address | null = null;
+  isLoadingAddresses = false;
 
   categories = [
     'Electronics', 'Fashion', 'Home Appliances', 'Toys',
@@ -108,10 +116,17 @@ export class QrGenerator implements OnInit {
     });
   }
 
-  selectAgent(agent: Agent): void {
+  selectAgent(agent: any): void {
     this.selectedAgent = agent;
-    this.agentSearchQuery = `${agent.firstname} ${agent.lastname}`;
-    this.showAgentDropdown = false;
+    this.agentSearchQuery = '';
+    this.clearAddress();
+    this.loadAgentAddresses(agent.uuid);
+  }
+
+  clearAgent(): void {
+    this.selectedAgent = null;
+    this.selectedAddress = null;
+    this.agentSearchQuery = '';
     this.cdr.detectChanges();
   }
 
@@ -120,10 +135,20 @@ export class QrGenerator implements OnInit {
     return parts.length ? parts.join(', ') : 'Location not set';
   }
 
-  clearAgent(): void {
-    this.selectedAgent = null;
-    this.agentSearchQuery = '';
-    this.cdr.detectChanges();
+  loadAgentAddresses(agentUuid: string): void {
+    this.isLoadingAddresses = true;
+    this.addresses = [];
+    this.addressService.getAddressesByUserUuid(agentUuid).subscribe({
+      next: (response) => {
+        this.addresses = response.data || [];
+        this.isLoadingAddresses = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isLoadingAddresses = false;
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   onAgentSearchFocus(): void {
@@ -136,6 +161,33 @@ export class QrGenerator implements OnInit {
       this.showAgentDropdown = false;
       this.cdr.detectChanges();
     }, 200);
+  }
+
+  // ── Address loading ───────────────────────────────────────────────
+
+  loadAddresses(): void {
+    this.isLoadingAddresses = true;
+    this.addressService.getAddresses().subscribe({
+      next: (response) => {
+        this.addresses = response.data || [];
+        this.isLoadingAddresses = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isLoadingAddresses = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  selectAddress(address: Address): void {
+    this.selectedAddress = address;
+    this.cdr.detectChanges();
+  }
+
+  clearAddress(): void {
+    this.selectedAddress = null;
+    this.cdr.detectChanges();
   }
 
   // ── Photos ──────────────────────────────────────────────────────
@@ -189,6 +241,7 @@ export class QrGenerator implements OnInit {
     if (this.product.totalWeight.trim()) formData.append('total_weight', this.product.totalWeight.trim());
     if (this.product.totalVolume.trim()) formData.append('total_volume', this.product.totalVolume.trim());
     if (this.selectedAgent)             formData.append('assigned_agent_uuid', this.selectedAgent.uuid);
+    if (this.selectedAddress)           formData.append('agent_address_id', String(this.selectedAddress.id));
 
     this.productPhotos.forEach((photo) => {
       if (photo.file.size > 0) formData.append('photos[]', photo.file);
@@ -336,6 +389,14 @@ export class QrGenerator implements OnInit {
         drawSection('Assigned Agent', agentRows);
       }
 
+      // ── Agent Address ──
+      if (this.selectedAddress) {
+        const addressRows: [string, string][] = [
+          ['Address', this.selectedAddress.address_line || ''],
+        ].filter(([, v]) => !!v) as [string, string][];
+        drawSection('Agent Address', addressRows);
+      }
+
       // ── Customer Details ──
       if (currentUser) {
         const customerRows: [string, string][] = [
@@ -432,10 +493,18 @@ export class QrGenerator implements OnInit {
           }));
         }
 
-        // Restore assigned agent if present
+        // Restore selected agent
         if (data.assigned_agent_uuid) {
-          const found = this.agents.find(a => a.uuid === data.assigned_agent_uuid);
-          if (found) this.selectAgent(found);
+          const foundAgent = this.agents.find(a => a.uuid === data.assigned_agent_uuid);
+          if (foundAgent) {
+            this.selectedAgent = foundAgent;
+            this.loadAgentAddresses(data.assigned_agent_uuid);
+          }
+        }
+
+        // Restore selected agent address
+        if (data.agent_address) {
+          this.selectedAddress = data.agent_address;
         }
 
         this.qrUuid = data.uuid;
@@ -457,6 +526,7 @@ export class QrGenerator implements OnInit {
     this.editUuid = null;
     this.isEditMode = false;
     this.selectedAgent = null;
+    this.selectedAddress = null;
     this.agentSearchQuery = '';
   }
 

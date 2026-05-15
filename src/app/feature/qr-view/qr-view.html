@@ -130,6 +130,21 @@
           </div>
         </div>
 
+        <!-- ── Agent Address ── -->
+        <div *ngIf="qrData.agent_address">
+          <h2 class="text-base font-semibold text-orange-500 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-location-dot"></i> Agent Address
+          </h2>
+          <div class="bg-blue-50 dark:bg-[#111] rounded-xl p-4 space-y-3">
+
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-500">Address</span>
+              <span class="text-sm font-medium dark:text-white">{{ qrData.agent_address.address_line }}</span>
+            </div>
+
+          </div>
+        </div>
+
         <!-- ── Photos ── -->
         <div *ngIf="qrData.photos && qrData.photos.length > 0">
           <h2 class="text-base font-semibold text-orange-500 mb-3 flex items-center gap-2">
@@ -166,22 +181,6 @@
                 <i *ngIf="!isDownloading" class="fa-solid fa-file-pdf"></i>
                 <i *ngIf="isDownloading" class="fa-solid fa-circle-notch fa-spin"></i>
                 {{ isDownloading ? 'Generating PDF...' : 'Download PDF' }}
-              </button>
-
-              <button
-                (click)="shareQR()"
-                class="w-full py-3 bg-gray-200 dark:bg-[#222] text-gray-700 dark:text-white rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-[#333] transition flex items-center justify-center gap-2"
-              >
-                <i class="fa-solid fa-share"></i>
-                Share QR Code
-              </button>
-
-              <button
-                (click)="sendToAgent()"
-                class="w-full py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition flex items-center justify-center gap-2"
-              >
-                <i class="fa-solid fa-paper-plane"></i>
-                Send to Agent
               </button>
 
             </div>

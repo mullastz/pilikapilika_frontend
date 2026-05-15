@@ -20,6 +20,13 @@ interface AgentDetails {
   is_verified: boolean;
 }
 
+interface AgentAddress {
+  id: number;
+  label: string;
+  address_line: string;
+  is_default: boolean;
+}
+
 interface QrCodeData {
   uuid: string;
   product_name: string;
@@ -33,6 +40,7 @@ interface QrCodeData {
   total_volume: string | null;
   assigned_agent_uuid: string | null;
   agent: AgentDetails | null;
+  agent_address: AgentAddress | null;
   photos: string[] | null;
   qr_data: string;
   created_at: string;
@@ -189,6 +197,13 @@ export class QrView implements OnInit {
           ['Phone',    agent.phone || ''],
           ['Location', this.getAgentLocation(agent)],
           ['Address',  agent.address || ''],
+        ]);
+      }
+
+      // ── Agent Address ──
+      if (this.qrData.agent_address) {
+        drawSection('Agent Address', [
+          ['Address', this.qrData.agent_address.address_line || ''],
         ]);
       }
 

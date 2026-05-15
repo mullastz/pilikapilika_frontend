@@ -158,24 +158,8 @@
                     <!-- DETAILS -->
                     <div class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 space-y-1 mb-3">
 
-                        <ng-container *ngIf="isAgent(); else userDetails">
-                            <ng-container [ngSwitch]="activeTab()">
-                                <ng-container *ngSwitchCase="'my_shippings'">
-                                    <p *ngIf="shipment.agent"><strong>Agent:</strong> {{shipment.agent.firstname}} {{shipment.agent.lastname}}</p>
-                                </ng-container>
-                                <ng-container *ngSwitchDefault>
-                                    <p><strong>Customer:</strong> {{shipment.user?.firstname}} {{shipment.user?.lastname}}</p>
-                                </ng-container>
-                            </ng-container>
-                        </ng-container>
-                        <ng-template #userDetails>
-                            <p *ngIf="shipment.agent"><strong>Agent:</strong> {{shipment.agent.firstname}} {{shipment.agent.lastname}}</p>
-                        </ng-template>
-                        
-                        <p><strong>From:</strong> {{shipment.pickup_address}}</p>
-                        <p><strong>To:</strong> {{shipment.destination_address}}</p>
-                        <p><strong>Price:</strong> <span class="text-orange-500">${{shipment.estimated_price}}</span></p>
-                        <p *ngIf="isAgent() && shipment.user && shipment.user.phone"><strong>Phone:</strong> {{shipment.user.phone}}</p>
+                        <p *ngIf="shipment.agent"><strong>Agent:</strong> {{shipment.agent.firstname}} {{shipment.agent.lastname}}</p>
+                        <p *ngIf="shipment.agent_address"><strong>Agent Address:</strong> {{shipment.agent_address}}</p>
 
                     </div>
 
@@ -382,25 +366,15 @@
                 </div>
               </ng-container>
               <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
-                <span class="text-sm text-gray-500">Tracking #</span>
-                <span class="text-sm font-medium dark:text-white">{{s.tracking_number}}</span>
-              </div>
-              <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                 <span class="text-sm text-gray-500">Status</span>
                 <span class="text-xs px-2 py-0.5 rounded-full" [ngClass]="getStatusClass(s.status)">{{formatStatus(s.status)}}</span>
               </div>
-              <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
-                <span class="text-sm text-gray-500">From</span>
-                <span class="text-sm font-medium dark:text-white text-right">{{s.pickup_address}}</span>
-              </div>
-              <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
-                <span class="text-sm text-gray-500">To</span>
-                <span class="text-sm font-medium dark:text-white text-right">{{s.destination_address}}</span>
-              </div>
-              <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
-                <span class="text-sm text-gray-500">Estimated Price</span>
-                <span class="text-sm font-medium text-orange-500">${{s.estimated_price}}</span>
-              </div>
+              <ng-container *ngIf="s.agent_address">
+                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                  <span class="text-sm text-gray-500">Agent Address</span>
+                  <span class="text-sm font-medium dark:text-white text-right">{{s.agent_address}}</span>
+                </div>
+              </ng-container>
               <ng-container *ngIf="s.actual_price">
                 <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                   <span class="text-sm text-gray-500">Actual Price</span>
@@ -448,9 +422,15 @@
                   <span class="text-sm font-medium dark:text-white">{{s.agent.email}}</span>
                 </div>
                 <ng-container *ngIf="s.agent.phone">
-                  <div class="flex justify-between">
+                  <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                     <span class="text-sm text-gray-500">Agent Phone</span>
                     <span class="text-sm font-medium dark:text-white">{{s.agent.phone}}</span>
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="s.agent_address">
+                  <div class="flex justify-between">
+                    <span class="text-sm text-gray-500">Agent Address</span>
+                    <span class="text-sm font-medium dark:text-white text-right">{{s.agent_address}}</span>
                   </div>
                 </ng-container>
               </ng-container>

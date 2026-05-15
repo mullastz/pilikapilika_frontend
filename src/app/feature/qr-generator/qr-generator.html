@@ -143,7 +143,7 @@
 
           <!-- Selected agent badge -->
           <div *ngIf="selectedAgent" class="flex items-center gap-3 bg-orange-50 dark:bg-[#111] border border-orange-200 dark:border-orange-800 rounded-xl p-3 mb-3">
-            <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white flex-shrink-0">
+            <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white shrink-0">
               <i class="fa-solid fa-user text-sm"></i>
             </div>
             <div class="flex-1 min-w-0">
@@ -160,11 +160,58 @@
             <button
               type="button"
               (click)="clearAgent()"
-              class="text-gray-400 hover:text-red-500 transition flex-shrink-0"
+              class="text-gray-400 hover:text-red-500 transition shrink-0"
               aria-label="Remove agent"
             >
               <i class="fa-solid fa-xmark"></i>
             </button>
+          </div>
+
+          <!-- Agent address selection (shown when agent is selected) -->
+          <div *ngIf="selectedAgent" class="mt-4">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Select Agent Address
+            </label>
+
+            <!-- Selected address badge -->
+            <div *ngIf="selectedAddress" class="flex items-center gap-3 bg-blue-50 dark:bg-[#111] border border-blue-200 dark:border-blue-800 rounded-xl p-3 mb-3">
+              <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white shrink-0">
+                <i class="fa-solid fa-location-dot text-sm"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm text-gray-700 dark:text-gray-300 truncate">
+                  {{ selectedAddress.address_line }}
+                </p>
+              </div>
+              <button
+                type="button"
+                (click)="clearAddress()"
+                class="text-gray-400 hover:text-red-500 transition shrink-0"
+                aria-label="Remove address"
+              >
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <!-- Address dropdown -->
+            <div *ngIf="!selectedAddress" class="relative">
+              <select
+                [(ngModel)]="selectedAddress"
+                (change)="selectedAddress && selectAddress(selectedAddress)"
+                class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition appearance-none cursor-pointer"
+              >
+                <option [ngValue]="null">Select an address...</option>
+                <option *ngIf="isLoadingAddresses" disabled>Loading addresses...</option>
+                <option *ngFor="let address of addresses" [ngValue]="address">
+                  {{ address.label }} - {{ address.address_line }}
+                </option>
+              </select>
+              <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+            </div>
+
+            <p *ngIf="!isLoadingAddresses && addresses.length === 0 && !selectedAddress" class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              No addresses found. <a href="/manage-account" class="text-orange-500 hover:underline">Add addresses in your account settings</a>.
+            </p>
           </div>
 
           <!-- Search input -->
@@ -198,7 +245,7 @@
                 (mousedown)="selectAgent(agent)"
                 class="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 dark:hover:bg-[#333] transition text-left"
               >
-                <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white flex-shrink-0">
+                <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white shrink-0">
                   <i class="fa-solid fa-user text-xs"></i>
                 </div>
                 <div class="flex-1 min-w-0">
@@ -212,7 +259,7 @@
                     </ng-container>
                   </p>
                 </div>
-                <i class="fa-solid fa-check-circle text-green-500 text-xs flex-shrink-0" title="Verified"></i>
+                <i class="fa-solid fa-check-circle text-green-500 text-xs shrink-0" title="Verified"></i>
               </button>
             </div>
           </div>
@@ -333,22 +380,6 @@
               </button>
 
               <button
-                (click)="shareQR()"
-                class="w-full py-3 bg-gray-200 dark:bg-[#222] text-gray-700 dark:text-white rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-[#333] transition flex items-center justify-center gap-2"
-              >
-                <i class="fa-solid fa-share"></i>
-                Share
-              </button>
-
-              <button
-                (click)="sendToAgent()"
-                class="w-full py-3 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 transition flex items-center justify-center gap-2"
-              >
-                <i class="fa-solid fa-paper-plane"></i>
-                Send to Agent
-              </button>
-
-              <button
                 *ngIf="!isEditMode"
                 (click)="resetForm()"
                 class="w-full py-3 bg-gray-200 dark:bg-[#222] text-gray-700 dark:text-white rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-[#333] transition flex items-center justify-center gap-2"
@@ -388,12 +419,6 @@
             <div class="space-y-3">
               <div class="w-full py-3 bg-gray-100 dark:bg-[#222] text-gray-400 rounded-xl font-medium flex items-center justify-center gap-2 cursor-not-allowed">
                 <i class="fa-solid fa-file-pdf"></i> Download PDF
-              </div>
-              <div class="w-full py-3 bg-gray-100 dark:bg-[#222] text-gray-400 rounded-xl font-medium flex items-center justify-center gap-2 cursor-not-allowed">
-                <i class="fa-solid fa-share"></i> Share
-              </div>
-              <div class="w-full py-3 bg-gray-100 dark:bg-[#222] text-gray-400 rounded-xl font-medium flex items-center justify-center gap-2 cursor-not-allowed">
-                <i class="fa-solid fa-paper-plane"></i> Send to Agent
               </div>
             </div>
 
