@@ -172,30 +172,24 @@ export class QrView implements OnInit {
 
       const agentRows: [string, string][] = agent ? [
         ['Name', `${agent.firstname || ''} ${agent.lastname || ''}`.trim()],
-        ['Email', agent.email || ''],
         ['Phone', agent.phone || ''],
-        ['Location', this.getAgentLocation(agent)],
-        ['Address', agent.address || ''],
+        ['Address', this.qrData.agent_address ? (this.qrData.agent_address.address_line || '') : (agent.address || '')],
       ] : [];
 
-      const addressRows: [string, string][] = this.qrData.agent_address ? [
-        ['Address', this.qrData.agent_address.address_line || ''],
-      ] : [];
+      const addressRows: [string, string][] = [];
 
       const customerRows: [string, string][] = currentUser ? [
         ['Name', `${currentUser.firstname || ''} ${currentUser.lastname || ''}`.trim()],
-        ['Email', currentUser.email || ''],
         ['Phone', currentUser.phone || ''],
       ] : [];
 
       const htmlContent = `
-        <div id="pdf-render-target" style="width:794px;font-family:Helvetica,Arial,'Microsoft YaHei','PingFang SC',sans-serif;background:#fff;color:#111;">
+        <div id="pdf-render-target" style="width:794px;font-family:'DejaVu Sans','Helvetica Neue',Helvetica,Arial,sans-serif;background:#fff;color:#111;">
           <div style="background:#f97316;padding:14px 24px;color:#fff;font-weight:bold;font-size:17px;">
             PilikaPilika — Product QR Code
           </div>
           <div style="text-align:center;padding:20px;">
             <img src="${qrDataUrl}" style="width:200px;height:200px;display:block;margin:0 auto;" />
-            <div style="font-size:11px;color:#666;margin-top:8px;word-break:break-all;">${escapeHtml(this.qrData.qr_data || '')}</div>
           </div>
           <div style="padding:0 30px 20px;">
             ${buildSection('Product Details', productRows)}
@@ -217,7 +211,12 @@ export class QrView implements OnInit {
       renderTarget.style.top = '0';
       document.body.appendChild(renderTarget);
 
-      const hCanvas = await html2canvas(renderTarget, { scale: 2, useCORS: true });
+      const hCanvas = await html2canvas(renderTarget, { 
+        scale: 2, 
+        useCORS: true,
+        allowTaint: true,
+        logging: false
+      });
       const imgData = hCanvas.toDataURL('image/png');
 
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
