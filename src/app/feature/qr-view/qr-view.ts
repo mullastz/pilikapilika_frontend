@@ -5,6 +5,7 @@ import { QrCodeService } from '../../core/services/qr-code.service';
 import { AuthService } from '../../core/services/auth.service';
 import { QRCodeComponent } from 'angularx-qrcode';
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface AgentDetails {
   uuid: string;
@@ -126,110 +127,113 @@ export class QrView implements OnInit {
       const qrDataUrl = canvas.toDataURL('image/png');
       const currentUser = this.authService.getUser();
       const agent = this.qrData.agent;
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pageW = doc.internal.pageSize.getWidth();
-      const pageH = doc.internal.pageSize.getHeight();
-      const margin = 15;
-      const contentW = pageW - margin * 2;
-      let y = margin;
 
-      // ── Header bar ──
-      doc.setFillColor(249, 115, 22);
-      doc.rect(0, 0, pageW, 18, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(13);
-      doc.setFont('helvetica', 'bold');
-      doc.text('PilikaPilika — Product QR Code', margin, 12);
-      y = 26;
-
-      // ── QR code image ──
-      const qrSize = 50;
-      doc.addImage(qrDataUrl, 'PNG', (pageW - qrSize) / 2, y, qrSize, qrSize);
-      y += qrSize + 4;
-      doc.setFontSize(7);
-      doc.setTextColor(100, 100, 100);
-      doc.setFont('helvetica', 'normal');
-      doc.text(this.qrData.qr_data || '', pageW / 2, y, { align: 'center' });
-      y += 8;
-
-      // ── Section helper ──
-      const drawSection = (title: string, rows: [string, string][]) => {
-        const filled = rows.filter(([, v]) => !!v);
-        if (!filled.length) return;
-        doc.setFillColor(255, 237, 213);
-        doc.rect(margin, y, contentW, 7, 'F');
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(194, 65, 12);
-        doc.text(title, margin + 2, y + 5);
-        y += 9;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        filled.forEach(([label, value], i) => {
-          const bg = i % 2 === 0 ? [249, 250, 251] : [255, 255, 255];
-          doc.setFillColor(bg[0], bg[1], bg[2]);
-          doc.rect(margin, y, contentW, 6.5, 'F');
-          doc.setTextColor(107, 114, 128);
-          doc.text(label, margin + 2, y + 4.5);
-          doc.setTextColor(17, 24, 39);
-          doc.text(String(value), margin + 45, y + 4.5);
-          y += 6.5;
-        });
-        y += 4;
+      const escapeHtml = (str: string): string => {
+        if (!str) return '';
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
       };
 
-      // ── Product Details ──
-      drawSection('Product Details', [
-        ['Product Name',  this.qrData.product_name],
-        ['Description',   this.qrData.description || ''],
-        ['Category',      this.qrData.category || ''],
-        ['Package Type',  this.qrData.package_type || ''],
-        ['Quantity',      this.qrData.quantity ? String(this.qrData.quantity) : ''],
-        ['Total Weight',  this.qrData.total_weight ? `${this.qrData.total_weight} kg` : ''],
-        ['Total Volume',  this.qrData.total_volume ? `${this.qrData.total_volume} m³` : ''],
-      ]);
+      const buildRows = (rows: [string, string][]) =>
+        rows
+          .filter(([, v]) => !!v)
+          .map(([label, value], i) => {
+            const bg = i % 2 === 0 ? '#f9fafb' : '#ffffff';
+            return `<tr style="background:${bg};">
+              <td style="padding:5px 10px;color:#6b7280;width:40%;font-size:13px;">${escapeHtml(label)}</td>
+              <td style="padding:5px 10px;color:#111111;font-size:13px;">${escapeHtml(value)}</td>
+            </tr>`;
+          })
+          .join('');
 
-      // ── Agent Details ──
-      if (agent) {
-        drawSection('Assigned Agent', [
-          ['Name',     `${agent.firstname || ''} ${agent.lastname || ''}`.trim()],
-          ['Email',    agent.email || ''],
-          ['Phone',    agent.phone || ''],
-          ['Location', this.getAgentLocation(agent)],
-          ['Address',  agent.address || ''],
-        ]);
-      }
+      const buildSection = (title: string, rows: [string, string][]) => {
+        const rowHtml = buildRows(rows);
+        if (!rowHtml) return '';
+        return `
+          <div style="margin-bottom:14px;">
+            <div style="background:#ffedd5;padding:6px 10px;font-weight:bold;font-size:13px;color:#c2410c;border-radius:4px 4px 0 0;">${escapeHtml(title)}</div>
+            <table style="width:100%;border-collapse:collapse;">${rowHtml}</table>
+          </div>`;
+      };
 
-      // ── Agent Address ──
-      if (this.qrData.agent_address) {
-        drawSection('Agent Address', [
-          ['Address', this.qrData.agent_address.address_line || ''],
-        ]);
-      }
+      const productRows: [string, string][] = [
+        ['Product Name', this.qrData.product_name],
+        ['Description', this.qrData.description || ''],
+        ['Category', this.qrData.category || ''],
+        ['Package Type', this.qrData.package_type || ''],
+        ['Quantity', this.qrData.quantity ? String(this.qrData.quantity) : ''],
+        ['Total Weight', this.qrData.total_weight ? `${this.qrData.total_weight} kg` : ''],
+        ['Total Volume', this.qrData.total_volume ? `${this.qrData.total_volume} m³` : ''],
+      ];
 
-      // ── Customer Details ──
-      if (currentUser) {
-        drawSection('Customer Details', [
-          ['Name',  `${currentUser.firstname || ''} ${currentUser.lastname || ''}`.trim()],
-          ['Email', currentUser.email || ''],
-          ['Phone', currentUser.phone || ''],
-        ]);
-      }
+      const agentRows: [string, string][] = agent ? [
+        ['Name', `${agent.firstname || ''} ${agent.lastname || ''}`.trim()],
+        ['Email', agent.email || ''],
+        ['Phone', agent.phone || ''],
+        ['Location', this.getAgentLocation(agent)],
+        ['Address', agent.address || ''],
+      ] : [];
 
-      // ── Footer ──
-      doc.setFillColor(249, 115, 22);
-      doc.rect(0, pageH - 10, pageW, 10, 'F');
-      doc.setFontSize(7);
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Generated on ${new Date().toLocaleDateString()} · PilikaPilika`, pageW / 2, pageH - 4, { align: 'center' });
+      const addressRows: [string, string][] = this.qrData.agent_address ? [
+        ['Address', this.qrData.agent_address.address_line || ''],
+      ] : [];
+
+      const customerRows: [string, string][] = currentUser ? [
+        ['Name', `${currentUser.firstname || ''} ${currentUser.lastname || ''}`.trim()],
+        ['Email', currentUser.email || ''],
+        ['Phone', currentUser.phone || ''],
+      ] : [];
+
+      const htmlContent = `
+        <div id="pdf-render-target" style="width:794px;font-family:Helvetica,Arial,'Microsoft YaHei','PingFang SC',sans-serif;background:#fff;color:#111;">
+          <div style="background:#f97316;padding:14px 24px;color:#fff;font-weight:bold;font-size:17px;">
+            PilikaPilika — Product QR Code
+          </div>
+          <div style="text-align:center;padding:20px;">
+            <img src="${qrDataUrl}" style="width:200px;height:200px;display:block;margin:0 auto;" />
+            <div style="font-size:11px;color:#666;margin-top:8px;word-break:break-all;">${escapeHtml(this.qrData.qr_data || '')}</div>
+          </div>
+          <div style="padding:0 30px 20px;">
+            ${buildSection('Product Details', productRows)}
+            ${buildSection('Assigned Agent', agentRows)}
+            ${buildSection('Agent Address', addressRows)}
+            ${buildSection('Customer Details', customerRows)}
+          </div>
+          <div style="background:#f97316;padding:10px 20px;color:#fff;font-size:11px;text-align:center;">
+            Generated on ${new Date().toLocaleDateString()} · PilikaPilika
+          </div>
+        </div>
+      `;
+
+      const container = document.createElement('div');
+      container.innerHTML = htmlContent;
+      const renderTarget = container.firstElementChild as HTMLElement;
+      renderTarget.style.position = 'fixed';
+      renderTarget.style.left = '-9999px';
+      renderTarget.style.top = '0';
+      document.body.appendChild(renderTarget);
+
+      const hCanvas = await html2canvas(renderTarget, { scale: 2, useCORS: true });
+      const imgData = hCanvas.toDataURL('image/png');
+
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pdfWidth = doc.internal.pageSize.getWidth();
+      const pdfHeight = (hCanvas.height * pdfWidth) / hCanvas.width;
+
+      doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
       const safeName = (this.qrData.product_name || 'product')
         .trim()
         .replace(/[\\/:*?"<>|]/g, '')
         .replace(/\s+/g, '_')
         .substring(0, 80);
+
       doc.save(`${safeName}.pdf`);
+      document.body.removeChild(renderTarget);
     } catch (err) {
       console.error('PDF generation error:', err);
       alert('Failed to generate PDF. Please try again.');
