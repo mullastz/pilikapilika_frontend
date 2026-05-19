@@ -141,9 +141,30 @@
                             <h3 class="font-semibold dark:text-white text-sm sm:text-base mb-1">
                                 {{shipment.title || 'Untitled Shipment'}}
                             </h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">
-                                Tracking: {{shipment.tracking_number}}
-                            </p>
+                            <div class="flex items-center gap-2">
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    <ng-container *ngIf="hasTrackingNumber(shipment)">
+                                        External Tracking: <span class="font-medium text-orange-600 dark:text-orange-400">{{shipment.external_tracking_number}}</span>
+                                    </ng-container>
+                                    <ng-container *ngIf="!hasTrackingNumber(shipment)">
+                                        <span class="text-gray-400 italic">No external tracking number</span>
+                                    </ng-container>
+                                </p>
+                                <button
+                                    *ngIf="canAddTrackingNumber(shipment)"
+                                    (click)="openTrackingModal(shipment)"
+                                    class="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-2 py-1 rounded hover:bg-orange-200 dark:hover:bg-orange-900/50 transition"
+                                    title="Add external tracking number">
+                                    <i class="fa-solid fa-plus"></i> Add
+                                </button>
+                                <button
+                                    *ngIf="canEditTrackingNumber(shipment)"
+                                    (click)="openTrackingModal(shipment)"
+                                    class="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition"
+                                    title="Edit external tracking number">
+                                    <i class="fa-solid fa-pen"></i> Edit
+                                </button>
+                            </div>
                         </div>
 
                         <!-- STATUS BADGE -->
@@ -717,6 +738,54 @@
 
         </div>
       </ng-container>
+    </div>
+  </div>
+}
+
+<!-- Tracking Number Modal -->
+@if (trackingModalOpen()) {
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeTrackingModal()">
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 max-w-sm w-full shadow-2xl" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          {{isEditingTrackingNumber() ? 'Edit External Tracking Number' : 'Add External Tracking Number'}}
+        </h3>
+        <button (click)="closeTrackingModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+      <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+        @if (isEditingTrackingNumber()) {
+          Update the external tracking number. Only you can edit this since you added it.
+        } @else {
+          Enter the external tracking number provided by the logistics company.
+        }
+      </p>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">External Tracking Number</label>
+        <input
+          type="text"
+          [(ngModel)]="trackingNumberInput"
+          placeholder="e.g., TRK123456789"
+          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#222] text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+          [disabled]="trackingModalLoading()"
+        />
+      </div>
+      <div class="flex gap-3">
+        <button
+          (click)="closeTrackingModal()"
+          [disabled]="trackingModalLoading()"
+          class="flex-1 px-4 py-2 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-[#444] transition disabled:opacity-50 disabled:cursor-not-allowed">
+          Cancel
+        </button>
+        <button
+          (click)="submitTrackingNumber()"
+          [disabled]="trackingModalLoading()"
+          class="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+          <div *ngIf="trackingModalLoading()" class="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin"></div>
+          {{trackingModalLoading() ? (isEditingTrackingNumber() ? 'Updating...' : 'Adding...') : (isEditingTrackingNumber() ? 'Update Tracking Number' : 'Add External Tracking Number')}}
+        </button>
+      </div>
     </div>
   </div>
 }

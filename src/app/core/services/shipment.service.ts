@@ -7,6 +7,8 @@ export interface Shipment {
   user_id: string;
   agent_id: string;
   tracking_number: string;
+  external_tracking_number?: string;
+  external_tracking_added_by?: string;
   title: string;
   description?: string;
   pickup_address: string;
@@ -201,6 +203,16 @@ export class ShipmentService {
    */
   cancelShipment(shipmentId: string): Observable<{ success: boolean; message: string; data: { shipment: Shipment } }> {
     return this.apiService.post<{ success: boolean; message: string; data: { shipment: Shipment } }>(`${this.endpoint}/${shipmentId}/cancel`, {});
+  }
+
+  /**
+   * Update shipment external tracking number (for both agents and customers)
+   */
+  updateTrackingNumber(shipmentId: string, trackingNumber: string): Observable<{ success: boolean; message: string; data: { shipment: Shipment } }> {
+    return this.apiService.put<{ success: boolean; message: string; data: { shipment: Shipment } }>(
+      `${this.endpoint}/${shipmentId}/tracking-number`,
+      { external_tracking_number: trackingNumber }
+    );
   }
 
   /**

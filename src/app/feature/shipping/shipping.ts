@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { ShipmentService, Shipment } from '../../core/services/shipment.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -9,7 +10,7 @@ import { QRCodeComponent } from 'angularx-qrcode';
 
 @Component({
   selector: 'app-shipping',
-  imports: [ CommonModule, QRCodeComponent ],
+  imports: [ CommonModule, FormsModule, QRCodeComponent ],
   templateUrl: './shipping.html',
   styleUrl: './shipping.css',
 })
@@ -35,6 +36,12 @@ export class Shipping implements OnInit {
   public viewModalLoading = signal(false);
   public viewModalError = signal<string | null>(null);
   public selectedShipmentDetail = signal<Shipment | null>(null);
+
+  // Tracking number modal state
+  public trackingModalOpen = signal(false);
+  public trackingModalShipment = signal<Shipment | null>(null);
+  public trackingNumberInput = signal('');
+  public trackingModalLoading = signal(false);
 
   // Product expand state for view modal
   public selectedProductUuid = signal<string | null>(null);
@@ -523,4 +530,65 @@ export class Shipping implements OnInit {
   markAsDeliveredAction(shipment: Shipment): void {
     this.openConfirmModal(shipment, 'delivered');
   }
-} 
+
+  // Tracking number methods
+  openTrackingModal(shipment: Shipment): void {
+    this.trackingModalShipment.set(shipment);
+    this.trackingNumberInput.set(shipment.external_tracking_number || '');
+    this.trackingModalOpen.set(true);
+  }
+
+  closeTrackingModal(): void {
+    this.trackingModalOpen.set(false);
+    this.trackingModalShipment.set(null);
+    this.trackingNumberInput.set('');
+  }
+
+  submitTrackingNumber(): void {
+    const shipment = this.trackingModalShipment();
+    const trackingNumber = this.trackingNumberInput().trim();
+
+    if (!shipment || !trackingNumber) {
+      this.toastService.error('Please enter a tracking number');
+      return;
+    }
+
+    this.trackingModalLoading.set(true);
+
+    this.shipmentService.updateTrackingNumber(shipment.id, trackingNumber).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.success('Tracking number added successfully');
+          this.closeTrackingModal();
+          this.loadShipments(); // Reload to update the list
+        } else {
+          this.toastService.error(response.message || 'Failed to add tracking number');
+        }
+        this.trackingModalLoading.set(false);
+      },
+      error: (error: any) => {
+        console.error('Failed to add tracking number:', error);
+        this.toastService.error('Failed to add tracking number');
+        this.trackingModalLoading.set(false);
+      }
+    });
+  }
+
+  canAddTrackingNumber(shipment: Shipment): boolean {
+    return !shipment.external_tracking_number;
+  }
+
+  canEditTrackingNumber(shipment: Shipment): boolean {
+    const user = this.authService.getUser();
+    return !!shipment.external_tracking_number && shipment.external_tracking_added_by === user?.uuid;
+  }
+
+  isEditingTrackingNumber(): boolean {
+    const shipment = this.trackingModalShipment();
+    return !!shipment?.external_tracking_number;
+  }
+
+  hasTrackingNumber(shipment: Shipment): boolean {
+    return !!shipment.external_tracking_number;
+  }
+}
