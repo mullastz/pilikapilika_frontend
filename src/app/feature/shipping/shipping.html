@@ -411,6 +411,12 @@
                   <span class="text-sm font-medium dark:text-white text-right">{{s.agent_address}}</span>
                 </div>
               </ng-container>
+              <ng-container *ngIf="s.external_tracking_number">
+                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                  <span class="text-sm text-gray-500">External Tracking</span>
+                  <span class="text-sm font-medium text-orange-500">{{s.external_tracking_number}}</span>
+                </div>
+              </ng-container>
               <ng-container *ngIf="s.actual_price">
                 <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                   <span class="text-sm text-gray-500">Actual Price</span>
@@ -445,6 +451,12 @@
                   <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                     <span class="text-sm text-gray-500">Customer Phone</span>
                     <span class="text-sm font-medium dark:text-white">{{s.user.phone}}</span>
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="s.user.country">
+                  <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <span class="text-sm text-gray-500">Customer Country</span>
+                    <span class="text-sm font-medium dark:text-white">{{s.user.country}}</span>
                   </div>
                 </ng-container>
               </ng-container>

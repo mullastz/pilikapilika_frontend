@@ -16,6 +16,7 @@ interface AgentDetails {
   address: string | null;
   region: string | null;
   district: string | null;
+  country: string | null;
   base_price: string | null;
   currency: string;
   is_verified: boolean;
@@ -26,6 +27,18 @@ interface AgentAddress {
   label: string;
   address_line: string;
   is_default: boolean;
+}
+
+interface CustomerDetails {
+  uuid: string;
+  firstname: string;
+  lastname: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  region: string | null;
+  district: string | null;
+  country: string | null;
 }
 
 interface QrCodeData {
@@ -42,6 +55,7 @@ interface QrCodeData {
   assigned_agent_uuid: string | null;
   agent: AgentDetails | null;
   agent_address: AgentAddress | null;
+  customer: CustomerDetails | null;
   photos: string[] | null;
   qr_data: string;
   created_at: string;
@@ -125,7 +139,6 @@ export class QrView implements OnInit {
       if (!canvas) throw new Error('QR canvas not found');
 
       const qrDataUrl = canvas.toDataURL('image/png');
-      const currentUser = this.authService.getUser();
       const agent = this.qrData.agent;
 
       const escapeHtml = (str: string): string => {
@@ -178,9 +191,11 @@ export class QrView implements OnInit {
 
       const addressRows: [string, string][] = [];
 
-      const customerRows: [string, string][] = currentUser ? [
-        ['Name', `${currentUser.firstname || ''} ${currentUser.lastname || ''}`.trim()],
-        ['Phone', currentUser.phone || ''],
+      const customer = this.qrData.customer;
+      const customerRows: [string, string][] = customer ? [
+        ['Name', `${customer.firstname || ''} ${customer.lastname || ''}`.trim()],
+        ['Phone', customer.phone || ''],
+        ['Country', customer.country || ''],
       ] : [];
 
       const htmlContent = `

@@ -7,7 +7,8 @@ import { QrCodeService, QrCodeResponse } from '../../core/services/qr-code.servi
 import { AgentService } from '../../core/services/agent.service';
 import { AuthService } from '../../core/services/auth.service';
 import { AddressService, Address } from '../../core/services/address.service';
-import { Agent } from '../../core/interfaces/auth.interface';
+import { Agent, User } from '../../core/interfaces/auth.interface';
+import { UserService } from '../../core/services/user.service';
 import { environment } from '../../../environments/environment';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -39,6 +40,7 @@ export class QrGenerator implements OnInit {
     private qrCodeService: QrCodeService,
     private agentService: AgentService,
     private authService: AuthService,
+    private userService: UserService,
     private addressService: AddressService,
     private cdr: ChangeDetectorRef,
     private route: ActivatedRoute,
@@ -306,7 +308,19 @@ export class QrGenerator implements OnInit {
       if (!canvas) throw new Error('QR canvas not found');
 
       const qrDataUrl = canvas.toDataURL('image/png');
-      const currentUser = this.authService.getUser();
+
+      // Fetch fresh user profile to ensure country and other fields are up-to-date
+      let currentUser: User | null = this.authService.getUser();
+      try {
+        const profileRes = await this.userService.getProfile().toPromise();
+        if (profileRes?.data) {
+          currentUser = profileRes.data;
+          this.authService.saveUser(profileRes.data);
+        }
+      } catch {
+        // fallback to cached user if API fails
+      }
+
       const agent = this.selectedAgent;
 
       const escapeHtml = (str: string): string => {
@@ -362,6 +376,7 @@ export class QrGenerator implements OnInit {
       const customerRows: [string, string][] = currentUser ? [
         ['Name', `${currentUser.firstname || ''} ${currentUser.lastname || ''}`.trim()],
         ['Phone', currentUser.phone || ''],
+        ['Country', currentUser.country || ''],
       ] : [];
 
       const htmlContent = `

@@ -31,6 +31,7 @@ export interface Shipment {
     lastname: string;
     email: string;
     phone?: string;
+    country?: string;
   };
   agent?: {
     uuid: string;

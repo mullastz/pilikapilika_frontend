@@ -44,6 +44,19 @@ export class ManageAccount implements OnInit {
 
   genderOptions = ['Male', 'Female', 'Other'];
 
+  countryOptions = [
+    'Tanzania',
+    'Kenya',
+    'Uganda',
+    'Rwanda',
+    'Burundi',
+    'Democratic Republic of Congo',
+    'Zambia',
+    'Malawi',
+    'Mozambique',
+    'South Sudan',
+  ];
+
   constructor(
     private location: Location,
     private fb: FormBuilder,
@@ -61,6 +74,7 @@ export class ManageAccount implements OnInit {
       phone: ['', Validators.maxLength(20)],
       region: [''],
       district: [''],
+      country: [''],
       ward: ['', Validators.maxLength(255)],
       address: ['', Validators.maxLength(500)],
     });
@@ -123,6 +137,7 @@ export class ManageAccount implements OnInit {
       phone: user.phone || '',
       region: user.region || '',
       district: user.district || '',
+      country: user.country || '',
       ward: user.ward || '',
       address: user.address || '',
     });
@@ -228,6 +243,7 @@ export class ManageAccount implements OnInit {
       phone: formValue.phone,
       region: formValue.region,
       district: formValue.district,
+      country: formValue.country,
       ward: formValue.ward,
       address: formValue.address,
     };

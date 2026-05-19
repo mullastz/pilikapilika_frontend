@@ -12,6 +12,7 @@ export interface SignupRequest {
   phone?: string;
   region?: string;
   district?: string;
+  country?: string;
   ward?: string;
   address?: string;
 }
@@ -77,6 +78,7 @@ export interface User {
   phone: string | null;
   region: string | null;
   district: string | null;
+  country: string | null;
   ward: string | null;
   address: string | null;
   profile_photo: string | null;
@@ -162,6 +164,7 @@ export interface UpdateProfileRequest {
   phone?: string;
   region?: string;
   district?: string;
+  country?: string;
   ward?: string;
   address?: string;
 }
