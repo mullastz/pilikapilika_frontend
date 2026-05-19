@@ -27,7 +27,7 @@ export class Shipping implements OnInit {
   public confirmModalConfig = signal<{
     title: string;
     message: string;
-    action: 'confirm' | 'reject' | 'cancel' | 'in_transit' | 'delivered';
+    action: 'confirm' | 'reject' | 'cancel' | 'at_warehouse' | 'in_transit' | 'delivered';
     shipment: Shipment | null;
   }>({ title: '', message: '', action: 'confirm', shipment: null });
 
@@ -62,6 +62,7 @@ export class Shipping implements OnInit {
     { id: 'all', label: 'All Shipments', icon: 'fa-list' },
     { id: 'pending_confirmation', label: 'Requests', icon: 'fa-clock' },
     { id: 'confirmed', label: 'Confirmed', icon: 'fa-check-circle' },
+    { id: 'at_warehouse', label: 'At Warehouse', icon: 'fa-warehouse' },
     { id: 'in_transit', label: 'In Transit', icon: 'fa-truck' },
     { id: 'delivered', label: 'Delivered', icon: 'fa-check-double' },
     { id: 'cancelled', label: 'Cancelled', icon: 'fa-times-circle' },
@@ -73,6 +74,7 @@ export class Shipping implements OnInit {
     { id: 'all', label: 'All Shipments', icon: 'fa-list' },
     { id: 'pending_confirmation', label: 'Pending', icon: 'fa-clock' },
     { id: 'confirmed', label: 'Confirmed', icon: 'fa-check-circle' },
+    { id: 'at_warehouse', label: 'At Warehouse', icon: 'fa-warehouse' },
     { id: 'in_transit', label: 'In Transit', icon: 'fa-truck' },
     { id: 'delivered', label: 'Delivered', icon: 'fa-check-double' },
     { id: 'cancelled', label: 'Cancelled', icon: 'fa-times-circle' }
@@ -237,6 +239,8 @@ export class Shipping implements OnInit {
         return 'bg-green-100 text-green-600';
       case 'in_transit':
         return 'bg-blue-100 text-blue-600';
+      case 'at_warehouse':
+        return 'bg-indigo-100 text-indigo-600';
       case 'confirmed':
         return 'bg-purple-100 text-purple-600';
       case 'pending_confirmation':
@@ -358,6 +362,27 @@ export class Shipping implements OnInit {
     });
   }
 
+  markAsAtWarehouse(shipment: Shipment): void {
+    this.updatingShipment.set(shipment.id);
+
+    this.shipmentService.markAsAtWarehouse(shipment.id).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.success('Shipment marked as at warehouse');
+          this.loadShipments(); // Reload to update the list
+        } else {
+          this.toastService.error(response.message || 'Failed to update shipment');
+        }
+        this.updatingShipment.set(null);
+      },
+      error: (error: any) => {
+        console.error('Failed to update shipment:', error);
+        this.toastService.error('Failed to update shipment');
+        this.updatingShipment.set(null);
+      }
+    });
+  }
+
   markAsInTransit(shipment: Shipment): void {
     this.updatingShipment.set(shipment.id);
 
@@ -404,8 +429,12 @@ export class Shipping implements OnInit {
     return shipment.status === 'pending_confirmation';
   }
 
-  canMarkInTransit(shipment: Shipment): boolean {
+  canMarkAtWarehouse(shipment: Shipment): boolean {
     return shipment.status === 'confirmed';
+  }
+
+  canMarkInTransit(shipment: Shipment): boolean {
+    return shipment.status === 'at_warehouse';
   }
 
   canMarkDelivered(shipment: Shipment): boolean {
@@ -467,12 +496,13 @@ export class Shipping implements OnInit {
   // Confirmation modal methods
   openConfirmModal(
     shipment: Shipment,
-    action: 'confirm' | 'reject' | 'cancel' | 'in_transit' | 'delivered'
+    action: 'confirm' | 'reject' | 'cancel' | 'at_warehouse' | 'in_transit' | 'delivered'
   ): void {
     const configMap: Record<typeof action, { title: string; message: string }> = {
       confirm: { title: 'Confirm Shipment', message: 'Are you sure you want to confirm this shipment request?' },
       reject: { title: 'Reject Shipment', message: 'Are you sure you want to reject this shipment request?' },
       cancel: { title: 'Cancel Shipment', message: 'Are you sure you want to cancel this shipment?' },
+      at_warehouse: { title: 'Mark as At Warehouse', message: 'Are you sure you want to mark this shipment as at warehouse?' },
       in_transit: { title: 'Mark as In Transit', message: 'Are you sure you want to mark this shipment as in transit?' },
       delivered: { title: 'Mark as Delivered', message: 'Are you sure you want to mark this shipment as delivered?' },
     };
@@ -500,6 +530,9 @@ export class Shipping implements OnInit {
       case 'cancel':
         this.cancelShipment(cfg.shipment);
         break;
+      case 'at_warehouse':
+        this.markAsAtWarehouse(cfg.shipment);
+        break;
       case 'in_transit':
         this.markAsInTransit(cfg.shipment);
         break;
@@ -521,6 +554,10 @@ export class Shipping implements OnInit {
 
   cancelShipmentAction(shipment: Shipment): void {
     this.openConfirmModal(shipment, 'cancel');
+  }
+
+  markAsAtWarehouseAction(shipment: Shipment): void {
+    this.openConfirmModal(shipment, 'at_warehouse');
   }
 
   markAsInTransitAction(shipment: Shipment): void {

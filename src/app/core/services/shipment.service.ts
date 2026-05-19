@@ -16,7 +16,7 @@ export interface Shipment {
   agent_address?: string;
   estimated_price: number;
   actual_price?: number;
-  status: 'pending_confirmation' | 'confirmed' | 'in_transit' | 'delivered' | 'cancelled';
+  status: 'pending_confirmation' | 'confirmed' | 'at_warehouse' | 'in_transit' | 'delivered' | 'cancelled';
   products?: any[];
   packages?: any[];
   notes?: string;
@@ -128,6 +128,15 @@ export class ShipmentService {
   confirmShipment(id: string): Observable<{ success: boolean; message: string; data: { shipment: Shipment } }> {
     return this.apiService.post<{ success: boolean; message: string; data: { shipment: Shipment } }>(
       `${this.endpoint}/${id}/confirm`, {}
+    );
+  }
+
+  /**
+   * Mark shipment as at warehouse (for agents)
+   */
+  markAsAtWarehouse(id: string): Observable<{ success: boolean; message: string; data: { shipment: Shipment } }> {
+    return this.apiService.post<{ success: boolean; message: string; data: { shipment: Shipment } }>(
+      `${this.endpoint}/${id}/at-warehouse`, {}
     );
   }
 
