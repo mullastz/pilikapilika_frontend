@@ -84,7 +84,7 @@ export class ScanQr implements OnInit, OnDestroy {
       await this.html5QrCode.start(
         { facingMode: 'environment' },
         { fps: 10 },
-        (decodedText) => {
+        (decodedText: string) => {
           if (this.scanHandled || this.state() !== 'scanning') return;
           // Extra debounce: ignore scans within 3 seconds of a previous scan
           const now = Date.now();
