@@ -17,6 +17,7 @@ import { Search } from './feature/search/search';
 import { QrGenerator } from './feature/qr-generator/qr-generator';
 import { QrView } from './feature/qr-view/qr-view';
 import { MyProducts } from './feature/my-products/my-products';
+import { ScanQr } from './feature/scan-qr/scan-qr';
 import { PackageGenerator } from './feature/package-generator/package-generator';
 import { PackageView } from './feature/package-view/package-view';
 import { BookShipment } from './feature/book-shipment/book-shipment';
@@ -60,6 +61,8 @@ export const routes: Routes = [
   { path: 'package/:uuid', component: PackageView },
   { path: 'book-shipment/:agentId', component: BookShipment },
   { path: 'account/my-products', component: MyProducts },
+  { path: 'scan-qr', component: ScanQr, canActivate: [AgentGuard] },
+  { path: 'account/scan-qr', component: ScanQr, canActivate: [AgentGuard] },
 
   // Admin Routes
   {

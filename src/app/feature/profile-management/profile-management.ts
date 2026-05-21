@@ -35,6 +35,15 @@ export class ProfileManagement implements OnInit {
       agentOnly: true
     },
     {
+      id: 'scan-qr',
+      title: 'Scan QR',
+      icon: 'fa-camera',
+      bgColor: 'bg-purple-100',
+      darkBgColor: 'dark:bg-[#111]',
+      iconBgColor: 'bg-purple-500',
+      agentOnly: true
+    },
+    {
       id: 'my-products',
       title: 'My Products',
       icon: 'fa-box',

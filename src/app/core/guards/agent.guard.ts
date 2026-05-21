@@ -20,7 +20,8 @@ export class AgentGuard implements CanActivate {
       return false;
     }
 
-    if (user.role !== 'agent') {
+    const role = user.role?.toLowerCase();
+    if (role !== 'agent' && role !== 'seller') {
       this.router.navigate(['/home']);
       return false;
     }

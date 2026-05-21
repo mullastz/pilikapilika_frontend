@@ -221,7 +221,15 @@
                             View
                         </button>
 
-                        
+                        <!-- View QR Button (for agents on pending shipments) -->
+                        <button
+                            *ngIf="isAgent() && shipment.status === 'pending_confirmation' && shipment.products && shipment.products.length > 0"
+                            (click)="openQrModal(shipment)"
+                            class="px-3 py-2 bg-white dark:bg-[#222] border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-[#333] transition flex items-center gap-2">
+                            <i class="fa-solid fa-qrcode text-purple-500"></i>
+                            View QR
+                        </button>
+
                         <!-- Agent Action Buttons -->
                         <ng-container *ngIf="isAgent() && activeTab() !== 'my_shippings'">
                             <!-- Confirm Button (for pending shipments) -->
@@ -811,6 +819,54 @@
           class="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
           <div *ngIf="trackingModalLoading()" class="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin"></div>
           {{trackingModalLoading() ? (isEditingTrackingNumber() ? 'Updating...' : 'Adding...') : (isEditingTrackingNumber() ? 'Update Tracking Number' : 'Add External Tracking Number')}}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- QR Code View Modal -->
+@if (qrModalOpen()) {
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeQrModal()">
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Product QR Codes</h3>
+        <button (click)="closeQrModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="p-6 space-y-6">
+        <ng-container *ngIf="qrModalShipment() as qrShipment">
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Scan these QR codes from the customer's physical package to verify and approve the shipment.
+          </p>
+          <div class="space-y-6">
+            <ng-container *ngFor="let product of qrShipment.products">
+              <div class="bg-orange-50 dark:bg-[#111] rounded-xl p-4 text-center">
+                <p class="font-medium text-gray-900 dark:text-white mb-3">{{product.product_name || 'Product'}}</p>
+                <div class="flex justify-center">
+                  <div class="bg-white p-3 rounded-xl inline-block">
+                    <qrcode
+                      [qrdata]="getQrData(product)"
+                      [width]="200"
+                      [errorCorrectionLevel]="'M'"
+                    ></qrcode>
+                  </div>
+                </div>
+                <p class="text-xs text-gray-400 mt-2 break-all">{{getQrData(product)}}</p>
+              </div>
+            </ng-container>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Footer -->
+      <div class="p-4 border-t border-gray-100 dark:border-gray-700 flex justify-end">
+        <button (click)="closeQrModal()" class="px-4 py-2 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-[#444] transition">
+          Close
         </button>
       </div>
     </div>

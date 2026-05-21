@@ -233,6 +233,16 @@ export class ShipmentService {
   }
 
   /**
+   * Approve shipment by QR code scan (for agents)
+   */
+  approveByQrCode(qrCodeUuid: string): Observable<{ success: boolean; info?: boolean; message: string; data?: { shipment: Shipment } }> {
+    return this.apiService.post<{ success: boolean; info?: boolean; message: string; data?: { shipment: Shipment } }>(
+      `${this.endpoint}/scan-approve`,
+      { qr_code_uuid: qrCodeUuid }
+    );
+  }
+
+  /**
    * Refresh shipments data
    */
   refreshShipments(): void {

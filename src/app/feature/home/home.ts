@@ -260,12 +260,22 @@ export class Home implements OnInit {
     });
   }
 
-  // Activities for desktop
-  activities = [
-    { icon: 'fa-solid fa-qrcode', label: 'Generate QRcode', route: '/qr-generator' },
-    { icon: 'fa-solid fa-magnifying-glass', label: 'Search Agent', route: '/search' },
-    { icon: 'fa-solid fa-location-crosshairs', label: 'Track Shipping', route: '/account/shipping' }
-  ];
+  get isAgent(): boolean {
+    const role = this.currentUser?.role?.toLowerCase();
+    return role === 'agent' || role === 'seller';
+  }
+
+  get activities(): { icon: string; label: string; route: string }[] {
+    const base = [
+      { icon: 'fa-solid fa-qrcode', label: 'Generate QRcode', route: '/qr-generator' },
+      { icon: 'fa-solid fa-magnifying-glass', label: 'Search Agent', route: '/search' },
+      { icon: 'fa-solid fa-location-crosshairs', label: 'Track Shipping', route: '/account/shipping' }
+    ];
+    if (this.isAgent) {
+      base.push({ icon: 'fa-solid fa-camera', label: 'Scan QR', route: '/scan-qr' });
+    }
+    return base;
+  }
 
   // Helper methods for template
   getShipmentProgress(shipment: Shipment): number {

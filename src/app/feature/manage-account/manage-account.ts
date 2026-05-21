@@ -15,6 +15,7 @@ import { User, UpdateProfileRequest, UpdateProfileResponse } from '../../core/in
   styleUrl: './manage-account.css',
 })
 export class ManageAccount implements OnInit {
+[x: string]: any;
   @ViewChild('photoInput') photoInput!: ElementRef<HTMLInputElement>;
 
   profileForm: FormGroup;

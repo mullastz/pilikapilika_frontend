@@ -1,0 +1,155 @@
+.scan-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Camera feed fills the whole screen */
+.camera-feed {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 1;
+}
+
+.camera-feed video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+/* Scanner overlay */
+.scanner-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+.overlay-bar {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.65);
+  min-height: 60px;
+}
+
+.overlay-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 2rem;
+}
+
+.overlay-middle {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 280px;
+  flex-shrink: 0;
+}
+
+.overlay-side {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.65);
+  min-width: 20px;
+}
+
+/* Reticle / cutout area */
+.scanner-reticle {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65);
+  border-radius: 1rem;
+}
+
+/* Corner brackets */
+.corner {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-color: #FF7800;
+  border-style: solid;
+  z-index: 21;
+}
+
+.corner.top-left {
+  top: -2px;
+  left: -2px;
+  border-width: 4px 0 0 4px;
+  border-top-left-radius: 12px;
+}
+
+.corner.top-right {
+  top: -2px;
+  right: -2px;
+  border-width: 4px 4px 0 0;
+  border-top-right-radius: 12px;
+}
+
+.corner.bottom-left {
+  bottom: -2px;
+  left: -2px;
+  border-width: 0 0 4px 4px;
+  border-bottom-left-radius: 12px;
+}
+
+.corner.bottom-right {
+  bottom: -2px;
+  right: -2px;
+  border-width: 0 4px 4px 0;
+  border-bottom-right-radius: 12px;
+}
+
+/* Animated scanning line */
+.scanner-line {
+  position: absolute;
+  top: 0;
+  left: 10%;
+  width: 80%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #FF7800, transparent);
+  animation: scanMove 2.5s linear infinite;
+  border-radius: 2px;
+  z-index: 21;
+}
+
+@keyframes scanMove {
+  0% {
+    top: 10%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 90%;
+    opacity: 0;
+  }
+}
+
+/* html5-qrcode internal UI overrides — hide ALL library chrome */
+#reader__dashboard_section_csr,
+#reader__dashboard_section_swaplink,
+#reader__filescan_input,
+#reader__header_message,
+#reader__scan_region,
+#reader__scan_region_highlight,
+#reader__scan_region_image {
+  display: none !important;
+}
+
+/* Hide any canvas or region overlay the library injects */
+#reader canvas,
+#reader > div > canvas {
+  display: none !important;
+}

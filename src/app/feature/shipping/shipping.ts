@@ -47,6 +47,10 @@ export class Shipping implements OnInit {
   public selectedProductUuid = signal<string | null>(null);
   public productDetailsMap = signal<Map<string, any>>(new Map());
 
+  // QR view modal state
+  public qrModalOpen = signal(false);
+  public qrModalShipment = signal<Shipment | null>(null);
+
   // Computed signals
   public shipments = computed(() => this._shipments());
   public activeTab = computed(() => this._activeTab());
@@ -297,6 +301,27 @@ export class Shipping implements OnInit {
     this.selectedShipmentDetail.set(null);
     this.selectedProductUuid.set(null);
     this.productDetailsMap.set(new Map());
+  }
+
+  // QR modal methods
+  openQrModal(shipment: Shipment): void {
+    this.qrModalOpen.set(true);
+    this.qrModalShipment.set(shipment);
+  }
+
+  closeQrModal(): void {
+    this.qrModalOpen.set(false);
+    this.qrModalShipment.set(null);
+  }
+
+  getQrData(product: any): string {
+    if (product.qr_data) {
+      return product.qr_data;
+    }
+    if (product.qr_code_uuid) {
+      return `${window.location.origin}/qr/${product.qr_code_uuid}`;
+    }
+    return '';
   }
 
   selectProduct(productId: string): void {
