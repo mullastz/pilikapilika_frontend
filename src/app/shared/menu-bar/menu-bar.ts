@@ -29,13 +29,25 @@ export class MenuBar implements OnInit, OnDestroy {
 
   private routerSubscription!: Subscription;
 
-  readonly menuItems: MenuItem[] = [
-    { label: 'Home', icon: 'fa-solid fa-house', route: '/home' },
-    { label: 'Shipping', icon: 'fa-solid fa-box', route: '/account/shipping' },
-    { label: 'Search', icon: 'fa-solid fa-magnifying-glass', route: '/search' },
-    { label: 'Message', icon: 'fa-solid fa-message', route: '/messages' },
-    { label: 'Profile', icon: 'fa-solid fa-user', route: '/profile-management' }
-  ];
+  get menuItems(): MenuItem[] {
+    const user = this.authService.getUser();
+    const role = user?.role?.toLowerCase();
+    const isAgent = role === 'agent' || role === 'seller';
+
+    const items: MenuItem[] = [
+      { label: 'Home', icon: 'fa-solid fa-house', route: '/home' },
+      { label: 'Shipping', icon: 'fa-solid fa-box', route: '/account/shipping' },
+      { label: 'Search', icon: 'fa-solid fa-magnifying-glass', route: '/search' }
+    ];
+
+    if (isAgent) {
+      items.push({ label: 'Scan QR', icon: 'fa-solid fa-camera', route: '/scan-qr' });
+    }
+
+    items.push({ label: 'Profile', icon: 'fa-solid fa-user', route: '/profile-management' });
+
+    return items;
+  }
 
   private readonly hiddenRoutes = [
     '/search',

@@ -29,18 +29,18 @@ export class ProfileManagement implements OnInit {
       id: 'agent',
       title: 'Agent Profile',
       icon: 'fa-id-card',
-      bgColor: 'bg-blue-100',
+      bgColor: 'bg-orange-200',
       darkBgColor: 'dark:bg-[#111]',
-      iconBgColor: 'bg-blue-500',
+      iconBgColor: 'bg-orange-500',
       agentOnly: true
     },
     {
       id: 'scan-qr',
       title: 'Scan QR',
       icon: 'fa-camera',
-      bgColor: 'bg-purple-100',
+      bgColor: 'bg-orange-200',
       darkBgColor: 'dark:bg-[#111]',
-      iconBgColor: 'bg-purple-500',
+      iconBgColor: 'bg-orange-500',
       agentOnly: true
     },
     {
@@ -53,7 +53,7 @@ export class ProfileManagement implements OnInit {
     },
     {
       id: 'shipping',
-      title: 'My Shipping',
+      title: 'Shipments',
       icon: 'fa-truck-fast',
       bgColor: 'bg-orange-200',
       darkBgColor: 'dark:bg-[#111]',

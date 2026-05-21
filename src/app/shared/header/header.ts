@@ -14,6 +14,7 @@ export class Header {
   isDark = false;
   isLoggedIn = signal(false);
   isProfileDropdownOpen = signal(false);
+  isAgent = signal(false);
 
   private authService = inject(AuthService);
   private toastService = inject(ToastService);
@@ -27,6 +28,9 @@ export class Header {
 
   checkAuthStatus(): void {
     this.isLoggedIn.set(this.authService.isAuthenticated());
+    const user = this.authService.getUser();
+    const role = user?.role?.toLowerCase();
+    this.isAgent.set(role === 'agent' || role === 'seller');
   }
 
   toggleTheme() {
