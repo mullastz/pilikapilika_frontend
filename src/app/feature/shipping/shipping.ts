@@ -77,9 +77,10 @@ export class Shipping implements OnInit, OnDestroy {
   public qrScanPurpose = signal<QrScanPurpose>('agent_load_container');
   public qrScanContainerId = signal<string | null>(null);
   public qrScanShipmentId = signal<string | null>(null);
-  public qrScanState = signal<'idle' | 'scanning' | 'processing' | 'success' | 'error'>('idle');
+  public qrScanState = signal<'idle' | 'scanning' | 'processing' | 'success' | 'info' | 'error'>('idle');
   public qrScanMessage = signal<string>('');
   public qrScanCameraError = signal<string | null>(null);
+  public qrScanInfoShipment = signal<any | null>(null);
   private html5QrCode: Html5Qrcode | null = null;
   private scanHandled = false;
   private lastScanTime = 0;
@@ -913,6 +914,7 @@ export class Shipping implements OnInit, OnDestroy {
     this.qrScanState.set('idle');
     this.qrScanMessage.set('');
     this.qrScanCameraError.set(null);
+    this.qrScanInfoShipment.set(null);
   }
 
   closeQrScannerModal(): void {
@@ -921,6 +923,7 @@ export class Shipping implements OnInit, OnDestroy {
     this.qrScanState.set('idle');
     this.qrScanMessage.set('');
     this.qrScanCameraError.set(null);
+    this.qrScanInfoShipment.set(null);
     this.scanHandled = false;
   }
 
@@ -1043,7 +1046,11 @@ export class Shipping implements OnInit, OnDestroy {
     if (this.qrScanPurpose() === 'agent_load_container' && this.qrScanContainerId()) {
       this.containerService.scanShipment(this.qrScanContainerId()!, uuid).subscribe({
         next: (response) => {
-          if (response.success) {
+          if (response.success && response.info) {
+            this.qrScanState.set('info');
+            this.qrScanMessage.set(response.message || 'No update performed');
+            this.qrScanInfoShipment.set(response.data?.shipment ?? null);
+          } else if (response.success) {
             this.qrScanState.set('success');
             this.qrScanMessage.set(response.message || 'Shipment added to container successfully');
             this.loadShipments();
@@ -1061,7 +1068,11 @@ export class Shipping implements OnInit, OnDestroy {
     } else if (this.qrScanPurpose() === 'user_confirm_delivery' && this.qrScanShipmentId()) {
       this.shipmentService.markAsUserDelivered(this.qrScanShipmentId()!, uuid).subscribe({
         next: (response) => {
-          if (response.success) {
+          if (response.success && response.info) {
+            this.qrScanState.set('info');
+            this.qrScanMessage.set(response.message || 'No update performed');
+            this.qrScanInfoShipment.set(response.data?.shipment ?? null);
+          } else if (response.success) {
             this.qrScanState.set('success');
             this.qrScanMessage.set(response.message || 'Delivery confirmed successfully');
             this.loadShipments();
@@ -1086,6 +1097,7 @@ export class Shipping implements OnInit, OnDestroy {
     this.qrScanState.set('idle');
     this.qrScanMessage.set('');
     this.qrScanCameraError.set(null);
+    this.qrScanInfoShipment.set(null);
   }
 
   // Delivery scan modal (text-based fallback)

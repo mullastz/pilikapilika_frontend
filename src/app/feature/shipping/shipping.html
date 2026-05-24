@@ -1145,6 +1145,41 @@
       </div>
     }
 
+    <!-- INFO STATE -->
+    @if (qrScanState() === 'info') {
+      <div class="absolute inset-0 z-40 bg-black/80 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+          <div class="text-center">
+            <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+              <i class="fa-solid fa-circle-info text-blue-500 text-2xl"></i>
+            </div>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">No Update Performed</h2>
+            <p class="text-sm text-blue-600 dark:text-blue-400 font-medium">{{qrScanMessage()}}</p>
+          </div>
+          @if (qrScanInfoShipment(); as infoShipment) {
+            <div class="bg-gray-50 dark:bg-[#111] rounded-xl p-4 space-y-2">
+              <div class="flex justify-between">
+                <span class="text-sm text-gray-500">Title</span>
+                <span class="text-sm font-medium dark:text-white">{{ infoShipment.title || 'Untitled' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-sm text-gray-500">Status</span>
+                <span class="text-sm font-medium capitalize dark:text-white">{{ (infoShipment.status || '').replace('_', ' ') }}</span>
+              </div>
+            </div>
+          }
+          <div class="flex gap-3">
+            <button (click)="resetQrScanner()" class="flex-1 px-4 py-2.5 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-[#444] transition font-medium text-sm">
+              Scan Another
+            </button>
+            <button (click)="closeQrScannerModal()" class="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition font-medium text-sm">
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
     <!-- ERROR STATE -->
     @if (qrScanState() === 'error') {
       <div class="absolute inset-0 z-40 bg-black/90 flex flex-col items-center justify-center p-6 text-center">
