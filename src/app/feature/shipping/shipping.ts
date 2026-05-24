@@ -951,6 +951,37 @@ export class Shipping implements OnInit, OnDestroy {
       this.qrScanMessage.set('Scanner element not found.');
       return;
     }
+
+    // Explicitly request camera permission first — this triggers the browser
+    // permission prompt on devices where html5-qrcode.start() fails to do so.
+    try {
+      const fallbackConstraints = { video: true };
+      const preferredConstraints = { video: { facingMode: 'environment' } };
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(preferredConstraints);
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+      }
+      // Stop all tracks so html5-qrcode can take over the camera cleanly
+      stream.getTracks().forEach(track => track.stop());
+    } catch (err: any) {
+      console.error('Camera permission error:', err);
+      const name = err?.name || '';
+      const msg = err?.message || '';
+      if (name === 'NotAllowedError' || msg.includes('Permission denied') || msg.includes('permission')) {
+        this.qrScanCameraError.set('Camera access denied. Please allow camera permission.');
+      } else if (name === 'NotFoundError' || msg.includes('device not found') || msg.includes('no camera')) {
+        this.qrScanCameraError.set('No camera found on this device.');
+      } else if (name === 'NotReadableError' || msg.includes('in use') || msg.includes('busy')) {
+        this.qrScanCameraError.set('Camera is already in use.');
+      } else {
+        this.qrScanCameraError.set(msg || 'Unable to start camera.');
+      }
+      this.qrScanState.set('error');
+      return;
+    }
+
     this.html5QrCode = new Html5Qrcode('shipping-qr-reader');
     try {
       await this.html5QrCode.start(
@@ -968,11 +999,14 @@ export class Shipping implements OnInit, OnDestroy {
       );
     } catch (err: any) {
       console.error('Camera error:', err);
+      const name = err?.name || '';
       const msg = err?.message || '';
-      if (msg.includes('Permission denied') || msg.includes('permission')) {
+      if (name === 'NotAllowedError' || msg.includes('Permission denied') || msg.includes('permission')) {
         this.qrScanCameraError.set('Camera access denied. Please allow camera permission.');
-      } else if (msg.includes('device not found') || msg.includes('no camera')) {
+      } else if (name === 'NotFoundError' || msg.includes('device not found') || msg.includes('no camera')) {
         this.qrScanCameraError.set('No camera found on this device.');
+      } else if (name === 'NotReadableError' || msg.includes('in use') || msg.includes('busy')) {
+        this.qrScanCameraError.set('Camera is already in use.');
       } else {
         this.qrScanCameraError.set(msg || 'Unable to start camera.');
       }

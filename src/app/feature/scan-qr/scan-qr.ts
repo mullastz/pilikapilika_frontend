@@ -78,6 +78,41 @@ export class ScanQr implements OnInit, OnDestroy {
       return;
     }
 
+    // Explicitly request camera permission first — this triggers the browser
+    // permission prompt on devices where html5-qrcode.start() fails to do so.
+    try {
+      const fallbackConstraints = { video: true };
+      const preferredConstraints = { video: { facingMode: 'environment' } };
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(preferredConstraints);
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+      }
+      // Stop all tracks so html5-qrcode can take over the camera cleanly
+      stream.getTracks().forEach(track => track.stop());
+    } catch (err: any) {
+      console.error('Camera permission error:', err);
+      const name = err?.name || '';
+      const msg = err?.message || '';
+
+      if (name === 'NotAllowedError' || msg.includes('Permission denied') || msg.includes('permission')) {
+        this.cameraError.set('Camera access denied.');
+        this.cameraErrorDetail.set('Please allow camera permission when prompted, or reset it in your browser settings and tap Try Again.');
+      } else if (name === 'NotFoundError' || msg.includes('device not found') || msg.includes('no camera')) {
+        this.cameraError.set('No camera found on this device.');
+        this.cameraErrorDetail.set('Make sure your device has a working camera and it is not being used by another app.');
+      } else if (name === 'NotReadableError' || msg.includes('in use') || msg.includes('busy')) {
+        this.cameraError.set('Camera is already in use.');
+        this.cameraErrorDetail.set('Another app or browser tab is using the camera. Please close it and tap Try Again.');
+      } else {
+        this.cameraError.set('Unable to start camera.');
+        this.cameraErrorDetail.set(msg || 'An unexpected error occurred. Please tap Try Again.');
+      }
+      this.state.set('error');
+      return;
+    }
+
     this.html5QrCode = new Html5Qrcode('reader');
 
     try {
