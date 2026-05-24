@@ -6,6 +6,7 @@ export interface Shipment {
   id: string;
   user_id: string;
   agent_id: string;
+  container_id?: string;
   tracking_number: string;
   external_tracking_number?: string;
   external_tracking_added_by?: string;
@@ -16,13 +17,15 @@ export interface Shipment {
   agent_address?: string;
   estimated_price: number;
   actual_price?: number;
-  status: 'pending_confirmation' | 'confirmed' | 'at_warehouse' | 'in_transit' | 'delivered' | 'cancelled';
+  status: 'pending_confirmation' | 'confirmed' | 'at_warehouse' | 'loading_container' | 'loaded_in_container' | 'in_transit' | 'at_tanzania_port' | 'at_tanzania_warehouse' | 'delivered' | 'cancelled';
   products?: any[];
   packages?: any[];
   notes?: string;
   confirmed_at?: string;
   picked_up_at?: string;
   delivered_at?: string;
+  agent_delivered_at?: string;
+  user_delivered_at?: string;
   created_at: string;
   updated_at: string;
   user?: {
@@ -239,6 +242,16 @@ export class ShipmentService {
     return this.apiService.post<{ success: boolean; info?: boolean; message: string; data?: { shipment: Shipment } }>(
       `${this.endpoint}/scan-approve`,
       { qr_code_uuid: qrCodeUuid }
+    );
+  }
+
+  /**
+   * Mark shipment as delivered by user QR scan confirmation
+   */
+  markAsUserDelivered(shipmentId: string, qrCodeUuid?: string): Observable<{ success: boolean; info?: boolean; message: string; data?: { shipment: Shipment } }> {
+    return this.apiService.post<{ success: boolean; info?: boolean; message: string; data?: { shipment: Shipment } }>(
+      `${this.endpoint}/${shipmentId}/confirm-delivery`,
+      qrCodeUuid ? { qr_code_uuid: qrCodeUuid } : {}
     );
   }
 

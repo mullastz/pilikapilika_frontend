@@ -22,14 +22,24 @@
                     </h1>
                 </div>
 
-                <button 
-                    (click)="refreshShipments()"
-                    [disabled]="loading()"
-                    class="px-3 py-1 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2"
-                >
-                    <div *ngIf="loading()" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                    Refresh
-                </button>
+                <div class="flex items-center gap-2">
+                    <button 
+                        *ngIf="isAgent()"
+                        (click)="openContainerModal()"
+                        class="px-3 py-1 text-sm bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition flex items-center gap-2"
+                    >
+                        <i class="fa-solid fa-box-open"></i>
+                        Containers
+                    </button>
+                    <button 
+                        (click)="refreshShipments()"
+                        [disabled]="loading()"
+                        class="px-3 py-1 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2"
+                    >
+                        <div *ngIf="loading()" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                        Refresh
+                    </button>
+                </div>
 
             </div>
 
@@ -39,21 +49,14 @@
                     <button 
                         *ngFor="let tab of agentTabs"
                         (click)="switchTab(tab.id)"
-                        class="flex-1 min-w-[140px] px-3 py-3 text-sm font-medium border-b-2 transition-colors duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
+                        class="flex-1 min-w-[120px] px-3 py-3 text-sm font-medium border-b-2 transition-colors duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
                         [class]="activeTab() === tab.id ? 
                             'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20' : 
                             'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#333]'"
                     >
                         <i class="fa-solid {{tab.icon}}"></i>
                         <span class="hidden sm:inline">{{tab.label}}</span>
-                        <span class="sm:hidden">
-                            <ng-container [ngSwitch]="tab.id">
-                                <ng-container *ngSwitchCase="'my_shippings'">My Shippings</ng-container>
-                                <ng-container *ngSwitchCase="'at_warehouse'">At Warehouse</ng-container>
-                                <ng-container *ngSwitchCase="'in_transit'">In Transit</ng-container>
-                                <ng-container *ngSwitchDefault>{{tab.label.split(' ')[0]}}</ng-container>
-                            </ng-container>
-                        </span>
+                        <span class="sm:hidden">{{tab.label.split(' ')[0]}}</span>
                     </button>
                 </div>
             </div>
@@ -71,14 +74,7 @@
                     >
                         <i class="fa-solid {{tab.icon}}"></i>
                         <span class="hidden sm:inline">{{tab.label}}</span>
-                        <span class="sm:hidden">
-                            <ng-container [ngSwitch]="tab.id">
-                                <ng-container *ngSwitchCase="'pending_confirmation'">Pending</ng-container>
-                                <ng-container *ngSwitchCase="'at_warehouse'">At Warehouse</ng-container>
-                                <ng-container *ngSwitchCase="'in_transit'">In Transit</ng-container>
-                                <ng-container *ngSwitchDefault>{{tab.label.split(' ')[0]}}</ng-container>
-                            </ng-container>
-                        </span>
+                        <span class="sm:hidden">{{tab.label.split(' ')[0]}}</span>
                     </button>
                 </div>
             </div>
@@ -108,7 +104,11 @@
                             <ng-container *ngSwitchCase="'pending_confirmation'">No shipment requests waiting for confirmation.</ng-container>
                             <ng-container *ngSwitchCase="'confirmed'">No confirmed shipments at the moment.</ng-container>
                             <ng-container *ngSwitchCase="'at_warehouse'">No shipments at the warehouse.</ng-container>
+                            <ng-container *ngSwitchCase="'loading_container'">No shipments being loaded.</ng-container>
+                            <ng-container *ngSwitchCase="'loaded_in_container'">No shipments loaded in containers.</ng-container>
                             <ng-container *ngSwitchCase="'in_transit'">No shipments currently in transit.</ng-container>
+                            <ng-container *ngSwitchCase="'at_tanzania_port'">No shipments at Tanzania port.</ng-container>
+                            <ng-container *ngSwitchCase="'at_tanzania_warehouse'">No shipments at Tanzania warehouse.</ng-container>
                             <ng-container *ngSwitchCase="'delivered'">No delivered shipments yet.</ng-container>
                             <ng-container *ngSwitchCase="'my_shippings'">No shipments booked to other agents.</ng-container>
                             <ng-container *ngSwitchCase="'cancelled'">No cancelled or rejected shipments found.</ng-container>
@@ -120,7 +120,11 @@
                             <ng-container *ngSwitchCase="'pending_confirmation'">No pending shipments waiting for confirmation.</ng-container>
                             <ng-container *ngSwitchCase="'confirmed'">No confirmed shipments at the moment.</ng-container>
                             <ng-container *ngSwitchCase="'at_warehouse'">No shipments at the warehouse.</ng-container>
+                            <ng-container *ngSwitchCase="'loading_container'">No shipments being loaded.</ng-container>
+                            <ng-container *ngSwitchCase="'loaded_in_container'">No shipments loaded in containers.</ng-container>
                             <ng-container *ngSwitchCase="'in_transit'">No shipments currently in transit.</ng-container>
+                            <ng-container *ngSwitchCase="'at_tanzania_port'">No shipments at Tanzania port.</ng-container>
+                            <ng-container *ngSwitchCase="'at_tanzania_warehouse'">No shipments at Tanzania warehouse.</ng-container>
                             <ng-container *ngSwitchCase="'delivered'">No delivered shipments yet.</ng-container>
                             <ng-container *ngSwitchCase="'cancelled'">No cancelled shipments found.</ng-container>
                             <ng-container *ngSwitchDefault>You haven't booked any shipments yet.</ng-container>
@@ -145,7 +149,7 @@
                             <h3 class="font-semibold dark:text-white text-sm sm:text-base mb-1">
                                 {{shipment.title || 'Untitled Shipment'}}
                             </h3>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 flex-wrap">
                                 <p class="text-xs text-gray-500 dark:text-gray-400">
                                     <ng-container *ngIf="hasTrackingNumber(shipment)">
                                         External Tracking: <span class="font-medium text-orange-600 dark:text-orange-400">{{shipment.external_tracking_number}}</span>
@@ -185,6 +189,24 @@
 
                         <p *ngIf="shipment.agent"><strong>Agent:</strong> {{shipment.agent.firstname}} {{shipment.agent.lastname}}</p>
                         <p *ngIf="shipment.agent_address"><strong>Agent Address:</strong> {{shipment.agent_address}}</p>
+
+                        <!-- Container info -->
+                        <div *ngIf="shipment.container_id" class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-2 mt-2">
+                            <p class="text-indigo-700 dark:text-indigo-300">
+                                <i class="fa-solid fa-box-open mr-1"></i>
+                                <strong>In Container:</strong> This shipment is part of a container. Status updates are managed via container.
+                            </p>
+                        </div>
+
+                        <!-- Delivery info -->
+                        <div *ngIf="shipment.status === 'delivered'" class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-2 mt-2">
+                            <p class="text-green-700 dark:text-green-300 text-xs">
+                                <i class="fa-solid fa-check-circle mr-1"></i>
+                                <strong>Delivered by:</strong>
+                                <ng-container *ngIf="shipment.agent_delivered_at">Agent</ng-container>
+                                <ng-container *ngIf="shipment.user_delivered_at">Customer</ng-container>
+                            </p>
+                        </div>
 
                     </div>
 
@@ -265,7 +287,29 @@
                                 At Warehouse
                             </button>
 
-                            <!-- Mark as In Transit Button (for at_warehouse shipments) -->
+                            <!-- Load to Container Button (for at_warehouse shipments) -->
+                            <button 
+                                *ngIf="canLoadToContainer(shipment)"
+                                (click)="openContainerModal(shipment)"
+                                [disabled]="isUpdating(shipment.id)"
+                                class="px-4 py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
+                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                                <i class="fa-solid fa-dolly"></i>
+                                Load to Container
+                            </button>
+
+                            <!-- Remove from Container Button (for loading_container shipments) -->
+                            <button 
+                                *ngIf="canRemoveFromContainer(shipment)"
+                                (click)="removeShipmentFromContainer(shipment)"
+                                [disabled]="isUpdating(shipment.id)"
+                                class="px-4 py-2 bg-yellow-500 text-white text-sm rounded-lg hover:bg-yellow-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
+                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                                <i class="fa-solid fa-arrow-left"></i>
+                                Remove from Container
+                            </button>
+
+                            <!-- Mark as In Transit Button (for at_warehouse non-containerized shipments) -->
                             <button 
                                 *ngIf="canMarkInTransit(shipment)"
                                 (click)="markAsInTransitAction(shipment)"
@@ -276,7 +320,7 @@
                                 In Transit
                             </button>
 
-                            <!-- Cancel Button (for confirmed/at_warehouse/in-transit shipments) -->
+                            <!-- Cancel Button -->
                             <button 
                                 *ngIf="canCancel(shipment) && !canConfirm(shipment)"
                                 (click)="cancelShipmentAction(shipment)"
@@ -287,7 +331,7 @@
                                 Cancel
                             </button>
 
-                            <!-- Mark as Delivered Button (for in-transit shipments) -->
+                            <!-- Mark as Delivered Button (for at_tanzania_warehouse or in_transit non-containerized shipments) -->
                             <button 
                                 *ngIf="canMarkDelivered(shipment)"
                                 (click)="markAsDeliveredAction(shipment)"
@@ -295,7 +339,7 @@
                                 class="px-4 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
                                 <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
                                 <i class="fa-solid fa-check-double"></i>
-                                Delivered
+                                Mark Delivered
                             </button>
                         </ng-container>
 
@@ -310,6 +354,26 @@
                                 <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
                                 <i class="fa-solid fa-times"></i>
                                 Cancel
+                            </button>
+
+                            <!-- Confirm Delivery Button (for at_tanzania_warehouse shipments) -->
+                            <button 
+                                *ngIf="canUserConfirmDelivery(shipment)"
+                                (click)="confirmUserDeliveryAction(shipment)"
+                                [disabled]="isUpdating(shipment.id)"
+                                class="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
+                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                                <i class="fa-solid fa-check"></i>
+                                Confirm Delivery
+                            </button>
+
+                            <!-- Scan QR to Confirm Delivery (for at_tanzania_warehouse shipments) -->
+                            <button 
+                                *ngIf="canUserConfirmDelivery(shipment)"
+                                (click)="openQrScanner('user_confirm_delivery', { shipmentId: shipment.id })"
+                                class="px-4 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600 transition flex items-center gap-2">
+                                <i class="fa-solid fa-camera"></i>
+                                Scan QR to Confirm
                             </button>
                         </ng-container>
                     </div>
@@ -342,6 +406,151 @@
         <button (click)="executeConfirmedAction()" class="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
           Confirm
         </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Container Management Modal -->
+@if (containerModalOpen()) {
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeContainerModal()">
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <i class="fa-solid fa-box-open text-indigo-500 mr-2"></i>
+          Container Management
+        </h3>
+        <button (click)="closeContainerModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Create Container Section -->
+      <div class="p-6 border-b border-gray-100 dark:border-gray-700">
+        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Create New Container</h4>
+        <div class="flex gap-3">
+          <input
+            type="text"
+            [(ngModel)]="newContainerRef"
+            placeholder="Enter container reference number"
+            class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#222] text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+          />
+          <button
+            (click)="createContainer()"
+            [disabled]="creatingContainer()"
+            class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
+            <div *ngIf="creatingContainer()" class="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin"></div>
+            <i class="fa-solid fa-plus"></i>
+            Create
+          </button>
+        </div>
+      </div>
+
+      <!-- Containers List -->
+      <div class="p-6">
+        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Your Containers</h4>
+        
+        <div *ngIf="containersLoading()" class="text-center py-8">
+          <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
+        </div>
+
+        <div *ngIf="!containersLoading() && containers().length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
+          <i class="fa-solid fa-box-open text-3xl mb-2"></i>
+          <p class="text-sm">No containers yet</p>
+        </div>
+
+        <div *ngIf="selectedShipmentForContainer()" class="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+          <p class="text-sm text-orange-700 dark:text-orange-300">
+            <i class="fa-solid fa-box mr-1"></i>
+            Loading shipment: <strong>{{selectedShipmentForContainer()!.title || 'Untitled'}}</strong>
+          </p>
+          <p class="text-xs text-orange-600 dark:text-orange-400 mt-1">Select a draft container below to add this shipment.</p>
+        </div>
+
+        <div *ngIf="!containersLoading() && containers().length > 0" class="space-y-3">
+          <div *ngFor="let container of containers()" 
+               class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-[#222] transition">
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <p class="font-medium dark:text-white">{{container.reference_number}}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  Status: <span class="font-medium" [ngClass]="getStatusClass(container.status)">{{formatStatus(container.status)}}</span>
+                  <span *ngIf="container.shipments_count"> &middot; {{container.shipments_count}} shipment(s)</span>
+                </p>
+              </div>
+              <div class="flex gap-2 flex-wrap justify-end">
+                <button
+                  *ngIf="selectedShipmentForContainer() && container.status === 'draft'"
+                  (click)="loadShipmentToContainer(container.id)"
+                  [disabled]="updatingShipment() === selectedShipmentForContainer()!.id"
+                  class="px-3 py-1 text-xs bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 transition">
+                  <span *ngIf="updatingShipment() === selectedShipmentForContainer()!.id" class="animate-spin inline-block w-3 h-3 border border-white border-t-transparent rounded-full mr-1"></span>
+                  Add Shipment
+                </button>
+                <button
+                  *ngIf="container.status === 'draft'"
+                  (click)="openQrScanner('agent_load_container', { containerId: container.id })"
+                  class="px-3 py-1 text-xs bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition">
+                  <i class="fa-solid fa-camera mr-1"></i> Scan to Load
+                </button>
+                <button
+                  *ngIf="container.status === 'draft'"
+                  (click)="closeContainer(container.id)"
+                  [disabled]="updatingContainer() === container.id"
+                  class="px-3 py-1 text-xs bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:bg-gray-300 transition">
+                  <span *ngIf="updatingContainer() === container.id" class="animate-spin inline-block w-3 h-3 border border-white border-t-transparent rounded-full mr-1"></span>
+                  Close
+                </button>
+                <button
+                  *ngIf="getNextContainerStatus(container.status)"
+                  (click)="updateContainerStatus(container.id, getNextContainerStatus(container.status)!)"
+                  [disabled]="updatingContainer() === container.id"
+                  class="px-3 py-1 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 transition">
+                  <span *ngIf="updatingContainer() === container.id" class="animate-spin inline-block w-3 h-3 border border-white border-t-transparent rounded-full mr-1"></span>
+                  {{getNextContainerStatusLabel(container.status)}}
+                </button>
+              </div>
+            </div>
+            <button
+              (click)="openContainerDetail(container)"
+              class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+              View Details <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Container Detail Modal -->
+@if (containerDetailOpen() && selectedContainer()) {
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeContainerModal()">
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{selectedContainer()!.reference_number}}</h3>
+        <button (click)="closeContainerModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <div class="mb-4">
+          <span class="text-xs px-3 py-1 rounded-full" [ngClass]="getStatusClass(selectedContainer()!.status)">
+            {{formatStatus(selectedContainer()!.status)}}
+          </span>
+        </div>
+        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Shipments in Container</h4>
+        <div *ngIf="!hasContainerShipments()" class="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
+          No shipments in this container
+        </div>
+        <div *ngIf="hasContainerShipments()" class="space-y-2">
+          <div *ngFor="let s of getContainerShipments()" class="bg-gray-50 dark:bg-[#222] rounded-lg p-3">
+            <p class="text-sm font-medium dark:text-white">{{s.title || 'Untitled'}}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Status: {{formatStatus(s.status)}}</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -413,6 +622,24 @@
                 <span class="text-sm text-gray-500">Status</span>
                 <span class="text-xs px-2 py-0.5 rounded-full" [ngClass]="getStatusClass(s.status)">{{formatStatus(s.status)}}</span>
               </div>
+              <ng-container *ngIf="s.container_id">
+                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                  <span class="text-sm text-gray-500">Container</span>
+                  <span class="text-sm font-medium text-indigo-600 dark:text-indigo-400">In Container</span>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="s.agent_delivered_at">
+                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                  <span class="text-sm text-gray-500">Delivered By</span>
+                  <span class="text-sm font-medium text-green-600 dark:text-green-400">Agent</span>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="s.user_delivered_at">
+                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                  <span class="text-sm text-gray-500">Delivered By</span>
+                  <span class="text-sm font-medium text-green-600 dark:text-green-400">Customer</span>
+                </div>
+              </ng-container>
               <ng-container *ngIf="s.agent_address">
                 <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                   <span class="text-sm text-gray-500">Agent Address</span>
@@ -819,6 +1046,166 @@
           class="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
           <div *ngIf="trackingModalLoading()" class="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin"></div>
           {{trackingModalLoading() ? (isEditingTrackingNumber() ? 'Updating...' : 'Adding...') : (isEditingTrackingNumber() ? 'Update Tracking Number' : 'Add External Tracking Number')}}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- QR Scanner Modal -->
+@if (qrScanModalOpen()) {
+  <div class="fixed inset-0 bg-black z-50 flex flex-col">
+    <!-- Header -->
+    <div class="absolute top-0 left-0 right-0 z-30 flex items-center gap-3 px-4 py-4 bg-linear-to-b from-black/70 to-transparent">
+      <button (click)="closeQrScannerModal()" class="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center hover:bg-white/30 transition">
+        <i class="fa-solid fa-arrow-left text-white"></i>
+      </button>
+      <h1 class="text-lg font-bold text-white drop-shadow">
+        <ng-container *ngIf="qrScanPurpose() === 'agent_load_container'">Scan to Load Container</ng-container>
+        <ng-container *ngIf="qrScanPurpose() === 'user_confirm_delivery'">Scan to Confirm Delivery</ng-container>
+      </h1>
+    </div>
+
+    <!-- IDLE STATE -->
+    @if (qrScanState() === 'idle') {
+      <div class="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center bg-black">
+        <div class="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
+          <i class="fa-solid fa-qrcode text-white text-4xl"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-white mb-2">Scan QR Code</h2>
+        <p class="text-gray-300 text-sm max-w-xs mb-8">
+          <ng-container *ngIf="qrScanPurpose() === 'agent_load_container'">
+            Point your camera at the product QR code to load it into the container.
+          </ng-container>
+          <ng-container *ngIf="qrScanPurpose() === 'user_confirm_delivery'">
+            Point your camera at the delivery QR code to confirm receipt.
+          </ng-container>
+        </p>
+        <button (click)="beginQrScanning()" class="px-8 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition font-semibold text-base flex items-center gap-2">
+          <i class="fa-solid fa-camera"></i>
+          Start Scanning
+        </button>
+      </div>
+    }
+
+    <!-- SCANNING STATE -->
+    @if (qrScanState() === 'scanning') {
+      <div class="absolute inset-0 z-20 flex flex-col">
+        <!-- Scanner overlay -->
+        <div class="absolute inset-0 z-20 flex flex-col pointer-events-none">
+          <div class="flex-1 bg-black/65 min-h-[60px]"></div>
+          <div class="flex flex-row w-full h-[280px] shrink-0">
+            <div class="flex-1 bg-black/65 min-w-[20px]"></div>
+            <div class="relative w-[280px] h-[280px] shrink-0 rounded-2xl" style="box-shadow: 0 0 0 9999px rgba(0,0,0,0.65);">
+              <div class="absolute -top-0.5 -left-0.5 w-7 h-7 border-l-4 border-t-4 border-orange-500 rounded-tl-xl z-30"></div>
+              <div class="absolute -top-0.5 -right-0.5 w-7 h-7 border-r-4 border-t-4 border-orange-500 rounded-tr-xl z-30"></div>
+              <div class="absolute -bottom-0.5 -left-0.5 w-7 h-7 border-l-4 border-b-4 border-orange-500 rounded-bl-xl z-30"></div>
+              <div class="absolute -bottom-0.5 -right-0.5 w-7 h-7 border-r-4 border-b-4 border-orange-500 rounded-br-xl z-30"></div>
+              <div class="absolute top-[10%] left-[10%] w-[80%] h-[2px] bg-linear-to-r from-transparent via-orange-500 to-transparent rounded animate-scan z-30"></div>
+            </div>
+            <div class="flex-1 bg-black/65 min-w-[20px]"></div>
+          </div>
+          <div class="flex-1 bg-black/65 flex items-center justify-center pb-8">
+            <p class="text-white/80 text-sm text-center px-4">Align the QR code within the frame to scan</p>
+          </div>
+        </div>
+        <!-- Camera element -->
+        <div id="shipping-qr-reader" class="absolute inset-0 w-full h-full z-10"></div>
+      </div>
+    }
+
+    <!-- PROCESSING STATE -->
+    @if (qrScanState() === 'processing') {
+      <div class="absolute inset-0 z-40 bg-black/80 flex flex-col items-center justify-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mb-4"></div>
+        <p class="text-white font-medium">Processing...</p>
+      </div>
+    }
+
+    <!-- SUCCESS STATE -->
+    @if (qrScanState() === 'success') {
+      <div class="absolute inset-0 z-40 bg-black/80 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+          <div class="text-center">
+            <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+              <i class="fa-solid fa-check text-green-500 text-2xl"></i>
+            </div>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">Success</h2>
+            <p class="text-sm text-green-600 dark:text-green-400 font-medium">{{qrScanMessage()}}</p>
+          </div>
+          <div class="flex gap-3">
+            <button (click)="resetQrScanner()" class="flex-1 px-4 py-2.5 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-[#444] transition font-medium text-sm">
+              Scan Another
+            </button>
+            <button (click)="closeQrScannerModal()" class="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition font-medium text-sm">
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ERROR STATE -->
+    @if (qrScanState() === 'error') {
+      <div class="absolute inset-0 z-40 bg-black/90 flex flex-col items-center justify-center p-6 text-center">
+        <div class="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-4">
+          <i class="fa-solid fa-circle-exclamation text-red-500 text-3xl"></i>
+        </div>
+        @if (qrScanCameraError()) {
+          <h2 class="text-xl font-bold text-white mb-2">Camera Error</h2>
+          <p class="text-gray-300 text-sm max-w-xs mb-6">{{qrScanCameraError()}}</p>
+        } @else {
+          <h2 class="text-xl font-bold text-white mb-2">Scan Failed</h2>
+          <p class="text-gray-300 text-sm max-w-xs mb-6">{{qrScanMessage()}}</p>
+        }
+        <div class="flex gap-3">
+          <button (click)="closeQrScannerModal()" class="px-6 py-2.5 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-[#444] transition font-medium text-sm">
+            Cancel
+          </button>
+          <button (click)="resetQrScanner(); beginQrScanning()" class="px-6 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition font-medium text-sm">
+            Try Again
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<!-- User Delivery Scan Modal -->
+@if (deliveryScanModalOpen()) {
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeDeliveryScanModal()">
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 max-w-sm w-full shadow-2xl" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Confirm Delivery</h3>
+        <button (click)="closeDeliveryScanModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+      <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+        Confirm that you have received this shipment at the destination.
+      </p>
+      <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 mb-4">
+        <p class="text-sm text-green-700 dark:text-green-300">
+          <i class="fa-solid fa-box mr-1"></i>
+          <strong>{{deliveryScanShipment()?.title || 'Untitled Shipment'}}</strong>
+        </p>
+        <p class="text-xs text-green-600 dark:text-green-400 mt-1">
+          Tracking: {{deliveryScanShipment()?.tracking_number}}
+        </p>
+      </div>
+      <div class="flex gap-3">
+        <button
+          (click)="closeDeliveryScanModal()"
+          [disabled]="deliveryScanLoading()"
+          class="flex-1 px-4 py-2 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-[#444] transition disabled:opacity-50">
+          Cancel
+        </button>
+        <button
+          (click)="submitDeliveryScan()"
+          [disabled]="deliveryScanLoading()"
+          class="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition disabled:opacity-50 flex items-center justify-center gap-2">
+          <div *ngIf="deliveryScanLoading()" class="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin"></div>
+          {{deliveryScanLoading() ? 'Confirming...' : 'Confirm Delivery'}}
         </button>
       </div>
     </div>

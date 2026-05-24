@@ -1,12 +1,16 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { Html5Qrcode } from 'html5-qrcode';
 import { ShipmentService, Shipment } from '../../core/services/shipment.service';
+import { ContainerService, Container } from '../../core/services/container.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { QrCodeService } from '../../core/services/qr-code.service';
 import { QRCodeComponent } from 'angularx-qrcode';
+
+type QrScanPurpose = 'agent_load_container' | 'user_confirm_delivery';
 
 @Component({
   selector: 'app-shipping',
@@ -14,7 +18,7 @@ import { QRCodeComponent } from 'angularx-qrcode';
   templateUrl: './shipping.html',
   styleUrl: './shipping.css',
 })
-export class Shipping implements OnInit {
+export class Shipping implements OnInit, OnDestroy {
   // Signals
   private _shipments = signal<Shipment[]>([]);
   private _activeTab = signal<string>('all');
@@ -27,7 +31,7 @@ export class Shipping implements OnInit {
   public confirmModalConfig = signal<{
     title: string;
     message: string;
-    action: 'confirm' | 'reject' | 'cancel' | 'at_warehouse' | 'in_transit' | 'delivered';
+    action: 'confirm' | 'reject' | 'cancel' | 'at_warehouse' | 'in_transit' | 'delivered' | 'user_delivered';
     shipment: Shipment | null;
   }>({ title: '', message: '', action: 'confirm', shipment: null });
 
@@ -51,12 +55,40 @@ export class Shipping implements OnInit {
   public qrModalOpen = signal(false);
   public qrModalShipment = signal<Shipment | null>(null);
 
+  // Container management state
+  public containers = signal<Container[]>([]);
+  public containersLoading = signal(false);
+  public containerModalOpen = signal(false);
+  public selectedContainer = signal<Container | null>(null);
+  public containerDetailOpen = signal(false);
+  public newContainerRef = signal('');
+  public creatingContainer = signal(false);
+  public scanningToContainer = signal(false);
+  public updatingContainer = signal<string | null>(null);
+  public selectedShipmentForContainer = signal<Shipment | null>(null);
+
+  // User delivery scan modal
+  public deliveryScanModalOpen = signal(false);
+  public deliveryScanShipment = signal<Shipment | null>(null);
+  public deliveryScanLoading = signal(false);
+
+  // QR Scanner modal state
+  public qrScanModalOpen = signal(false);
+  public qrScanPurpose = signal<QrScanPurpose>('agent_load_container');
+  public qrScanContainerId = signal<string | null>(null);
+  public qrScanShipmentId = signal<string | null>(null);
+  public qrScanState = signal<'idle' | 'scanning' | 'processing' | 'success' | 'error'>('idle');
+  public qrScanMessage = signal<string>('');
+  public qrScanCameraError = signal<string | null>(null);
+  private html5QrCode: Html5Qrcode | null = null;
+  private scanHandled = false;
+  private lastScanTime = 0;
+
   // Computed signals
   public shipments = computed(() => this._shipments());
   public activeTab = computed(() => this._activeTab());
   public isAgent = computed(() => {
     const user = this.authService.getUser();
-    // Treat 'Seller' role as agent since that's how agents are stored in system
     const role = user?.role?.toLowerCase();
     return role === 'agent' || role === 'seller';
   });
@@ -67,7 +99,11 @@ export class Shipping implements OnInit {
     { id: 'pending_confirmation', label: 'Requests', icon: 'fa-clock' },
     { id: 'confirmed', label: 'Confirmed', icon: 'fa-check-circle' },
     { id: 'at_warehouse', label: 'At Warehouse', icon: 'fa-warehouse' },
+    { id: 'loading_container', label: 'Loading', icon: 'fa-dolly' },
+    { id: 'loaded_in_container', label: 'Loaded', icon: 'fa-box' },
     { id: 'in_transit', label: 'In Transit', icon: 'fa-truck' },
+    { id: 'at_tanzania_port', label: 'At Port', icon: 'fa-ship' },
+    { id: 'at_tanzania_warehouse', label: 'At TZ Warehouse', icon: 'fa-warehouse' },
     { id: 'delivered', label: 'Delivered', icon: 'fa-check-double' },
     { id: 'cancelled', label: 'Cancelled', icon: 'fa-times-circle' },
     { id: 'my_shippings', label: 'My Shippings', icon: 'fa-box' }
@@ -79,7 +115,11 @@ export class Shipping implements OnInit {
     { id: 'pending_confirmation', label: 'Pending', icon: 'fa-clock' },
     { id: 'confirmed', label: 'Confirmed', icon: 'fa-check-circle' },
     { id: 'at_warehouse', label: 'At Warehouse', icon: 'fa-warehouse' },
+    { id: 'loading_container', label: 'Loading', icon: 'fa-dolly' },
+    { id: 'loaded_in_container', label: 'Loaded', icon: 'fa-box' },
     { id: 'in_transit', label: 'In Transit', icon: 'fa-truck' },
+    { id: 'at_tanzania_port', label: 'At Port', icon: 'fa-ship' },
+    { id: 'at_tanzania_warehouse', label: 'At TZ Warehouse', icon: 'fa-warehouse' },
     { id: 'delivered', label: 'Delivered', icon: 'fa-check-double' },
     { id: 'cancelled', label: 'Cancelled', icon: 'fa-times-circle' }
   ];
@@ -88,6 +128,7 @@ export class Shipping implements OnInit {
     private location: Location,
     private router: Router,
     private shipmentService: ShipmentService,
+    private containerService: ContainerService,
     private toastService: ToastService,
     private authService: AuthService,
     private qrCodeService: QrCodeService
@@ -95,6 +136,10 @@ export class Shipping implements OnInit {
 
   ngOnInit(): void {
     this.loadShipments();
+  }
+
+  ngOnDestroy(): void {
+    this.stopQrScanner();
   }
 
   goBack(): void {
@@ -114,18 +159,16 @@ export class Shipping implements OnInit {
     const isAgentUser = this.isAgent();
     
     if (isAgentUser) {
-      // Agent-specific loading
       if (currentTab === 'all') {
         this.loadAgentShipments();
       } else if (currentTab === 'my_shippings') {
-        this.loadUserShipments(); // Load shipments agent booked to other agents
+        this.loadUserShipments();
       } else if (currentTab === 'cancelled') {
         this.loadCancelledShipments();
       } else {
         this.loadAgentShipmentsByStatus(currentTab);
       }
     } else {
-      // Normal user loading
       if (currentTab === 'all') {
         this.loadUserShipments();
       } else {
@@ -157,7 +200,6 @@ export class Shipping implements OnInit {
     this.shipmentService.getUserShipmentsByStatus(status).subscribe({
       next: (response) => {
         if (response.success) {
-          // Filter shipments by status client-side
           const filteredShipments = status === 'all' 
             ? response.data.shipments 
             : response.data.shipments.filter(shipment => shipment.status === status);
@@ -219,7 +261,6 @@ export class Shipping implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    // Load cancelled shipments only
     this.shipmentService.getAgentShipmentsByStatus('cancelled').subscribe({
       next: (response) => {
         if (response.success) {
@@ -239,20 +280,19 @@ export class Shipping implements OnInit {
 
   getStatusClass(status: string): string {
     switch (status) {
-      case 'delivered':
-        return 'bg-green-100 text-green-600';
-      case 'in_transit':
-        return 'bg-blue-100 text-blue-600';
-      case 'at_warehouse':
-        return 'bg-indigo-100 text-indigo-600';
-      case 'confirmed':
-        return 'bg-purple-100 text-purple-600';
-      case 'pending_confirmation':
-        return 'bg-yellow-100 text-yellow-600';
-      case 'cancelled':
-        return 'bg-red-100 text-red-600';
-      default:
-        return 'bg-gray-200 text-gray-600';
+      case 'delivered':        return 'bg-green-100 text-green-600';
+      case 'in_transit':       return 'bg-blue-100 text-blue-600';
+      case 'at_warehouse':     return 'bg-indigo-100 text-indigo-600';
+      case 'loading_container': return 'bg-orange-100 text-orange-600';
+      case 'loaded_in_container': return 'bg-teal-100 text-teal-600';
+      case 'at_tanzania_port': return 'bg-cyan-100 text-cyan-600';
+      case 'at_tanzania_warehouse': return 'bg-sky-100 text-sky-600';
+      case 'confirmed':        return 'bg-purple-100 text-purple-600';
+      case 'pending_confirmation': return 'bg-yellow-100 text-yellow-600';
+      case 'cancelled':        return 'bg-red-100 text-red-600';
+      case 'draft':            return 'bg-gray-100 text-gray-600';
+      case 'closed':           return 'bg-teal-100 text-teal-600';
+      default:                 return 'bg-gray-200 text-gray-600';
     }
   }
 
@@ -368,12 +408,11 @@ export class Shipping implements OnInit {
   // Agent-specific methods
   confirmShipment(shipment: Shipment): void {
     this.updatingShipment.set(shipment.id);
-
     this.shipmentService.confirmShipment(shipment.id).subscribe({
       next: (response) => {
         if (response.success) {
           this.toastService.success('Shipment confirmed successfully');
-          this.loadShipments(); // Reload to update the list
+          this.loadShipments();
         } else {
           this.toastService.error(response.message || 'Failed to confirm shipment');
         }
@@ -389,12 +428,11 @@ export class Shipping implements OnInit {
 
   markAsAtWarehouse(shipment: Shipment): void {
     this.updatingShipment.set(shipment.id);
-
     this.shipmentService.markAsAtWarehouse(shipment.id).subscribe({
       next: (response) => {
         if (response.success) {
           this.toastService.success('Shipment marked as at warehouse');
-          this.loadShipments(); // Reload to update the list
+          this.loadShipments();
         } else {
           this.toastService.error(response.message || 'Failed to update shipment');
         }
@@ -410,12 +448,11 @@ export class Shipping implements OnInit {
 
   markAsInTransit(shipment: Shipment): void {
     this.updatingShipment.set(shipment.id);
-
     this.shipmentService.markAsInTransit(shipment.id).subscribe({
       next: (response) => {
         if (response.success) {
           this.toastService.success('Shipment marked as in transit');
-          this.loadShipments(); // Reload to update the list
+          this.loadShipments();
         } else {
           this.toastService.error(response.message || 'Failed to update shipment');
         }
@@ -431,12 +468,11 @@ export class Shipping implements OnInit {
 
   markAsDelivered(shipment: Shipment): void {
     this.updatingShipment.set(shipment.id);
-
     this.shipmentService.markAsDelivered(shipment.id).subscribe({
       next: (response) => {
         if (response.success) {
           this.toastService.success('Shipment marked as delivered');
-          this.loadShipments(); // Reload to update the list
+          this.loadShipments();
         } else {
           this.toastService.error(response.message || 'Failed to update shipment');
         }
@@ -459,11 +495,28 @@ export class Shipping implements OnInit {
   }
 
   canMarkInTransit(shipment: Shipment): boolean {
-    return shipment.status === 'at_warehouse';
+    return shipment.status === 'at_warehouse' && !shipment.container_id;
   }
 
   canMarkDelivered(shipment: Shipment): boolean {
-    return shipment.status === 'in_transit';
+    // Containerized shipments: only from at_tanzania_warehouse
+    // Non-containerized shipments: from in_transit or at_tanzania_warehouse
+    if (shipment.container_id) {
+      return shipment.status === 'at_tanzania_warehouse';
+    }
+    return shipment.status === 'at_tanzania_warehouse' || shipment.status === 'in_transit';
+  }
+
+  canLoadToContainer(shipment: Shipment): boolean {
+    return shipment.status === 'at_warehouse' && !shipment.container_id;
+  }
+
+  canRemoveFromContainer(shipment: Shipment): boolean {
+    return shipment.status === 'loading_container' && !!shipment.container_id;
+  }
+
+  canUserConfirmDelivery(shipment: Shipment): boolean {
+    return shipment.status === 'at_tanzania_warehouse';
   }
 
   isUpdating(shipmentId: string): boolean {
@@ -473,12 +526,11 @@ export class Shipping implements OnInit {
   // Agent reject shipment
   rejectShipment(shipment: Shipment): void {
     this.updatingShipment.set(shipment.id);
-
     this.shipmentService.rejectShipment(shipment.id).subscribe({
       next: (response) => {
         if (response.success) {
           this.toastService.success('Shipment rejected successfully');
-          this.loadShipments(); // Reload to update the list
+          this.loadShipments();
         } else {
           this.toastService.error(response.message || 'Failed to reject shipment');
         }
@@ -495,12 +547,11 @@ export class Shipping implements OnInit {
   // Cancel shipment (for both agents and customers)
   cancelShipment(shipment: Shipment): void {
     this.updatingShipment.set(shipment.id);
-
     this.shipmentService.cancelShipment(shipment.id).subscribe({
       next: (response) => {
         if (response.success) {
           this.toastService.success('Shipment cancelled successfully');
-          this.loadShipments(); // Reload to update the list
+          this.loadShipments();
         } else {
           this.toastService.error(response.message || 'Failed to cancel shipment');
         }
@@ -521,7 +572,7 @@ export class Shipping implements OnInit {
   // Confirmation modal methods
   openConfirmModal(
     shipment: Shipment,
-    action: 'confirm' | 'reject' | 'cancel' | 'at_warehouse' | 'in_transit' | 'delivered'
+    action: 'confirm' | 'reject' | 'cancel' | 'at_warehouse' | 'in_transit' | 'delivered' | 'user_delivered'
   ): void {
     const configMap: Record<typeof action, { title: string; message: string }> = {
       confirm: { title: 'Confirm Shipment', message: 'Are you sure you want to confirm this shipment request?' },
@@ -530,6 +581,7 @@ export class Shipping implements OnInit {
       at_warehouse: { title: 'Mark as At Warehouse', message: 'Are you sure you want to mark this shipment as at warehouse?' },
       in_transit: { title: 'Mark as In Transit', message: 'Are you sure you want to mark this shipment as in transit?' },
       delivered: { title: 'Mark as Delivered', message: 'Are you sure you want to mark this shipment as delivered?' },
+      user_delivered: { title: 'Confirm Delivery', message: 'Are you sure you want to confirm delivery of this shipment?' },
     };
     const cfg = configMap[action];
     this.confirmModalConfig.set({ ...cfg, action, shipment });
@@ -564,6 +616,9 @@ export class Shipping implements OnInit {
       case 'delivered':
         this.markAsDelivered(cfg.shipment);
         break;
+      case 'user_delivered':
+        this.confirmUserDelivery(cfg.shipment);
+        break;
     }
     this.closeConfirmModal();
   }
@@ -591,6 +646,201 @@ export class Shipping implements OnInit {
 
   markAsDeliveredAction(shipment: Shipment): void {
     this.openConfirmModal(shipment, 'delivered');
+  }
+
+  confirmUserDeliveryAction(shipment: Shipment): void {
+    this.openConfirmModal(shipment, 'user_delivered');
+  }
+
+  // User delivery confirmation
+  confirmUserDelivery(shipment: Shipment): void {
+    this.updatingShipment.set(shipment.id);
+    this.shipmentService.markAsUserDelivered(shipment.id).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.success(response.message || 'Delivery confirmed successfully');
+          this.loadShipments();
+        } else {
+          this.toastService.error(response.message || 'Failed to confirm delivery');
+        }
+        this.updatingShipment.set(null);
+      },
+      error: (error: any) => {
+        console.error('Failed to confirm delivery:', error);
+        this.toastService.error('Failed to confirm delivery');
+        this.updatingShipment.set(null);
+      }
+    });
+  }
+
+  // Container management methods
+  loadContainers(): void {
+    this.containersLoading.set(true);
+    this.containerService.getContainers().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.containers.set(response.data.containers);
+        }
+        this.containersLoading.set(false);
+      },
+      error: (error: any) => {
+        console.error('Failed to load containers:', error);
+        this.containersLoading.set(false);
+      }
+    });
+  }
+
+  openContainerModal(shipment?: Shipment): void {
+    this.containerModalOpen.set(true);
+    this.selectedShipmentForContainer.set(shipment || null);
+    this.loadContainers();
+  }
+
+  closeContainerModal(): void {
+    this.containerModalOpen.set(false);
+    this.selectedContainer.set(null);
+    this.containerDetailOpen.set(false);
+  }
+
+  openContainerDetail(container: Container): void {
+    this.containerDetailOpen.set(true);
+    this.selectedContainer.set(container);
+    this.containerService.getContainer(container.id).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.selectedContainer.set(response.data.container);
+        }
+      },
+      error: (error: any) => {
+        console.error('Failed to load container details:', error);
+      }
+    });
+  }
+
+  createContainer(): void {
+    const ref = this.newContainerRef().trim();
+    if (!ref) {
+      this.toastService.error('Please enter a reference number');
+      return;
+    }
+    this.creatingContainer.set(true);
+    this.containerService.createContainer(ref).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.success('Container created successfully');
+          this.newContainerRef.set('');
+          this.loadContainers();
+        } else {
+          this.toastService.error(response.message || 'Failed to create container');
+        }
+        this.creatingContainer.set(false);
+      },
+      error: (error: any) => {
+        console.error('Failed to create container:', error);
+        this.toastService.error('Failed to create container');
+        this.creatingContainer.set(false);
+      }
+    });
+  }
+
+  loadShipmentToContainer(containerId: string): void {
+    const shipment = this.selectedShipmentForContainer();
+    if (!shipment) return;
+    this.updatingShipment.set(shipment.id);
+    this.containerService.addShipment(containerId, shipment.id).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.success('Shipment added to container');
+          this.loadShipments();
+          this.selectedShipmentForContainer.set(null);
+        } else {
+          this.toastService.error(response.message || 'Failed to add shipment');
+        }
+        this.updatingShipment.set(null);
+      },
+      error: (error: any) => {
+        console.error('Failed to add shipment to container:', error);
+        this.toastService.error('Failed to add shipment to container');
+        this.updatingShipment.set(null);
+      }
+    });
+  }
+
+  removeShipmentFromContainer(shipment: Shipment): void {
+    if (!shipment.container_id) return;
+    this.updatingShipment.set(shipment.id);
+    this.containerService.removeShipment(shipment.container_id, shipment.id).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.success('Shipment removed from container');
+          this.loadShipments();
+        } else {
+          this.toastService.error(response.message || 'Failed to remove shipment');
+        }
+        this.updatingShipment.set(null);
+      },
+      error: (error: any) => {
+        console.error('Failed to remove shipment from container:', error);
+        this.toastService.error('Failed to remove shipment from container');
+        this.updatingShipment.set(null);
+      }
+    });
+  }
+
+  closeContainer(containerId: string): void {
+    this.updatingContainer.set(containerId);
+    this.containerService.closeContainer(containerId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.success('Container closed successfully');
+          this.loadContainers();
+          this.loadShipments();
+        } else {
+          this.toastService.error(response.message || 'Failed to close container');
+        }
+        this.updatingContainer.set(null);
+      },
+      error: (error: any) => {
+        console.error('Failed to close container:', error);
+        this.toastService.error('Failed to close container');
+        this.updatingContainer.set(null);
+      }
+    });
+  }
+
+  updateContainerStatus(containerId: string, status: string): void {
+    this.updatingContainer.set(containerId);
+    this.containerService.updateContainerStatus(containerId, status).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.success(`Container updated to ${status.replace(/_/g, ' ')}`);
+          this.loadContainers();
+          this.loadShipments();
+        } else {
+          this.toastService.error(response.message || 'Failed to update container');
+        }
+        this.updatingContainer.set(null);
+      },
+      error: (error: any) => {
+        console.error('Failed to update container status:', error);
+        this.toastService.error('Failed to update container status');
+        this.updatingContainer.set(null);
+      }
+    });
+  }
+
+  getNextContainerStatus(status: string): string | null {
+    const flow: Record<string, string> = {
+      'closed': 'in_transit',
+      'in_transit': 'at_tanzania_port',
+      'at_tanzania_port': 'at_tanzania_warehouse',
+    };
+    return flow[status] || null;
+  }
+
+  getNextContainerStatusLabel(status: string): string {
+    const next = this.getNextContainerStatus(status);
+    return next ? next.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : '';
   }
 
   // Tracking number methods
@@ -622,7 +872,7 @@ export class Shipping implements OnInit {
         if (response.success) {
           this.toastService.success('Tracking number added successfully');
           this.closeTrackingModal();
-          this.loadShipments(); // Reload to update the list
+          this.loadShipments();
         } else {
           this.toastService.error(response.message || 'Failed to add tracking number');
         }
@@ -652,5 +902,202 @@ export class Shipping implements OnInit {
 
   hasTrackingNumber(shipment: Shipment): boolean {
     return !!shipment.external_tracking_number;
+  }
+
+  // QR Scanner Modal methods
+  openQrScanner(purpose: QrScanPurpose, options?: { containerId?: string; shipmentId?: string }): void {
+    this.qrScanPurpose.set(purpose);
+    this.qrScanContainerId.set(options?.containerId ?? null);
+    this.qrScanShipmentId.set(options?.shipmentId ?? null);
+    this.qrScanModalOpen.set(true);
+    this.qrScanState.set('idle');
+    this.qrScanMessage.set('');
+    this.qrScanCameraError.set(null);
+  }
+
+  closeQrScannerModal(): void {
+    this.stopQrScanner();
+    this.qrScanModalOpen.set(false);
+    this.qrScanState.set('idle');
+    this.qrScanMessage.set('');
+    this.qrScanCameraError.set(null);
+    this.scanHandled = false;
+  }
+
+  async beginQrScanning(): Promise<void> {
+    await this.stopQrScanner();
+    this.scanHandled = false;
+    this.lastScanTime = 0;
+    this.qrScanState.set('scanning');
+    this.qrScanCameraError.set(null);
+    setTimeout(() => this.startQrScanner(), 100);
+  }
+
+  async startQrScanner(): Promise<void> {
+    const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (!isSecure) {
+      this.qrScanState.set('error');
+      this.qrScanMessage.set('Camera access requires a secure connection (HTTPS).');
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      this.qrScanState.set('error');
+      this.qrScanMessage.set('Your browser does not support camera access.');
+      return;
+    }
+    const readerEl = document.getElementById('shipping-qr-reader');
+    if (!readerEl) {
+      this.qrScanState.set('error');
+      this.qrScanMessage.set('Scanner element not found.');
+      return;
+    }
+    this.html5QrCode = new Html5Qrcode('shipping-qr-reader');
+    try {
+      await this.html5QrCode.start(
+        { facingMode: 'environment' },
+        { fps: 10 },
+        (decodedText: string) => {
+          if (this.scanHandled || this.qrScanState() !== 'scanning') return;
+          const now = Date.now();
+          if (now - this.lastScanTime < 3000) return;
+          this.lastScanTime = now;
+          this.scanHandled = true;
+          this.handleQrScan(decodedText);
+        },
+        () => {}
+      );
+    } catch (err: any) {
+      console.error('Camera error:', err);
+      const msg = err?.message || '';
+      if (msg.includes('Permission denied') || msg.includes('permission')) {
+        this.qrScanCameraError.set('Camera access denied. Please allow camera permission.');
+      } else if (msg.includes('device not found') || msg.includes('no camera')) {
+        this.qrScanCameraError.set('No camera found on this device.');
+      } else {
+        this.qrScanCameraError.set(msg || 'Unable to start camera.');
+      }
+      this.qrScanState.set('error');
+    }
+  }
+
+  async stopQrScanner(): Promise<void> {
+    if (this.html5QrCode) {
+      try {
+        await this.html5QrCode.stop();
+        await this.html5QrCode.clear();
+      } catch {}
+      this.html5QrCode = null;
+    }
+  }
+
+  extractUuid(text: string): string | null {
+    const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+    const match = text.match(uuidRegex);
+    return match ? match[0] : null;
+  }
+
+  async handleQrScan(decodedText: string): Promise<void> {
+    await this.stopQrScanner();
+    const uuid = this.extractUuid(decodedText);
+    if (!uuid) {
+      this.qrScanState.set('error');
+      this.qrScanMessage.set('Invalid QR code. No valid UUID found.');
+      return;
+    }
+    this.qrScanState.set('processing');
+
+    if (this.qrScanPurpose() === 'agent_load_container' && this.qrScanContainerId()) {
+      this.containerService.scanShipment(this.qrScanContainerId()!, uuid).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.qrScanState.set('success');
+            this.qrScanMessage.set(response.message || 'Shipment added to container successfully');
+            this.loadShipments();
+            this.loadContainers();
+          } else {
+            this.qrScanState.set('error');
+            this.qrScanMessage.set(response.message || 'Failed to add shipment to container');
+          }
+        },
+        error: (err: any) => {
+          this.qrScanState.set('error');
+          this.qrScanMessage.set(err?.error?.message || 'Something went wrong. Please try again.');
+        }
+      });
+    } else if (this.qrScanPurpose() === 'user_confirm_delivery' && this.qrScanShipmentId()) {
+      this.shipmentService.markAsUserDelivered(this.qrScanShipmentId()!, uuid).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.qrScanState.set('success');
+            this.qrScanMessage.set(response.message || 'Delivery confirmed successfully');
+            this.loadShipments();
+          } else {
+            this.qrScanState.set('error');
+            this.qrScanMessage.set(response.message || 'Failed to confirm delivery');
+          }
+        },
+        error: (err: any) => {
+          this.qrScanState.set('error');
+          this.qrScanMessage.set(err?.error?.message || 'Something went wrong. Please try again.');
+        }
+      });
+    } else {
+      this.qrScanState.set('error');
+      this.qrScanMessage.set('Invalid scan configuration.');
+    }
+  }
+
+  resetQrScanner(): void {
+    this.scanHandled = false;
+    this.qrScanState.set('idle');
+    this.qrScanMessage.set('');
+    this.qrScanCameraError.set(null);
+  }
+
+  // Delivery scan modal (text-based fallback)
+  openDeliveryScanModal(shipment: Shipment): void {
+    this.deliveryScanShipment.set(shipment);
+    this.deliveryScanModalOpen.set(true);
+  }
+
+  closeDeliveryScanModal(): void {
+    this.deliveryScanModalOpen.set(false);
+    this.deliveryScanShipment.set(null);
+  }
+
+  submitDeliveryScan(): void {
+    const shipment = this.deliveryScanShipment();
+    if (!shipment) return;
+
+    this.deliveryScanLoading.set(true);
+    this.shipmentService.markAsUserDelivered(shipment.id).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.success(response.message || 'Delivery confirmed');
+          this.closeDeliveryScanModal();
+          this.loadShipments();
+        } else {
+          this.toastService.error(response.message || 'Failed to confirm delivery');
+        }
+        this.deliveryScanLoading.set(false);
+      },
+      error: (error: any) => {
+        console.error('Failed to confirm delivery:', error);
+        this.toastService.error('Failed to confirm delivery');
+        this.deliveryScanLoading.set(false);
+      }
+    });
+  }
+
+  // Helper method to check if container has shipments
+  hasContainerShipments(): boolean {
+    const container = this.selectedContainer();
+    return !!(container?.shipments && container.shipments.length > 0);
+  }
+
+  // Helper method to get container shipments
+  getContainerShipments(): any[] {
+    const container = this.selectedContainer();
+    return container?.shipments || [];
   }
 }
