@@ -23,21 +23,13 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <button 
+                    <button
                         *ngIf="isAgent()"
                         (click)="openContainerModal()"
-                        class="px-3 py-1 text-sm bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition flex items-center gap-2"
+                        class="px-3 py-1.5 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition flex items-center gap-2 shadow-sm"
                     >
                         <i class="fa-solid fa-box-open"></i>
                         Containers
-                    </button>
-                    <button 
-                        (click)="refreshShipments()"
-                        [disabled]="loading()"
-                        class="px-3 py-1 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2"
-                    >
-                        <div *ngIf="loading()" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                        Refresh
                     </button>
                 </div>
 
@@ -46,17 +38,16 @@
             <!-- AGENT TABS -->
             <div *ngIf="isAgent()" class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm mb-6">
                 <div class="flex overflow-x-auto scrollbar-hide">
-                    <button 
+                    <button
                         *ngFor="let tab of agentTabs"
                         (click)="switchTab(tab.id)"
-                        class="flex-1 min-w-[120px] px-3 py-3 text-sm font-medium border-b-2 transition-colors duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
-                        [class]="activeTab() === tab.id ? 
-                            'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20' : 
+                        class="flex-1 min-w-[120px] px-3 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
+                        [class]="activeTab() === tab.id ?
+                            'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20' :
                             'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#333]'"
                     >
                         <i class="fa-solid {{tab.icon}}"></i>
-                        <span class="hidden sm:inline">{{tab.label}}</span>
-                        <span class="sm:hidden">{{tab.label.split(' ')[0]}}</span>
+                        <span>{{tab.label}}</span>
                     </button>
                 </div>
             </div>
@@ -64,17 +55,16 @@
             <!-- USER TABS -->
             <div *ngIf="!isAgent()" class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm mb-6">
                 <div class="flex overflow-x-auto scrollbar-hide">
-                    <button 
+                    <button
                         *ngFor="let tab of userTabs"
                         (click)="switchTab(tab.id)"
-                        class="flex-1 min-w-[120px] px-3 py-3 text-sm font-medium border-b-2 transition-colors duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
-                        [class]="activeTab() === tab.id ? 
-                            'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20' : 
+                        class="flex-1 min-w-[120px] px-3 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
+                        [class]="activeTab() === tab.id ?
+                            'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20' :
                             'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#333]'"
                     >
                         <i class="fa-solid {{tab.icon}}"></i>
-                        <span class="hidden sm:inline">{{tab.label}}</span>
-                        <span class="sm:hidden">{{tab.label.split(' ')[0]}}</span>
+                        <span>{{tab.label}}</span>
                     </button>
                 </div>
             </div>
@@ -140,242 +130,197 @@
             <div *ngIf="!loading() && !error() && shipments().length > 0" class="flex flex-col gap-4">
 
                 <div *ngFor="let shipment of shipments()"
-                     class="bg-white dark:bg-[#1a1a1a] rounded-xl p-4 hover:scale-[1.01] transition shadow-sm">
+                     class="shipment-card bg-white dark:bg-[#1a1a1a] rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-800 relative overflow-hidden"
+                     (click)="closeActionMenu()">
 
-                    <!-- TOP -->
-                    <div class="flex justify-between items-center mb-3">
+                    <!-- Subtle left accent bar -->
+                    <div class="absolute left-0 top-4 bottom-4 w-1 rounded-r-full" [ngClass]="getStatusAccentClass(shipment.status)"></div>
 
-                        <div class="flex-1">
-                            <h3 class="font-semibold dark:text-white text-sm sm:text-base mb-1">
+                    <!-- HEADER ROW: Title + Status Badge (mobile optimized) -->
+                    <div class="mb-3 pl-3">
+                        <!-- Title + Status on same line -->
+                        <div class="flex items-start justify-between gap-2">
+                            <h3 class="font-semibold dark:text-white text-sm sm:text-base leading-tight truncate">
                                 {{shipment.title || 'Untitled Shipment'}}
                             </h3>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <p class="text-xs text-gray-500 dark:text-gray-400">
-                                    <ng-container *ngIf="hasTrackingNumber(shipment)">
-                                        External Tracking: <span class="font-medium text-orange-600 dark:text-orange-400">{{shipment.external_tracking_number}}</span>
-                                    </ng-container>
-                                    <ng-container *ngIf="!hasTrackingNumber(shipment)">
-                                        <span class="text-gray-400 italic">No external tracking number</span>
-                                    </ng-container>
-                                </p>
-                                <button
-                                    *ngIf="canAddTrackingNumber(shipment)"
-                                    (click)="openTrackingModal(shipment)"
-                                    class="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-2 py-1 rounded hover:bg-orange-200 dark:hover:bg-orange-900/50 transition"
-                                    title="Add external tracking number">
-                                    <i class="fa-solid fa-plus"></i> Add
-                                </button>
-                                <button
-                                    *ngIf="canEditTrackingNumber(shipment)"
-                                    (click)="openTrackingModal(shipment)"
-                                    class="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition"
-                                    title="Edit external tracking number">
-                                    <i class="fa-solid fa-pen"></i> Edit
-                                </button>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <!-- Smart Additional Info Toggle -->
+                                <ng-container *ngIf="shipment.status === 'pending_confirmation' || shipment.container_id || shipment.status === 'delivered'">
+                                    <button
+                                        (click)="toggleInfo(shipment.id, $event)"
+                                        class="w-7 h-7 rounded-full bg-gray-100 dark:bg-[#222] hover:bg-gray-200 dark:hover:bg-[#333] flex items-center justify-center transition-all duration-200 group"
+                                        [class.ring-2]="isInfoExpanded(shipment.id)"
+                                        [class.ring-orange-300]="isInfoExpanded(shipment.id)"
+                                        title="Additional information">
+                                        <i class="fa-solid fa-question text-gray-500 dark:text-gray-400 text-xs group-hover:text-orange-500 transition-colors"></i>
+                                    </button>
+                                </ng-container>
+
+                                <span
+                                  class="status-badge text-[11px] font-semibold px-3 py-1 rounded-full whitespace-nowrap shadow-sm"
+                                  [ngClass]="getStatusClass(shipment.status)">
+                                  {{formatStatus(shipment.status)}}
+                                </span>
                             </div>
                         </div>
-
-                        <!-- STATUS BADGE -->
-                        <span 
-                          class="text-xs px-3 py-1 rounded-full whitespace-nowrap"
-                          [ngClass]="getStatusClass(shipment.status)">
-                          {{formatStatus(shipment.status)}}
-                        </span>
-
+                        <!-- Tracking info row (separate line) -->
+                        <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                            <span class="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-[#222] px-2 py-0.5 rounded-md">
+                                <i class="fa-solid fa-barcode text-gray-400 text-[10px]"></i>
+                                <ng-container *ngIf="hasTrackingNumber(shipment)">
+                                    <span class="font-medium text-gray-700 dark:text-gray-300">{{shipment.external_tracking_number}}</span>
+                                </ng-container>
+                                <ng-container *ngIf="!hasTrackingNumber(shipment)">
+                                    <span class="text-gray-400 italic">Tracking number</span>
+                                </ng-container>
+                            </span>
+                            <button
+                                *ngIf="canAddTrackingNumber(shipment)"
+                                (click)="openTrackingModal(shipment); $event.stopPropagation()"
+                                class="text-[10px] bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-md hover:bg-orange-100 dark:hover:bg-orange-900/40 transition font-medium"
+                                title="Add external tracking number">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                            <button
+                                *ngIf="canEditTrackingNumber(shipment)"
+                                (click)="openTrackingModal(shipment); $event.stopPropagation()"
+                                class="text-[10px] bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/40 transition font-medium"
+                                title="Edit external tracking number">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- DETAILS -->
-                    <div class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 space-y-1 mb-3">
-
-                        <p *ngIf="shipment.agent"><strong>Agent:</strong> {{shipment.agent.firstname}} {{shipment.agent.lastname}}</p>
-                        <p *ngIf="shipment.agent_address"><strong>Agent Address:</strong> {{shipment.agent_address}}</p>
+                    <!-- EXPANDABLE ADDITIONAL INFO (animated) -->
+                    <div *ngIf="isInfoExpanded(shipment.id)" class="info-expand pl-3 mb-3">
+                        <!-- Pending confirmation info -->
+                        <div *ngIf="shipment.status === 'pending_confirmation'" class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                            <p class="text-xs text-yellow-800 dark:text-yellow-200 flex items-start gap-2">
+                                <i class="fa-solid fa-clock mt-0.5 shrink-0"></i>
+                                <span>
+                                    <ng-container *ngIf="isAgent(); else userPending">
+                                        <ng-container [ngSwitch]="activeTab()">
+                                            <ng-container *ngSwitchCase="'my_shippings'">Waiting for agent confirmation. You'll receive an email when confirmed.</ng-container>
+                                            <ng-container *ngSwitchDefault>Customer is waiting for your confirmation. Please review and confirm this shipment.</ng-container>
+                                        </ng-container>
+                                    </ng-container>
+                                    <ng-template #userPending>Waiting for agent confirmation. You'll receive an email when confirmed.</ng-template>
+                                </span>
+                            </p>
+                        </div>
 
                         <!-- Container info -->
-                        <div *ngIf="shipment.container_id" class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-2 mt-2">
-                            <p class="text-indigo-700 dark:text-indigo-300">
-                                <i class="fa-solid fa-box-open mr-1"></i>
-                                <strong>In Container:</strong> This shipment is part of a container. Status updates are managed via container.
+                        <div *ngIf="shipment.container_id" class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-3 mt-2">
+                            <p class="text-xs text-indigo-700 dark:text-indigo-300 flex items-start gap-2">
+                                <i class="fa-solid fa-box-open mt-0.5 shrink-0"></i>
+                                <span>This shipment is part of a container. Status updates are managed via container.</span>
                             </p>
                         </div>
 
                         <!-- Delivery info -->
-                        <div *ngIf="shipment.status === 'delivered'" class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-2 mt-2">
-                            <p class="text-green-700 dark:text-green-300 text-xs">
-                                <i class="fa-solid fa-check-circle mr-1"></i>
-                                <strong>Delivered by:</strong>
-                                <ng-container *ngIf="shipment.agent_delivered_at">Agent</ng-container>
-                                <ng-container *ngIf="shipment.user_delivered_at">Customer</ng-container>
+                        <div *ngIf="shipment.status === 'delivered'" class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 mt-2">
+                            <p class="text-xs text-green-700 dark:text-green-300 flex items-start gap-2">
+                                <i class="fa-solid fa-check-circle mt-0.5 shrink-0"></i>
+                                <span>
+                                    <strong>Delivered by:</strong>
+                                    <ng-container *ngIf="shipment.agent_delivered_at">Agent</ng-container>
+                                    <ng-container *ngIf="shipment.user_delivered_at">Customer</ng-container>
+                                </span>
                             </p>
                         </div>
-
                     </div>
 
-                    <!-- ADDITIONAL INFO -->
-                    <div *ngIf="shipment.status === 'pending_confirmation'" class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-3">
-                        <p class="text-xs text-yellow-800 dark:text-yellow-200">
-                            <ng-container *ngIf="isAgent(); else userPending">
-                                <ng-container [ngSwitch]="activeTab()">
-                                    <ng-container *ngSwitchCase="'my_shippings'">
-                                        <i class="fa-solid fa-clock mr-1"></i>
-                                        Waiting for agent confirmation. You'll receive an email when confirmed.
-                                    </ng-container>
-                                    <ng-container *ngSwitchDefault>
-                                        <i class="fa-solid fa-clock mr-1"></i>
-                                        Customer is waiting for your confirmation. Please review and confirm this shipment.
-                                    </ng-container>
-                                </ng-container>
-                            </ng-container>
-                            <ng-template #userPending>
-                                <i class="fa-solid fa-clock mr-1"></i>
-                                Waiting for agent confirmation. You'll receive an email when confirmed.
-                            </ng-template>
-                        </p>
+                    <!-- DETAILS ROW -->
+                    <div class="pl-3 mb-3">
+                        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                            <span *ngIf="shipment.agent" class="inline-flex items-center gap-1.5">
+                                <i class="fa-solid fa-user-tie text-gray-400 text-[10px]"></i>
+                                {{shipment.agent.firstname}} {{shipment.agent.lastname}}
+                            </span>
+                            <span *ngIf="shipment.agent_address" class="hidden sm:inline-flex items-center gap-1.5">
+                                <i class="fa-solid fa-location-dot text-gray-400 text-[10px]"></i>
+                                <span class="truncate max-w-[200px]">{{shipment.agent_address}}</span>
+                            </span>
+                        </div>
                     </div>
 
-                    <!-- ACTION BUTTONS -->
-                    <div class="mt-3 flex flex-wrap gap-2 justify-end">
+                    <!-- ACTION BAR -->
+                    <div class="pl-3 flex items-center justify-between gap-3">
+                        <!-- Left: View & QR -->
+                        <div class="flex items-center gap-2">
+                            <button
+                                (click)="openViewModal(shipment); $event.stopPropagation()"
+                                class="px-3 py-1.5 bg-white dark:bg-[#222] border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-[#333] hover:border-orange-300 dark:hover:border-orange-700 transition flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-eye text-orange-500 text-xs"></i>
+                                View
+                            </button>
+                            <button
+                                *ngIf="isAgent() && shipment.status === 'pending_confirmation' && shipment.products && shipment.products.length > 0"
+                                (click)="openQrModal(shipment); $event.stopPropagation()"
+                                class="px-3 py-1.5 bg-white dark:bg-[#222] border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-[#333] hover:border-purple-300 dark:hover:border-purple-700 transition flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-qrcode text-purple-500 text-xs"></i>
+                                QR
+                            </button>
+                        </div>
 
-                        <!-- View Details Button -->
-                        <button
-                            (click)="openViewModal(shipment)"
-                            class="px-3 py-2 bg-white dark:bg-[#222] border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-[#333] transition flex items-center gap-2">
-                            <i class="fa-solid fa-eye text-orange-500"></i>
-                            View
-                        </button>
+                        <!-- Right: 3-dot Action Menu (Agent only) -->
+                        <div class="relative" *ngIf="isAgent() && activeTab() !== 'my_shippings' && getAgentActionItems(shipment).length > 0">
+                            <button
+                                (click)="toggleActionMenu(shipment.id, $event)"
+                                class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-[#222] hover:bg-gray-200 dark:hover:bg-[#333] flex items-center justify-center transition shadow-sm"
+                                [class.ring-2]="isActionMenuOpen(shipment.id)"
+                                [class.ring-orange-300]="isActionMenuOpen(shipment.id)">
+                                <i class="fa-solid fa-ellipsis-vertical text-gray-600 dark:text-gray-400 text-sm"></i>
+                            </button>
 
-                        <!-- View QR Button (for agents on pending shipments) -->
-                        <button
-                            *ngIf="isAgent() && shipment.status === 'pending_confirmation' && shipment.products && shipment.products.length > 0"
-                            (click)="openQrModal(shipment)"
-                            class="px-3 py-2 bg-white dark:bg-[#222] border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-[#333] transition flex items-center gap-2">
-                            <i class="fa-solid fa-qrcode text-purple-500"></i>
-                            View QR
-                        </button>
+                            <!-- Dropdown Menu -->
+                            <div *ngIf="isActionMenuOpen(shipment.id)"
+                                 class="action-menu absolute right-0 bottom-full mb-2 w-52 bg-white dark:bg-[#1a1a1a] rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-1.5 z-20 overflow-hidden"
+                                 (click)="$event.stopPropagation()">
+                                <div class="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-800 mb-1">
+                                    Actions
+                                </div>
+                                <button *ngFor="let item of getAgentActionItems(shipment)"
+                                        (click)="item.action(); closeActionMenu(); $event.stopPropagation()"
+                                        [disabled]="item.disabled"
+                                        class="w-full px-3 py-2 text-left text-sm flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-[#222] transition disabled:opacity-40 disabled:cursor-not-allowed">
+                                    <span class="w-6 h-6 rounded-md bg-gray-100 dark:bg-[#222] flex items-center justify-center shrink-0">
+                                        <i class="fa-solid {{item.icon}} {{item.colorClass}} text-xs"></i>
+                                    </span>
+                                    <span class="text-gray-700 dark:text-gray-300">{{item.label}}</span>
+                                    <div *ngIf="item.disabled" class="ml-auto w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                </button>
+                            </div>
+                        </div>
 
-                        <!-- Agent Action Buttons -->
-                        <ng-container *ngIf="isAgent() && activeTab() !== 'my_shippings'">
-                            <!-- Confirm Button (for pending shipments) -->
-                            <button 
-                                *ngIf="canConfirm(shipment)"
-                                (click)="confirmShipmentAction(shipment)"
+                        <!-- Customer Actions (non-agent) -->
+                        <div class="flex items-center gap-2" *ngIf="!isAgent()">
+                            <button
+                                *ngIf="canCancel(shipment)"
+                                (click)="cancelShipmentAction(shipment); $event.stopPropagation()"
                                 [disabled]="isUpdating(shipment.id)"
-                                class="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
+                                class="px-3 py-1.5 bg-gray-500 text-white text-xs rounded-lg hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-1.5 shadow-sm">
                                 <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                                <i class="fa-solid fa-check"></i>
+                                <i class="fa-solid fa-times text-xs"></i>
+                                Cancel
+                            </button>
+                            <button
+                                *ngIf="canUserConfirmDelivery(shipment)"
+                                (click)="confirmUserDeliveryAction(shipment); $event.stopPropagation()"
+                                [disabled]="isUpdating(shipment.id)"
+                                class="px-3 py-1.5 bg-green-500 text-white text-xs rounded-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-1.5 shadow-sm">
+                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                                <i class="fa-solid fa-check text-xs"></i>
                                 Confirm
                             </button>
-
-                            <!-- Reject Button (for pending shipments) -->
-                            <button 
-                                *ngIf="canConfirm(shipment)"
-                                (click)="rejectShipmentAction(shipment)"
-                                [disabled]="isUpdating(shipment.id)"
-                                class="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
-                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                                <i class="fa-solid fa-times"></i>
-                                Reject
-                            </button>
-
-                            <!-- Mark as At Warehouse Button (for confirmed shipments) -->
-                            <button 
-                                *ngIf="canMarkAtWarehouse(shipment)"
-                                (click)="markAsAtWarehouseAction(shipment)"
-                                [disabled]="isUpdating(shipment.id)"
-                                class="px-4 py-2 bg-indigo-500 text-white text-sm rounded-lg hover:bg-indigo-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
-                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                                <i class="fa-solid fa-warehouse"></i>
-                                At Warehouse
-                            </button>
-
-                            <!-- Load to Container Button (for at_warehouse shipments) -->
-                            <button 
-                                *ngIf="canLoadToContainer(shipment)"
-                                (click)="openContainerModal(shipment)"
-                                [disabled]="isUpdating(shipment.id)"
-                                class="px-4 py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
-                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                                <i class="fa-solid fa-dolly"></i>
-                                Load to Container
-                            </button>
-
-                            <!-- Remove from Container Button (for loading_container shipments) -->
-                            <button 
-                                *ngIf="canRemoveFromContainer(shipment)"
-                                (click)="removeShipmentFromContainer(shipment)"
-                                [disabled]="isUpdating(shipment.id)"
-                                class="px-4 py-2 bg-yellow-500 text-white text-sm rounded-lg hover:bg-yellow-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
-                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                                <i class="fa-solid fa-arrow-left"></i>
-                                Remove from Container
-                            </button>
-
-                            <!-- Mark as In Transit Button (for at_warehouse non-containerized shipments) -->
-                            <button 
-                                *ngIf="canMarkInTransit(shipment)"
-                                (click)="markAsInTransitAction(shipment)"
-                                [disabled]="isUpdating(shipment.id)"
-                                class="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
-                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                                <i class="fa-solid fa-truck"></i>
-                                In Transit
-                            </button>
-
-                            <!-- Cancel Button -->
-                            <button 
-                                *ngIf="canCancel(shipment) && !canConfirm(shipment)"
-                                (click)="cancelShipmentAction(shipment)"
-                                [disabled]="isUpdating(shipment.id)"
-                                class="px-4 py-2 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
-                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                                <i class="fa-solid fa-times"></i>
-                                Cancel
-                            </button>
-
-                            <!-- Mark as Delivered Button (for at_tanzania_warehouse or in_transit non-containerized shipments) -->
-                            <button 
-                                *ngIf="canMarkDelivered(shipment)"
-                                (click)="markAsDeliveredAction(shipment)"
-                                [disabled]="isUpdating(shipment.id)"
-                                class="px-4 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
-                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                                <i class="fa-solid fa-check-double"></i>
-                                Mark Delivered
-                            </button>
-                        </ng-container>
-
-                        <!-- Customer Action Buttons -->
-                        <ng-container *ngIf="!isAgent()">
-                            <!-- Cancel Button (for pending/confirmed/at_warehouse/in-transit shipments) -->
-                            <button 
-                                *ngIf="canCancel(shipment)"
-                                (click)="cancelShipmentAction(shipment)"
-                                [disabled]="isUpdating(shipment.id)"
-                                class="px-4 py-2 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
-                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                                <i class="fa-solid fa-times"></i>
-                                Cancel
-                            </button>
-
-                            <!-- Confirm Delivery Button (for at_tanzania_warehouse shipments) -->
-                            <button 
+                            <button
                                 *ngIf="canUserConfirmDelivery(shipment)"
-                                (click)="confirmUserDeliveryAction(shipment)"
-                                [disabled]="isUpdating(shipment.id)"
-                                class="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
-                                <div *ngIf="isUpdating(shipment.id)" class="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                                <i class="fa-solid fa-check"></i>
-                                Confirm Delivery
+                                (click)="openQrScanner('user_confirm_delivery', { shipmentId: shipment.id }); $event.stopPropagation()"
+                                class="px-3 py-1.5 bg-purple-500 text-white text-xs rounded-lg hover:bg-purple-600 transition flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-camera text-xs"></i>
+                                Scan QR
                             </button>
-
-                            <!-- Scan QR to Confirm Delivery (for at_tanzania_warehouse shipments) -->
-                            <button 
-                                *ngIf="canUserConfirmDelivery(shipment)"
-                                (click)="openQrScanner('user_confirm_delivery', { shipmentId: shipment.id })"
-                                class="px-4 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600 transition flex items-center gap-2">
-                                <i class="fa-solid fa-camera"></i>
-                                Scan QR to Confirm
-                            </button>
-                        </ng-container>
+                        </div>
                     </div>
 
                 </div>
@@ -413,17 +358,26 @@
 
 <!-- Container Management Modal -->
 @if (containerModalOpen()) {
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeContainerModal()">
-    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
-      
+  <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center" (click)="closeContainerModal()">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black/50 sheet-backdrop" [class.closing]="containerModalClosing()"></div>
+
+    <!-- Modal / Bottom Sheet -->
+    <div class="relative bg-white dark:bg-[#1a1a1a] rounded-2xl sm:rounded-2xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto sheet-modal-desktop sheet-modal-mobile" [class.closing]="containerModalClosing()" (click)="$event.stopPropagation()">
+
+      <!-- Mobile Sheet Handle -->
+      <div class="sheet-handle hidden sticky top-0 z-20 bg-white dark:bg-[#1a1a1a] pt-2 pb-1 rounded-t-2xl">
+        <div class="sheet-handle-bar"></div>
+      </div>
+
       <!-- Modal Header -->
-      <div class="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+      <div class="sheet-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sm:rounded-t-2xl">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
           <i class="fa-solid fa-box-open text-indigo-500 mr-2"></i>
           Container Management
         </h3>
-        <button (click)="closeContainerModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-          <i class="fa-solid fa-times"></i>
+        <button (click)="closeContainerModal()" class="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-[#333] flex items-center justify-center transition">
+          <i class="fa-solid fa-times text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"></i>
         </button>
       </div>
 
@@ -527,15 +481,26 @@
 
 <!-- Container Detail Modal -->
 @if (containerDetailOpen() && selectedContainer()) {
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeContainerModal()">
-    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
-      <div class="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+  <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center" (click)="closeContainerDetail()">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black/50 sheet-backdrop" [class.closing]="containerDetailClosing()"></div>
+
+    <!-- Modal / Bottom Sheet -->
+    <div class="relative bg-white dark:bg-[#1a1a1a] rounded-2xl sm:rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto sheet-modal-desktop sheet-modal-mobile" [class.closing]="containerDetailClosing()" (click)="$event.stopPropagation()">
+
+      <!-- Mobile Sheet Handle -->
+      <div class="sheet-handle hidden sticky top-0 z-20 bg-white dark:bg-[#1a1a1a] pt-2 pb-1 rounded-t-2xl">
+        <div class="sheet-handle-bar"></div>
+      </div>
+
+      <!-- Modal Header -->
+      <div class="sheet-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sm:rounded-t-2xl">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{selectedContainer()!.reference_number}}</h3>
-        <button (click)="closeContainerModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-          <i class="fa-solid fa-times"></i>
+        <button (click)="closeContainerDetail()" class="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-[#333] flex items-center justify-center transition">
+          <i class="fa-solid fa-times text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"></i>
         </button>
       </div>
-      <div class="p-6">
+      <div class="sheet-content p-6">
         <div class="mb-4">
           <span class="text-xs px-3 py-1 rounded-full" [ngClass]="getStatusClass(selectedContainer()!.status)">
             {{formatStatus(selectedContainer()!.status)}}
@@ -558,14 +523,23 @@
 
 <!-- View Shipment Details Modal -->
 @if (viewModalOpen()) {
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeViewModal()">
-    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl max-w-4xl w-full shadow-2xl max-h-[90vh] overflow-y-auto modal-scrollbar" (click)="$event.stopPropagation()">
+  <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center" (click)="closeViewModal()">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black/50 sheet-backdrop" [class.closing]="viewModalClosing()"></div>
+
+    <!-- Modal / Bottom Sheet -->
+    <div class="relative bg-white dark:bg-[#1a1a1a] rounded-2xl sm:rounded-2xl max-w-4xl w-full shadow-2xl max-h-[90vh] overflow-y-auto modal-scrollbar sheet-modal-desktop sheet-modal-mobile" [class.closing]="viewModalClosing()" (click)="$event.stopPropagation()">
+
+      <!-- Mobile Sheet Handle -->
+      <div class="sheet-handle hidden sticky top-0 z-20 bg-white dark:bg-[#1a1a1a] pt-2 pb-1 rounded-t-2xl">
+        <div class="sheet-handle-bar"></div>
+      </div>
 
       <!-- Modal Header -->
-      <div class="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-[#1a1a1a] rounded-t-2xl z-10">
+      <div class="sheet-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-[#1a1a1a] sm:rounded-t-2xl z-10">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Shipment Details</h3>
-        <button (click)="closeViewModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-          <i class="fa-solid fa-times"></i>
+        <button (click)="closeViewModal()" class="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-[#333] flex items-center justify-center transition">
+          <i class="fa-solid fa-times text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"></i>
         </button>
       </div>
 
@@ -1249,18 +1223,28 @@
 
 <!-- QR Code View Modal -->
 @if (qrModalOpen()) {
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeQrModal()">
-    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+  <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center" (click)="closeQrModal()">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black/50 sheet-backdrop" [class.closing]="qrModalClosing()"></div>
+
+    <!-- Modal / Bottom Sheet -->
+    <div class="relative bg-white dark:bg-[#1a1a1a] rounded-2xl sm:rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto sheet-modal-desktop sheet-modal-mobile" [class.closing]="qrModalClosing()" (click)="$event.stopPropagation()">
+
+      <!-- Mobile Sheet Handle -->
+      <div class="sheet-handle hidden sticky top-0 z-20 bg-white dark:bg-[#1a1a1a] pt-2 pb-1 rounded-t-2xl">
+        <div class="sheet-handle-bar"></div>
+      </div>
+
       <!-- Modal Header -->
-      <div class="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+      <div class="sheet-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sm:rounded-t-2xl">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Product QR Codes</h3>
-        <button (click)="closeQrModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-          <i class="fa-solid fa-times"></i>
+        <button (click)="closeQrModal()" class="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-[#333] flex items-center justify-center transition">
+          <i class="fa-solid fa-times text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"></i>
         </button>
       </div>
 
       <!-- Content -->
-      <div class="p-6 space-y-6">
+      <div class="sheet-content p-6 space-y-6">
         <ng-container *ngIf="qrModalShipment() as qrShipment">
           <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
             Scan these QR codes from the customer's physical package to verify and approve the shipment.
@@ -1287,7 +1271,7 @@
 
       <!-- Footer -->
       <div class="p-4 border-t border-gray-100 dark:border-gray-700 flex justify-end">
-        <button (click)="closeQrModal()" class="px-4 py-2 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-[#444] transition">
+        <button (click)="closeQrModal()" class="px-6 py-2.5 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-[#444] transition font-medium text-sm w-full sm:w-auto">
           Close
         </button>
       </div>

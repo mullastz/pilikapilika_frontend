@@ -8,6 +8,7 @@ import { ContainerService, Container } from '../../core/services/container.servi
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { QrCodeService } from '../../core/services/qr-code.service';
+import { MenuBarService } from '../../core/services/menu-bar.service';
 import { QRCodeComponent } from 'angularx-qrcode';
 
 type QrScanPurpose = 'agent_load_container' | 'user_confirm_delivery';
@@ -37,9 +38,15 @@ export class Shipping implements OnInit, OnDestroy {
 
   // View details modal state
   public viewModalOpen = signal(false);
+  public viewModalClosing = signal(false);
   public viewModalLoading = signal(false);
   public viewModalError = signal<string | null>(null);
   public selectedShipmentDetail = signal<Shipment | null>(null);
+
+  // QR view modal state
+  public qrModalOpen = signal(false);
+  public qrModalClosing = signal(false);
+  public qrModalShipment = signal<Shipment | null>(null);
 
   // Tracking number modal state
   public trackingModalOpen = signal(false);
@@ -51,16 +58,14 @@ export class Shipping implements OnInit, OnDestroy {
   public selectedProductUuid = signal<string | null>(null);
   public productDetailsMap = signal<Map<string, any>>(new Map());
 
-  // QR view modal state
-  public qrModalOpen = signal(false);
-  public qrModalShipment = signal<Shipment | null>(null);
-
   // Container management state
   public containers = signal<Container[]>([]);
   public containersLoading = signal(false);
   public containerModalOpen = signal(false);
+  public containerModalClosing = signal(false);
   public selectedContainer = signal<Container | null>(null);
   public containerDetailOpen = signal(false);
+  public containerDetailClosing = signal(false);
   public newContainerRef = signal('');
   public creatingContainer = signal(false);
   public scanningToContainer = signal(false);
@@ -84,6 +89,12 @@ export class Shipping implements OnInit, OnDestroy {
   private html5QrCode: Html5Qrcode | null = null;
   private scanHandled = false;
   private lastScanTime = 0;
+
+  // Action menu state (per shipment card)
+  public openActionMenuId = signal<string | null>(null);
+
+  // Additional info tooltip state (per shipment card)
+  public expandedInfoId = signal<string | null>(null);
 
   // Computed signals
   public shipments = computed(() => this._shipments());
@@ -132,7 +143,8 @@ export class Shipping implements OnInit, OnDestroy {
     private containerService: ContainerService,
     private toastService: ToastService,
     private authService: AuthService,
-    private qrCodeService: QrCodeService
+    private qrCodeService: QrCodeService,
+    private menuBarService: MenuBarService
   ) {}
 
   ngOnInit(): void {
@@ -297,6 +309,24 @@ export class Shipping implements OnInit, OnDestroy {
     }
   }
 
+  getStatusAccentClass(status: string): string {
+    switch (status) {
+      case 'delivered':        return 'bg-green-400';
+      case 'in_transit':       return 'bg-blue-400';
+      case 'at_warehouse':     return 'bg-indigo-400';
+      case 'loading_container': return 'bg-orange-400';
+      case 'loaded_in_container': return 'bg-teal-400';
+      case 'at_tanzania_port': return 'bg-cyan-400';
+      case 'at_tanzania_warehouse': return 'bg-sky-400';
+      case 'confirmed':        return 'bg-purple-400';
+      case 'pending_confirmation': return 'bg-yellow-400';
+      case 'cancelled':        return 'bg-red-400';
+      case 'draft':            return 'bg-gray-400';
+      case 'closed':           return 'bg-teal-400';
+      default:                 return 'bg-gray-400';
+    }
+  }
+
   formatStatus(status: string): string {
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   }
@@ -311,6 +341,7 @@ export class Shipping implements OnInit, OnDestroy {
 
   // View details modal methods
   openViewModal(shipment: Shipment): void {
+    this.menuBarService.hide();
     this.viewModalOpen.set(true);
     this.viewModalLoading.set(true);
     this.viewModalError.set(null);
@@ -336,23 +367,34 @@ export class Shipping implements OnInit, OnDestroy {
   }
 
   closeViewModal(): void {
-    this.viewModalOpen.set(false);
-    this.viewModalLoading.set(false);
-    this.viewModalError.set(null);
-    this.selectedShipmentDetail.set(null);
-    this.selectedProductUuid.set(null);
-    this.productDetailsMap.set(new Map());
+    this.viewModalClosing.set(true);
+    setTimeout(() => {
+      this.viewModalOpen.set(false);
+      this.viewModalClosing.set(false);
+      this.viewModalLoading.set(false);
+      this.viewModalError.set(null);
+      this.selectedShipmentDetail.set(null);
+      this.selectedProductUuid.set(null);
+      this.productDetailsMap.set(new Map());
+      this.menuBarService.show();
+    }, 280);
   }
 
   // QR modal methods
   openQrModal(shipment: Shipment): void {
+    this.menuBarService.hide();
     this.qrModalOpen.set(true);
     this.qrModalShipment.set(shipment);
   }
 
   closeQrModal(): void {
-    this.qrModalOpen.set(false);
-    this.qrModalShipment.set(null);
+    this.qrModalClosing.set(true);
+    setTimeout(() => {
+      this.qrModalOpen.set(false);
+      this.qrModalClosing.set(false);
+      this.qrModalShipment.set(null);
+      this.menuBarService.show();
+    }, 280);
   }
 
   getQrData(product: any): string {
@@ -692,18 +734,26 @@ export class Shipping implements OnInit, OnDestroy {
   }
 
   openContainerModal(shipment?: Shipment): void {
+    this.menuBarService.hide();
     this.containerModalOpen.set(true);
     this.selectedShipmentForContainer.set(shipment || null);
     this.loadContainers();
   }
 
   closeContainerModal(): void {
-    this.containerModalOpen.set(false);
-    this.selectedContainer.set(null);
-    this.containerDetailOpen.set(false);
+    this.containerModalClosing.set(true);
+    setTimeout(() => {
+      this.containerModalOpen.set(false);
+      this.containerModalClosing.set(false);
+      this.selectedContainer.set(null);
+      this.containerDetailOpen.set(false);
+      this.containerDetailClosing.set(false);
+      this.menuBarService.show();
+    }, 280);
   }
 
   openContainerDetail(container: Container): void {
+    this.menuBarService.hide();
     this.containerDetailOpen.set(true);
     this.selectedContainer.set(container);
     this.containerService.getContainer(container.id).subscribe({
@@ -716,6 +766,16 @@ export class Shipping implements OnInit, OnDestroy {
         console.error('Failed to load container details:', error);
       }
     });
+  }
+
+  closeContainerDetail(): void {
+    this.containerDetailClosing.set(true);
+    setTimeout(() => {
+      this.containerDetailOpen.set(false);
+      this.containerDetailClosing.set(false);
+      this.selectedContainer.set(null);
+      this.menuBarService.show();
+    }, 280);
   }
 
   createContainer(): void {
@@ -1145,5 +1205,60 @@ export class Shipping implements OnInit, OnDestroy {
   getContainerShipments(): any[] {
     const container = this.selectedContainer();
     return container?.shipments || [];
+  }
+
+  // Action menu methods
+  toggleActionMenu(shipmentId: string, event: Event): void {
+    event.stopPropagation();
+    const current = this.openActionMenuId();
+    this.openActionMenuId.set(current === shipmentId ? null : shipmentId);
+  }
+
+  closeActionMenu(): void {
+    this.openActionMenuId.set(null);
+  }
+
+  isActionMenuOpen(shipmentId: string): boolean {
+    return this.openActionMenuId() === shipmentId;
+  }
+
+  // Additional info tooltip methods
+  toggleInfo(shipmentId: string, event: Event): void {
+    event.stopPropagation();
+    const current = this.expandedInfoId();
+    this.expandedInfoId.set(current === shipmentId ? null : shipmentId);
+  }
+
+  isInfoExpanded(shipmentId: string): boolean {
+    return this.expandedInfoId() === shipmentId;
+  }
+
+  getAgentActionItems(shipment: Shipment): { label: string; icon: string; colorClass: string; action: () => void; disabled: boolean }[] {
+    const items: { label: string; icon: string; colorClass: string; action: () => void; disabled: boolean }[] = [];
+
+    if (this.canConfirm(shipment)) {
+      items.push({ label: 'Confirm', icon: 'fa-check', colorClass: 'text-green-600 dark:text-green-400', action: () => this.confirmShipmentAction(shipment), disabled: this.isUpdating(shipment.id) });
+      items.push({ label: 'Reject', icon: 'fa-times', colorClass: 'text-red-600 dark:text-red-400', action: () => this.rejectShipmentAction(shipment), disabled: this.isUpdating(shipment.id) });
+    }
+    if (this.canMarkAtWarehouse(shipment)) {
+      items.push({ label: 'At Warehouse', icon: 'fa-warehouse', colorClass: 'text-indigo-600 dark:text-indigo-400', action: () => this.markAsAtWarehouseAction(shipment), disabled: this.isUpdating(shipment.id) });
+    }
+    if (this.canLoadToContainer(shipment)) {
+      items.push({ label: 'Load to Container', icon: 'fa-dolly', colorClass: 'text-orange-600 dark:text-orange-400', action: () => this.openContainerModal(shipment), disabled: this.isUpdating(shipment.id) });
+    }
+    if (this.canRemoveFromContainer(shipment)) {
+      items.push({ label: 'Remove from Container', icon: 'fa-arrow-left', colorClass: 'text-yellow-600 dark:text-yellow-400', action: () => this.removeShipmentFromContainer(shipment), disabled: this.isUpdating(shipment.id) });
+    }
+    if (this.canMarkInTransit(shipment)) {
+      items.push({ label: 'In Transit', icon: 'fa-truck', colorClass: 'text-blue-600 dark:text-blue-400', action: () => this.markAsInTransitAction(shipment), disabled: this.isUpdating(shipment.id) });
+    }
+    if (this.canCancel(shipment) && !this.canConfirm(shipment)) {
+      items.push({ label: 'Cancel', icon: 'fa-times', colorClass: 'text-gray-600 dark:text-gray-400', action: () => this.cancelShipmentAction(shipment), disabled: this.isUpdating(shipment.id) });
+    }
+    if (this.canMarkDelivered(shipment)) {
+      items.push({ label: 'Mark Delivered', icon: 'fa-check-double', colorClass: 'text-purple-600 dark:text-purple-400', action: () => this.markAsDeliveredAction(shipment), disabled: this.isUpdating(shipment.id) });
+    }
+
+    return items;
   }
 }

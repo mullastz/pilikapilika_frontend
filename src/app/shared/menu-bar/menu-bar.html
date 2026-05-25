@@ -9,7 +9,7 @@
         @for (item of menuItems; track item.route) {
           <button
             (click)="navigateTo(item.route)"
-            class="flex flex-col items-center justify-center min-w-[60px] py-1 px-2 rounded-lg transition-all duration-200"
+            class="flex flex-col items-center justify-center min-w-15 py-1 px-2 rounded-lg transition-all duration-200"
             [class.text-[#FF7800]]="isActive(item.route)"
             [class.dark:text-[#FF7800]]="isActive(item.route)"
             [class.text-gray-500]="!isActive(item.route)"

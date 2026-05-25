@@ -2,6 +2,7 @@ import { Component, HostListener, inject, signal, OnInit, OnDestroy } from '@ang
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { MenuBarService } from '../../core/services/menu-bar.service';
 import { filter, Subscription } from 'rxjs';
 
 interface MenuItem {
@@ -20,6 +21,7 @@ interface MenuItem {
 export class MenuBar implements OnInit, OnDestroy {
   private router = inject(Router);
   private authService = inject(AuthService);
+  private menuBarService = inject(MenuBarService);
 
   isVisible = signal(true);
   isLoggedIn = signal(false);
@@ -36,9 +38,12 @@ export class MenuBar implements OnInit, OnDestroy {
 
     const items: MenuItem[] = [
       { label: 'Home', icon: 'fa-solid fa-house', route: '/home' },
-      { label: 'Shipping', icon: 'fa-solid fa-box', route: '/account/shipping' },
-      { label: 'Search', icon: 'fa-solid fa-magnifying-glass', route: '/search' }
+      { label: 'Shipments', icon: 'fa-solid fa-box', route: '/account/shipping' }
     ];
+
+    if (!isAgent) {
+      items.push({ label: 'Search', icon: 'fa-solid fa-magnifying-glass', route: '/search' });
+    }
 
     if (isAgent) {
       items.push({ label: 'Scan QR', icon: 'fa-solid fa-camera', route: '/scan-qr' });
@@ -91,6 +96,11 @@ export class MenuBar implements OnInit, OnDestroy {
 
   shouldShowMenuBar(): boolean {
     if (!this.isLoggedIn()) {
+      return false;
+    }
+
+    // Force hidden when a modal is open (controlled via MenuBarService)
+    if (this.menuBarService.hidden()) {
       return false;
     }
 

@@ -3,6 +3,7 @@ import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { MenuBar } from './shared/menu-bar/menu-bar';
+import { MenuBarService } from './core/services/menu-bar.service';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +15,7 @@ export class App {
   protected readonly title = signal('PilikaPilika_Frontend');
   showMenuBar = signal(true);
   private router = inject(Router);
+  private menuBarService = inject(MenuBarService);
 
   ngOnInit() {
     const saved = localStorage.getItem('theme');
@@ -27,6 +29,8 @@ export class App {
     this.showMenuBar.set(!this.router.url.startsWith('/admin'));
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((e: any) => {
       this.showMenuBar.set(!e.url.startsWith('/admin'));
+      // Reset menu-bar visibility on every route change — prevents stale modal state
+      this.menuBarService.reset();
     });
   }
 }
