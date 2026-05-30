@@ -130,7 +130,16 @@
             <div *ngIf="!loading() && !error() && shipments().length > 0" class="flex flex-col gap-4">
 
                 <div *ngFor="let shipment of shipments()"
-                     class="shipment-card bg-white dark:bg-[#1a1a1a] rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-800 relative overflow-hidden"
+                     [id]="'shipment-card-' + shipment.id"
+                     class="shipment-card bg-white dark:bg-[#1a1a1a] rounded-xl p-4 sm:p-5 shadow-sm border relative overflow-hidden transition-all duration-500"
+                     [class.border-gray-100]="!isHighlighted(shipment.id)"
+                     [class.dark:border-gray-800]="!isHighlighted(shipment.id)"
+                     [class.border-orange-400]="isHighlighted(shipment.id)"
+                     [class.dark:border-orange-600]="isHighlighted(shipment.id)"
+                     [class.ring-2]="isHighlighted(shipment.id)"
+                     [class.ring-orange-400]="isHighlighted(shipment.id)"
+                     [class.dark:ring-orange-600]="isHighlighted(shipment.id)"
+                     [class.scale-[1.02]]="isHighlighted(shipment.id)"
                      (click)="closeActionMenu()">
 
                     <!-- Subtle left accent bar -->
@@ -188,6 +197,36 @@
                                 title="Edit external tracking number">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar Section -->
+                    <div class="pl-3 mb-3">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Progress</span>
+                            <span class="text-[11px] font-bold" [ngClass]="getStatusClass(shipment.status)">{{getShipmentProgress(shipment.status)}}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                            <div class="h-2.5 rounded-full transition-all duration-700 ease-out"
+                                 [class]="getShipmentProgressColor(shipment.status)"
+                                 [style.width.%]="getShipmentProgress(shipment.status)"></div>
+                        </div>
+                        <!-- Mini stage dots -->
+                        <div class="flex items-center justify-between mt-2 px-0.5">
+                            <ng-container *ngFor="let stage of getProgressStages(shipment.status); let last = last">
+                                <div class="flex flex-col items-center" [class.flex-1]="!last">
+                                    <div class="w-2 h-2 rounded-full transition-colors duration-300"
+                                         [class.bg-green-500]="stage.completed"
+                                         [class.bg-orange-500]="stage.current"
+                                         [class.bg-gray-300]="!stage.completed && !stage.current"
+                                         [class.dark:bg-gray-600]="!stage.completed && !stage.current"></div>
+                                    <span class="text-[9px] mt-1 text-gray-400 dark:text-gray-500 whitespace-nowrap hidden sm:block">{{stage.label}}</span>
+                                </div>
+                                <div *ngIf="!last" class="flex-1 h-px mx-1 transition-colors duration-300"
+                                     [class.bg-green-500]="stage.completed"
+                                     [class.bg-gray-300]="!stage.completed"
+                                     [class.dark:bg-gray-600]="!stage.completed"></div>
+                            </ng-container>
                         </div>
                     </div>
 

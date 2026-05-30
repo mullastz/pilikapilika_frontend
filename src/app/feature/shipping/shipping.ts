@@ -1,9 +1,18 @@
 import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Html5Qrcode } from 'html5-qrcode';
 import { ShipmentService, Shipment } from '../../core/services/shipment.service';
+import {
+  getShipmentProgress,
+  getShipmentProgressColor,
+  getShipmentStageLabel,
+  isStageCompleted,
+  isStageCurrent,
+  getProgressStages,
+  ProgressStage,
+} from '../../core/helpers/shipment-progress.helper';
 import { ContainerService, Container } from '../../core/services/container.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -136,9 +145,13 @@ export class Shipping implements OnInit, OnDestroy {
     { id: 'cancelled', label: 'Cancelled', icon: 'fa-times-circle' }
   ];
 
+  // Highlighted shipment ID from query params (when navigated from home)
+  public highlightedShipmentId = signal<string | null>(null);
+
   constructor(
     private location: Location,
     private router: Router,
+    private route: ActivatedRoute,
     private shipmentService: ShipmentService,
     private containerService: ContainerService,
     private toastService: ToastService,
@@ -148,6 +161,18 @@ export class Shipping implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // Check for highlight query param from home page navigation
+    const highlightId = this.route.snapshot.queryParamMap.get('highlight');
+    if (highlightId) {
+      this.highlightedShipmentId.set(highlightId);
+      // Clear the query param from URL without reloading
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { highlight: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
     this.loadShipments();
   }
 
@@ -195,6 +220,7 @@ export class Shipping implements OnInit, OnDestroy {
       next: (response) => {
         if (response.success) {
           this._shipments.set(response.data.shipments);
+          this.scrollToHighlightedShipment();
         } else {
           this.toastService.error('Failed to load shipments');
         }
@@ -217,6 +243,7 @@ export class Shipping implements OnInit, OnDestroy {
             ? response.data.shipments 
             : response.data.shipments.filter(shipment => shipment.status === status);
           this._shipments.set(filteredShipments);
+          this.scrollToHighlightedShipment();
         } else {
           this.error.set('Failed to load shipments');
         }
@@ -235,6 +262,7 @@ export class Shipping implements OnInit, OnDestroy {
       next: (response) => {
         if (response.success) {
           this._shipments.set(response.data.shipments);
+          this.scrollToHighlightedShipment();
         } else {
           this.toastService.error('Failed to load shipments');
         }
@@ -257,6 +285,7 @@ export class Shipping implements OnInit, OnDestroy {
       next: (response) => {
         if (response.success) {
           this._shipments.set(response.data.shipments);
+          this.scrollToHighlightedShipment();
         } else {
           this.error.set('Failed to load shipments');
         }
@@ -278,6 +307,7 @@ export class Shipping implements OnInit, OnDestroy {
       next: (response) => {
         if (response.success) {
           this._shipments.set(response.data.shipments);
+          this.scrollToHighlightedShipment();
         } else {
           this.error.set('Failed to load cancelled shipments');
         }
@@ -331,12 +361,60 @@ export class Shipping implements OnInit, OnDestroy {
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   }
 
+  // Progress bar helpers
+  getShipmentProgress(status: string): number {
+    return getShipmentProgress(status);
+  }
+
+  getShipmentProgressColor(status: string): string {
+    return getShipmentProgressColor(status);
+  }
+
+  getShipmentStageLabel(status: string): string {
+    return getShipmentStageLabel(status);
+  }
+
+  isStageCompleted(shipmentStatus: string, stageStatus: string): boolean {
+    return isStageCompleted(shipmentStatus, stageStatus);
+  }
+
+  isStageCurrent(shipmentStatus: string, stageStatus: string): boolean {
+    return isStageCurrent(shipmentStatus, stageStatus);
+  }
+
+  getProgressStages(status: string): ProgressStage[] {
+    return getProgressStages(status);
+  }
+
   trackShipment(shipment: Shipment): void {
     this.router.navigate(['/track-shipping', shipment.id]);
   }
 
   refreshShipments(): void {
     this.loadShipments();
+  }
+
+  isHighlighted(shipmentId: string): boolean {
+    return this.highlightedShipmentId() === shipmentId;
+  }
+
+  private scrollToHighlightedShipment(): void {
+    const highlightId = this.highlightedShipmentId();
+    if (!highlightId) return;
+
+    // Check if the highlighted shipment is in the current list
+    const found = this.shipments().some(s => s.id === highlightId);
+    if (!found) return;
+
+    // Scroll to the element after the DOM updates
+    setTimeout(() => {
+      const element = document.getElementById(`shipment-card-${highlightId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Clear highlight after 3 seconds
+        setTimeout(() => this.highlightedShipmentId.set(null), 3000);
+      }
+    }, 300);
   }
 
   // View details modal methods

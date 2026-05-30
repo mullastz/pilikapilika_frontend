@@ -9,6 +9,15 @@ import { QrCodeService } from '../../core/services/qr-code.service';
 import { Agent, User } from '../../core/interfaces/auth.interface';
 import { Footer } from '../../shared/footer/footer';
 import { Header } from '../../shared/header/header';
+import {
+  getShipmentProgress,
+  getShipmentProgressColor,
+  getShipmentStageLabel,
+  getProgressStages,
+  formatShipmentStatus,
+  getStatusBadgeClass,
+  ProgressStage,
+} from '../../core/helpers/shipment-progress.helper';
 
 
 @Component({
@@ -174,47 +183,23 @@ export class Home implements OnInit {
   }
 
   viewShipmentDetails(shipmentId: string): void {
-    // Navigate to shipment details when backend is ready
-    this.toastService.info('Shipment tracking coming soon');
+    this.router.navigate(['/account/shipping'], { queryParams: { highlight: shipmentId } });
   }
 
   getStatusClass(status: string): string {
-    switch (status) {
-      case 'delivered':
-        return 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400';
-      case 'in_transit':
-        return 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400';
-      default:
-        return 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
-    }
+    return getStatusBadgeClass(status);
   }
 
   getStatusLabel(status: string): string {
-    switch (status) {
-      case 'delivered':
-        return 'Delivered';
-      case 'in_transit':
-        return 'In Transit';
-      case 'pending':
-        return 'Pending';
-      default:
-        return 'Unknown';
-    }
+    return getShipmentStageLabel(status);
   }
 
   getProgressBarColor(status: string): string {
-    switch (status) {
-      case 'delivered':
-        return 'bg-green-500';
-      case 'in_transit':
-        return 'bg-blue-500';
-      case 'pending':
-        return 'bg-yellow-500';
-      default:
-        return 'bg-gray-400';
-    }
+    return getShipmentProgressColor(status);
+  }
+
+  getProgressStagesForShipment(status: string): ProgressStage[] {
+    return getProgressStages(status);
   }
 
   trackByAgentId(index: number, agent: Agent): number {
@@ -279,18 +264,7 @@ export class Home implements OnInit {
 
   // Helper methods for template
   getShipmentProgress(shipment: Shipment): number {
-    switch (shipment.status) {
-      case 'pending_confirmation':
-        return 10;
-      case 'confirmed':
-        return 25;
-      case 'in_transit':
-        return 70;
-      case 'delivered':
-        return 100;
-      default:
-        return 0;
-    }
+    return getShipmentProgress(shipment.status);
   }
 
   getShipmentLocation(shipment: Shipment): { from: string; to: string } {
@@ -308,17 +282,6 @@ export class Home implements OnInit {
   }
 
   getEstimatedDelivery(shipment: Shipment): string {
-    switch (shipment.status) {
-      case 'pending_confirmation':
-        return 'Pending confirmation';
-      case 'confirmed':
-        return 'Confirmed';
-      case 'in_transit':
-        return 'In transit';
-      case 'delivered':
-        return 'Delivered';
-      default:
-        return 'Unknown';
-    }
+    return formatShipmentStatus(shipment.status);
   }
 }
