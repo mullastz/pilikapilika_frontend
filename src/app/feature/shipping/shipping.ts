@@ -41,7 +41,7 @@ export class Shipping implements OnInit, OnDestroy {
   public confirmModalConfig = signal<{
     title: string;
     message: string;
-    action: 'confirm' | 'reject' | 'cancel' | 'at_warehouse' | 'in_transit' | 'delivered' | 'user_delivered';
+    action: 'confirm' | 'reject' | 'cancel' | 'at_warehouse' | 'in_transit' | 'delivered' | 'user_delivered' | 'return_to_warehouse';
     shipment: Shipment | null;
   }>({ title: '', message: '', action: 'confirm', shipment: null });
 
@@ -122,6 +122,7 @@ export class Shipping implements OnInit, OnDestroy {
     { id: 'at_warehouse', label: 'At Warehouse', icon: 'fa-warehouse' },
     { id: 'loading_container', label: 'Loading', icon: 'fa-dolly' },
     { id: 'loaded_in_container', label: 'Loaded', icon: 'fa-box' },
+    { id: 'at_port_abroad', label: 'At Port Abroad', icon: 'fa-anchor' },
     { id: 'in_transit', label: 'In Transit', icon: 'fa-truck' },
     { id: 'at_tanzania_port', label: 'At Port', icon: 'fa-ship' },
     { id: 'at_tanzania_warehouse', label: 'At TZ Warehouse', icon: 'fa-warehouse' },
@@ -138,6 +139,7 @@ export class Shipping implements OnInit, OnDestroy {
     { id: 'at_warehouse', label: 'At Warehouse', icon: 'fa-warehouse' },
     { id: 'loading_container', label: 'Loading', icon: 'fa-dolly' },
     { id: 'loaded_in_container', label: 'Loaded', icon: 'fa-box' },
+    { id: 'at_port_abroad', label: 'At Port Abroad', icon: 'fa-anchor' },
     { id: 'in_transit', label: 'In Transit', icon: 'fa-truck' },
     { id: 'at_tanzania_port', label: 'At Port', icon: 'fa-ship' },
     { id: 'at_tanzania_warehouse', label: 'At TZ Warehouse', icon: 'fa-warehouse' },
@@ -567,6 +569,26 @@ export class Shipping implements OnInit, OnDestroy {
     });
   }
 
+  markAsAtPortAbroad(shipment: Shipment): void {
+    this.updatingShipment.set(shipment.id);
+    this.shipmentService.markAsAtPortAbroad(shipment.id).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.success('Shipment marked as at port abroad');
+          this.loadShipments();
+        } else {
+          this.toastService.error(response.message || 'Failed to update shipment');
+        }
+        this.updatingShipment.set(null);
+      },
+      error: (error: any) => {
+        console.error('Failed to update shipment:', error);
+        this.toastService.error('Failed to update shipment');
+        this.updatingShipment.set(null);
+      }
+    });
+  }
+
   markAsInTransit(shipment: Shipment): void {
     this.updatingShipment.set(shipment.id);
     this.shipmentService.markAsInTransit(shipment.id).subscribe({
@@ -616,7 +638,9 @@ export class Shipping implements OnInit, OnDestroy {
   }
 
   canMarkInTransit(shipment: Shipment): boolean {
-    return shipment.status === 'at_warehouse' && !shipment.container_id;
+    // Only non-containerized shipments that are at_port_abroad can be marked in transit individually
+    // Containerized shipments get in_transit via container status cascade
+    return shipment.status === 'at_port_abroad' && !shipment.container_id;
   }
 
   canMarkDelivered(shipment: Shipment): boolean {
@@ -686,14 +710,40 @@ export class Shipping implements OnInit, OnDestroy {
     });
   }
 
+  // Return shipment to warehouse (for loaded_in_container shipments)
+  returnToWarehouse(shipment: Shipment): void {
+    if (!shipment.container_id) return;
+    this.updatingShipment.set(shipment.id);
+    this.containerService.returnShipmentToWarehouse(shipment.container_id, shipment.id).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.success('Shipment returned to warehouse successfully');
+          this.loadShipments();
+        } else {
+          this.toastService.error(response.message || 'Failed to return shipment to warehouse');
+        }
+        this.updatingShipment.set(null);
+      },
+      error: (error: any) => {
+        console.error('Failed to return shipment to warehouse:', error);
+        this.toastService.error('Failed to return shipment to warehouse');
+        this.updatingShipment.set(null);
+      }
+    });
+  }
+
   canCancel(shipment: Shipment): boolean {
-    return shipment.status !== 'delivered' && shipment.status !== 'cancelled';
+    return shipment.status !== 'delivered' && shipment.status !== 'cancelled' && shipment.status !== 'loaded_in_container' && shipment.status !== 'at_port_abroad' && shipment.status !== 'in_transit' && shipment.status !== 'at_tanzania_port' && shipment.status !== 'at_tanzania_warehouse';
+  }
+
+  canReturnToWarehouse(shipment: Shipment): boolean {
+    return shipment.status === 'loaded_in_container' && !!shipment.container_id;
   }
 
   // Confirmation modal methods
   openConfirmModal(
     shipment: Shipment,
-    action: 'confirm' | 'reject' | 'cancel' | 'at_warehouse' | 'in_transit' | 'delivered' | 'user_delivered'
+    action: 'confirm' | 'reject' | 'cancel' | 'at_warehouse' | 'in_transit' | 'delivered' | 'user_delivered' | 'return_to_warehouse'
   ): void {
     const configMap: Record<typeof action, { title: string; message: string }> = {
       confirm: { title: 'Confirm Shipment', message: 'Are you sure you want to confirm this shipment request?' },
@@ -703,6 +753,7 @@ export class Shipping implements OnInit, OnDestroy {
       in_transit: { title: 'Mark as In Transit', message: 'Are you sure you want to mark this shipment as in transit?' },
       delivered: { title: 'Mark as Delivered', message: 'Are you sure you want to mark this shipment as delivered?' },
       user_delivered: { title: 'Confirm Delivery', message: 'Are you sure you want to confirm delivery of this shipment?' },
+      return_to_warehouse: { title: 'Return to Warehouse', message: 'This will remove the shipment from the container and return it to warehouse status. Are you sure?' },
     };
     const cfg = configMap[action];
     this.confirmModalConfig.set({ ...cfg, action, shipment });
@@ -740,6 +791,9 @@ export class Shipping implements OnInit, OnDestroy {
       case 'user_delivered':
         this.confirmUserDelivery(cfg.shipment);
         break;
+      case 'return_to_warehouse':
+        this.returnToWarehouse(cfg.shipment);
+        break;
     }
     this.closeConfirmModal();
   }
@@ -771,6 +825,10 @@ export class Shipping implements OnInit, OnDestroy {
 
   confirmUserDeliveryAction(shipment: Shipment): void {
     this.openConfirmModal(shipment, 'user_delivered');
+  }
+
+  returnToWarehouseAction(shipment: Shipment): void {
+    this.openConfirmModal(shipment, 'return_to_warehouse');
   }
 
   // User delivery confirmation
@@ -970,7 +1028,8 @@ export class Shipping implements OnInit, OnDestroy {
 
   getNextContainerStatus(status: string): string | null {
     const flow: Record<string, string> = {
-      'closed': 'in_transit',
+      'closed': 'at_port_abroad',
+      'at_port_abroad': 'in_transit',
       'in_transit': 'at_tanzania_port',
       'at_tanzania_port': 'at_tanzania_warehouse',
     };
@@ -1329,6 +1388,9 @@ export class Shipping implements OnInit, OnDestroy {
     }
     if (this.canMarkInTransit(shipment)) {
       items.push({ label: 'In Transit', icon: 'fa-truck', colorClass: 'text-blue-600 dark:text-blue-400', action: () => this.markAsInTransitAction(shipment), disabled: this.isUpdating(shipment.id) });
+    }
+    if (this.canReturnToWarehouse(shipment)) {
+      items.push({ label: 'Return to Warehouse', icon: 'fa-warehouse', colorClass: 'text-yellow-600 dark:text-yellow-400', action: () => this.returnToWarehouseAction(shipment), disabled: this.isUpdating(shipment.id) });
     }
     if (this.canCancel(shipment) && !this.canConfirm(shipment)) {
       items.push({ label: 'Cancel', icon: 'fa-times', colorClass: 'text-gray-600 dark:text-gray-400', action: () => this.cancelShipmentAction(shipment), disabled: this.isUpdating(shipment.id) });

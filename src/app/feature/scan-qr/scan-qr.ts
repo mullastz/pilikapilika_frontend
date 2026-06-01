@@ -6,7 +6,7 @@ import { ShipmentService } from '../../core/services/shipment.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
 
-type ScanState = 'idle' | 'scanning' | 'processing' | 'success' | 'info' | 'error';
+type ScanState = 'idle' | 'scanning' | 'quantity_input' | 'processing' | 'success' | 'info' | 'error';
 
 @Component({
   selector: 'app-scan-qr',
@@ -30,6 +30,12 @@ export class ScanQr implements OnInit, OnDestroy {
   resultShipment = signal<any | null>(null);
   infoMessage = signal<string>('');
   errorMessage = signal<string>('');
+
+  // Quantity input state
+  pendingQrUuid = signal<string | null>(null);
+  expectedQuantity = signal<number | null>(null);
+  receivedQuantity = signal<number | null>(null);
+  quantityError = signal<string>('');
 
   ngOnInit(): void {
     const user = this.authService.getUser();
@@ -175,39 +181,42 @@ export class ScanQr implements OnInit, OnDestroy {
       this.errorMessage.set('Invalid QR code');
       return;
     }
-    this.approveShipment(uuid);
-  }
 
-  extractUuid(text: string): string | null {
-    const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
-    const match = text.match(uuidRegex);
-    return match ? match[0] : null;
-  }
-
-  approveShipment(uuid: string): void {
+    // Step 1: Preview — get shipment info without modifying status
     this.state.set('processing');
-    this.shipmentService.approveByQrCode(uuid).subscribe({
+    this.shipmentService.approveByQrCode(uuid, undefined, true).subscribe({
       next: (response) => {
-        if (response.success && response.info) {
+        if (response.success && response.preview) {
+          const shipment = response.data?.shipment ?? null;
+          // Check if shipment is in a state where we can receive it
+          const status = shipment?.status;
+          if (status === 'pending_confirmation' || status === 'confirmed') {
+            // Show quantity input before approving
+            this.showQuantityInput(shipment, uuid);
+          } else {
+            // Already processed — show info state
+            this.resultShipment.set(shipment);
+            this.infoMessage.set(this.getStatusMessage(status || ''));
+            this.state.set('info');
+          }
+        } else if (response.success && response.info) {
           // Info: shipment found but already at some status
           this.resultShipment.set(response.data?.shipment ?? null);
           this.infoMessage.set(response.message);
           this.state.set('info');
           this.toastService.info(response.message);
         } else if (response.success) {
-          // Success: shipment approved
+          // Direct success (shouldn't happen in preview mode but handle gracefully)
           this.resultShipment.set(response.data?.shipment ?? null);
           this.state.set('success');
           this.toastService.success(response.message);
         } else {
-          // API returned success:false — show as simple error
           this.state.set('error');
           this.errorMessage.set(response.message || 'Invalid QR code');
           this.toastService.error(response.message || 'Invalid QR code');
         }
       },
       error: (err: any) => {
-        // Never expose raw error details to the user
         const status = err?.status;
         let message = 'Something went wrong. Please try again.';
         if (status === 404) {
@@ -226,6 +235,104 @@ export class ScanQr implements OnInit, OnDestroy {
     });
   }
 
+  extractUuid(text: string): string | null {
+    const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+    const match = text.match(uuidRegex);
+    return match ? match[0] : null;
+  }
+
+  getStatusMessage(status: string): string {
+    const messages: Record<string, string> = {
+      'at_warehouse': 'Shipment is already at warehouse',
+      'at_port_abroad': 'Shipment is already at port abroad',
+      'in_transit': 'Shipment is already in transit',
+      'delivered': 'Shipment is already delivered',
+      'cancelled': 'Shipment is already cancelled',
+      'loading_container': 'Shipment is being loaded into a container',
+      'loaded_in_container': 'Shipment is already loaded in a container',
+      'at_tanzania_port': 'Shipment is at Tanzania port',
+      'at_tanzania_warehouse': 'Shipment is at Tanzania warehouse',
+    };
+    return messages[status] || 'Shipment found';
+  }
+
+  // Quantity input flow
+  showQuantityInput(shipment: any, uuid: string): void {
+    this.pendingQrUuid.set(uuid);
+    // Extract expected quantity from products
+    let qty: number | null = null;
+    const products = shipment?.products ?? [];
+    if (Array.isArray(products) && products.length > 0) {
+      const firstProduct = products[0];
+      if (firstProduct && typeof firstProduct.quantity === 'number') {
+        qty = firstProduct.quantity;
+      }
+    }
+    this.expectedQuantity.set(qty);
+    this.receivedQuantity.set(qty); // Default to expected quantity
+    this.quantityError.set('');
+    this.state.set('quantity_input');
+  }
+
+  submitQuantity(): void {
+    const uuid = this.pendingQrUuid();
+    if (!uuid) return;
+
+    const qty = this.receivedQuantity();
+    if (qty === null || qty === undefined || qty < 0 || isNaN(qty)) {
+      this.quantityError.set('Please enter a valid quantity (0 or more)');
+      return;
+    }
+
+    this.quantityError.set('');
+    this.state.set('processing');
+
+    this.shipmentService.approveByQrCode(uuid, qty).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.resultShipment.set(response.data?.shipment ?? null);
+          this.state.set('success');
+          this.toastService.success(response.message);
+        } else {
+          this.state.set('error');
+          this.errorMessage.set(response.message || 'Failed to approve shipment');
+          this.toastService.error(response.message || 'Failed to approve shipment');
+        }
+      },
+      error: (err: any) => {
+        const status = err?.status;
+        let message = 'Something went wrong. Please try again.';
+        if (status === 404) {
+          message = 'Invalid QR code';
+        } else if (status === 429) {
+          message = err?.error?.message || 'Please wait a moment before scanning again.';
+        } else if (status === 403) {
+          message = err?.error?.message || 'Only agents can approve shipments';
+        } else if (status === 422) {
+          message = err?.error?.message || 'Invalid input';
+        }
+        this.state.set('error');
+        this.errorMessage.set(message);
+        this.toastService.error(message);
+      }
+    });
+  }
+
+  cancelQuantityInput(): void {
+    this.pendingQrUuid.set(null);
+    this.expectedQuantity.set(null);
+    this.receivedQuantity.set(null);
+    this.quantityError.set('');
+    this.resetToIdle();
+  }
+
+  onQuantityInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const val = parseInt(input.value, 10);
+    this.receivedQuantity.set(isNaN(val) ? null : val);
+    this.quantityError.set('');
+  }
+
   resetToIdle(): void {
     this.scanHandled = false;
     this.resultShipment.set(null);
@@ -233,6 +340,10 @@ export class ScanQr implements OnInit, OnDestroy {
     this.errorMessage.set('');
     this.cameraError.set(null);
     this.cameraErrorDetail.set(null);
+    this.pendingQrUuid.set(null);
+    this.expectedQuantity.set(null);
+    this.receivedQuantity.set(null);
+    this.quantityError.set('');
     this.state.set('idle');
   }
 

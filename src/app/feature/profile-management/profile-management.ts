@@ -45,7 +45,7 @@ export class ProfileManagement implements OnInit {
     },
     {
       id: 'my-products',
-      title: 'My Products',
+      title: 'My Parcels',
       icon: 'fa-box',
       bgColor: 'bg-orange-200',
       darkBgColor: 'dark:bg-[#111]',

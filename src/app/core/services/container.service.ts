@@ -54,6 +54,13 @@ export class ContainerService {
     );
   }
 
+  returnShipmentToWarehouse(containerId: string, shipmentId: string): Observable<{ success: boolean; message: string; data: any }> {
+    return this.apiService.post<{ success: boolean; message: string; data: any }>(
+      `${this.endpoint}/${containerId}/return-to-warehouse`,
+      { shipment_id: shipmentId }
+    );
+  }
+
   scanShipment(containerId: string, qrCodeUuid: string): Observable<{ success: boolean; info?: boolean; message: string; data: any }> {
     return this.apiService.post<{ success: boolean; info?: boolean; message: string; data: any }>(
       `${this.endpoint}/scan-shipment`,

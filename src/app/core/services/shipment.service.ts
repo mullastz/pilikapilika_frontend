@@ -17,7 +17,7 @@ export interface Shipment {
   agent_address?: string;
   estimated_price: number;
   actual_price?: number;
-  status: 'pending_confirmation' | 'confirmed' | 'at_warehouse' | 'loading_container' | 'loaded_in_container' | 'in_transit' | 'at_tanzania_port' | 'at_tanzania_warehouse' | 'delivered' | 'cancelled';
+  status: 'pending_confirmation' | 'confirmed' | 'at_warehouse' | 'loading_container' | 'loaded_in_container' | 'at_port_abroad' | 'in_transit' | 'at_tanzania_port' | 'at_tanzania_warehouse' | 'delivered' | 'cancelled';
   products?: any[];
   packages?: any[];
   notes?: string;
@@ -26,6 +26,7 @@ export interface Shipment {
   delivered_at?: string;
   agent_delivered_at?: string;
   user_delivered_at?: string;
+  received_quantity?: number;
   created_at: string;
   updated_at: string;
   user?: {
@@ -145,6 +146,15 @@ export class ShipmentService {
   }
 
   /**
+   * Mark shipment as at port abroad (for agents)
+   */
+  markAsAtPortAbroad(id: string): Observable<{ success: boolean; message: string; data: { shipment: Shipment } }> {
+    return this.apiService.post<{ success: boolean; message: string; data: { shipment: Shipment } }>(
+      `${this.endpoint}/${id}/at-port-abroad`, {}
+    );
+  }
+
+  /**
    * Mark shipment as in transit (for agents)
    */
   markAsInTransit(id: string): Observable<{ success: boolean; message: string; data: { shipment: Shipment } }> {
@@ -238,10 +248,17 @@ export class ShipmentService {
   /**
    * Approve shipment by QR code scan (for agents)
    */
-  approveByQrCode(qrCodeUuid: string): Observable<{ success: boolean; info?: boolean; message: string; data?: { shipment: Shipment } }> {
-    return this.apiService.post<{ success: boolean; info?: boolean; message: string; data?: { shipment: Shipment } }>(
+  approveByQrCode(qrCodeUuid: string, receivedQuantity?: number, preview?: boolean): Observable<{ success: boolean; info?: boolean; preview?: boolean; message: string; data?: { shipment: Shipment } }> {
+    const payload: any = { qr_code_uuid: qrCodeUuid };
+    if (receivedQuantity !== undefined && receivedQuantity !== null) {
+      payload.received_quantity = receivedQuantity;
+    }
+    if (preview) {
+      payload.preview = true;
+    }
+    return this.apiService.post<{ success: boolean; info?: boolean; preview?: boolean; message: string; data?: { shipment: Shipment } }>(
       `${this.endpoint}/scan-approve`,
-      { qr_code_uuid: qrCodeUuid }
+      payload
     );
   }
 
