@@ -695,6 +695,12 @@
                   <span class="text-sm font-medium text-orange-500">${{s.actual_price}}</span>
                 </div>
               </ng-container>
+              <ng-container *ngIf="s.products && s.products.length > 0 && s.products[0]?.quantity">
+                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                  <span class="text-sm text-gray-500">Quantity Sent</span>
+                  <span class="text-sm font-medium text-orange-500">{{s.products[0].quantity}}</span>
+                </div>
+              </ng-container>
               <ng-container *ngIf="s.received_quantity !== undefined && s.received_quantity !== null">
                 <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                   <span class="text-sm text-gray-500">Received Quantity</span>
