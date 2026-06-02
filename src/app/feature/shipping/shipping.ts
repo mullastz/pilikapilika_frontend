@@ -81,6 +81,35 @@ export class Shipping implements OnInit, OnDestroy {
   public updatingContainer = signal<string | null>(null);
   public selectedShipmentForContainer = signal<Shipment | null>(null);
 
+  // Shipment container distribution data (for container detail view)
+  public shipmentDistributions = signal<Record<string, {
+    loading: boolean;
+    error: string | null;
+    data: {
+      expected_quantity: number;
+      loaded_quantity: number;
+      remaining_quantity: number;
+      is_fully_loaded: boolean;
+      containers: { reference_number: string; quantity: number }[];
+    } | null;
+  }>>({});
+
+  // Container quantity modal state
+  public containerQuantityModalOpen = signal(false);
+  public containerQuantityModalClosing = signal(false);
+  public selectedContainerForQuantity = signal<Container | null>(null);
+  public quantityToLoad = signal<number | null>(null);
+  public quantityError = signal('');
+  public containerStatusLoading = signal(false);
+  public containerStatusError = signal<string | null>(null);
+  public containerStatusData = signal<{
+    expected_quantity: number;
+    loaded_quantity: number;
+    remaining_quantity: number;
+    is_fully_loaded: boolean;
+    containers: { reference_number: string; quantity: number }[];
+  } | null>(null);
+
   // User delivery scan modal
   public deliveryScanModalOpen = signal(false);
   public deliveryScanShipment = signal<Shipment | null>(null);
@@ -98,6 +127,10 @@ export class Shipping implements OnInit, OnDestroy {
   private html5QrCode: Html5Qrcode | null = null;
   private scanHandled = false;
   private lastScanTime = 0;
+
+  // Pending QR scan for quantity modal
+  private pendingQrScanContainerId = signal<string | null>(null);
+  private pendingQrScanShipment = signal<Shipment | null>(null);
 
   // Action menu state (per shipment card)
   public openActionMenuId = signal<string | null>(null);
@@ -120,6 +153,7 @@ export class Shipping implements OnInit, OnDestroy {
     { id: 'pending_confirmation', label: 'Requests', icon: 'fa-clock' },
     { id: 'confirmed', label: 'Confirmed', icon: 'fa-check-circle' },
     { id: 'at_warehouse', label: 'At Warehouse', icon: 'fa-warehouse' },
+    { id: 'half_loaded', label: 'Half Loaded', icon: 'fa-box-open' },
     { id: 'loading_container', label: 'Loading', icon: 'fa-dolly' },
     { id: 'loaded_in_container', label: 'Loaded', icon: 'fa-box' },
     { id: 'at_port_abroad', label: 'At Port Abroad', icon: 'fa-anchor' },
@@ -137,6 +171,7 @@ export class Shipping implements OnInit, OnDestroy {
     { id: 'pending_confirmation', label: 'Pending', icon: 'fa-clock' },
     { id: 'confirmed', label: 'Confirmed', icon: 'fa-check-circle' },
     { id: 'at_warehouse', label: 'At Warehouse', icon: 'fa-warehouse' },
+    { id: 'half_loaded', label: 'Half Loaded', icon: 'fa-box-open' },
     { id: 'loading_container', label: 'Loading', icon: 'fa-dolly' },
     { id: 'loaded_in_container', label: 'Loaded', icon: 'fa-box' },
     { id: 'at_port_abroad', label: 'At Port Abroad', icon: 'fa-anchor' },
@@ -328,6 +363,7 @@ export class Shipping implements OnInit, OnDestroy {
       case 'delivered':        return 'bg-green-100 text-green-600';
       case 'in_transit':       return 'bg-blue-100 text-blue-600';
       case 'at_warehouse':     return 'bg-indigo-100 text-indigo-600';
+      case 'half_loaded':      return 'bg-amber-100 text-amber-600';
       case 'loading_container': return 'bg-orange-100 text-orange-600';
       case 'loaded_in_container': return 'bg-teal-100 text-teal-600';
       case 'at_tanzania_port': return 'bg-cyan-100 text-cyan-600';
@@ -346,6 +382,7 @@ export class Shipping implements OnInit, OnDestroy {
       case 'delivered':        return 'bg-green-400';
       case 'in_transit':       return 'bg-blue-400';
       case 'at_warehouse':     return 'bg-indigo-400';
+      case 'half_loaded':      return 'bg-amber-400';
       case 'loading_container': return 'bg-orange-400';
       case 'loaded_in_container': return 'bg-teal-400';
       case 'at_tanzania_port': return 'bg-cyan-400';
@@ -433,6 +470,8 @@ export class Shipping implements OnInit, OnDestroy {
       next: (response) => {
         if (response.success) {
           this.selectedShipmentDetail.set(response.data.shipment);
+          // Fetch container distribution data (will show if shipment was ever loaded into containers)
+          this.loadShipmentDistribution(response.data.shipment.id);
         } else {
           this.viewModalError.set('Failed to load shipment details');
         }
@@ -456,6 +495,7 @@ export class Shipping implements OnInit, OnDestroy {
       this.selectedShipmentDetail.set(null);
       this.selectedProductUuid.set(null);
       this.productDetailsMap.set(new Map());
+      this.shipmentDistributions.set({});
       this.menuBarService.show();
     }, 280);
   }
@@ -653,7 +693,59 @@ export class Shipping implements OnInit, OnDestroy {
   }
 
   canLoadToContainer(shipment: Shipment): boolean {
-    return shipment.status === 'at_warehouse' && !shipment.container_id;
+    // Allow loading if at warehouse or half loaded (partially loaded)
+    return shipment.status === 'at_warehouse' || shipment.status === 'half_loaded';
+  }
+
+  getMaxLoadQuantity(): number {
+    const shipment = this.selectedShipmentForContainer();
+    if (!shipment) return 1;
+
+    const expected = this.getExpectedQuantity(shipment);
+
+    // For at_warehouse, max is the total
+    if (shipment.status === 'at_warehouse') {
+      return expected;
+    }
+
+    // For half_loaded, max is the remaining
+    const statusData = this.containerStatusData();
+    return statusData?.remaining_quantity ?? expected;
+  }
+
+  getExpectedQuantity(shipment: Shipment): number {
+    const products = shipment.products ?? [];
+    if (!Array.isArray(products) || products.length === 0) {
+      return 1;
+    }
+
+    // Handle nested array: [[{quantity: 12}]]
+    let firstProduct = products[0];
+    if (Array.isArray(firstProduct) && firstProduct.length > 0) {
+      firstProduct = firstProduct[0];
+    }
+
+    if (firstProduct && (typeof firstProduct.quantity === 'number' || typeof firstProduct.quantity === 'string')) {
+      const qty = parseInt(String(firstProduct.quantity), 10);
+      return isNaN(qty) || qty < 1 ? 1 : qty;
+    }
+
+    return 1;
+  }
+
+  getRemainingQuantity(shipment: Shipment): number {
+    // For now, we can't know remaining from frontend alone without API call
+    // So we use expected quantity as a proxy; the backend will validate
+    return this.getExpectedQuantity(shipment);
+  }
+
+  getLoadedQuantityDisplay(shipment: Shipment): string {
+    const expected = this.getExpectedQuantity(shipment);
+    if (expected <= 1) return '';
+    if (shipment.container_id) {
+      return `Loaded in container`;
+    }
+    return `${expected} units`;
   }
 
   canRemoveFromContainer(shipment: Shipment): boolean {
@@ -892,10 +984,18 @@ export class Shipping implements OnInit, OnDestroy {
     this.menuBarService.hide();
     this.containerDetailOpen.set(true);
     this.selectedContainer.set(container);
+    this.shipmentDistributions.set({});
     this.containerService.getContainer(container.id).subscribe({
       next: (response) => {
         if (response.success) {
           this.selectedContainer.set(response.data.container);
+          // Fetch distribution data for each shipment that is half_loaded
+          const shipments = response.data.container?.shipments || [];
+          shipments.forEach((shipment: Shipment) => {
+            if (shipment.status === 'half_loaded' || shipment.status === 'loading_container') {
+              this.loadShipmentDistribution(shipment.id);
+            }
+          });
         }
       },
       error: (error: any) => {
@@ -904,12 +1004,45 @@ export class Shipping implements OnInit, OnDestroy {
     });
   }
 
+  loadShipmentDistribution(shipmentId: string): void {
+    this.shipmentDistributions.update(dists => ({
+      ...dists,
+      [shipmentId]: { loading: true, error: null, data: null }
+    }));
+    this.shipmentService.getContainerStatus(shipmentId).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.shipmentDistributions.update(dists => ({
+            ...dists,
+            [shipmentId]: { loading: false, error: null, data: response.data }
+          }));
+        } else {
+          this.shipmentDistributions.update(dists => ({
+            ...dists,
+            [shipmentId]: { loading: false, error: 'Failed to load', data: null }
+          }));
+        }
+      },
+      error: () => {
+        this.shipmentDistributions.update(dists => ({
+          ...dists,
+          [shipmentId]: { loading: false, error: 'Failed to load', data: null }
+        }));
+      }
+    });
+  }
+
+  getShipmentDistribution(shipmentId: string) {
+    return this.shipmentDistributions()[shipmentId] || null;
+  }
+
   closeContainerDetail(): void {
     this.containerDetailClosing.set(true);
     setTimeout(() => {
       this.containerDetailOpen.set(false);
       this.containerDetailClosing.set(false);
       this.selectedContainer.set(null);
+      this.shipmentDistributions.set({});
       this.menuBarService.show();
     }, 280);
   }
@@ -940,16 +1073,111 @@ export class Shipping implements OnInit, OnDestroy {
     });
   }
 
-  loadShipmentToContainer(containerId: string): void {
+  // Quantity modal methods
+  openQuantityModal(container: Container, shipment: Shipment): void {
+    this.selectedContainerForQuantity.set(container);
+    this.selectedShipmentForContainer.set(shipment);
+    this.quantityToLoad.set(null);
+    this.quantityError.set('');
+    this.containerStatusData.set(null);
+    this.containerStatusError.set(null);
+    this.containerQuantityModalOpen.set(true);
+
+    // Only fetch container status for half_loaded shipments
+    // For at_warehouse, we just show Total Quantity (simple view)
+    if (shipment.status === 'half_loaded') {
+      this.containerStatusLoading.set(true);
+      this.shipmentService.getContainerStatus(shipment.id).subscribe({
+        next: (response) => {
+          console.log('Container status API response:', response);
+          if (response.success && response.data) {
+            this.containerStatusData.set(response.data);
+            this.containerStatusError.set(null);
+          } else {
+            console.warn('Container status API returned success=false or no data:', response);
+            this.containerStatusError.set('Failed to load container status');
+          }
+          this.containerStatusLoading.set(false);
+        },
+        error: (error) => {
+          console.error('Failed to fetch container status:', error);
+          this.containerStatusError.set('Failed to load container status. Please try again.');
+          this.containerStatusLoading.set(false);
+        }
+      });
+    }
+  }
+
+  closeQuantityModal(): void {
+    this.containerQuantityModalClosing.set(true);
+    setTimeout(() => {
+      this.containerQuantityModalOpen.set(false);
+      this.containerQuantityModalClosing.set(false);
+      this.selectedContainerForQuantity.set(null);
+      this.quantityToLoad.set(null);
+      this.quantityError.set('');
+      this.containerStatusData.set(null);
+      this.containerStatusLoading.set(false);
+      this.containerStatusError.set(null);
+    }, 280);
+  }
+
+  onQuantityInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const val = parseInt(input.value, 10);
+    this.quantityToLoad.set(isNaN(val) ? null : val);
+    this.quantityError.set('');
+  }
+
+  submitLoadWithQuantity(): void {
+    const container = this.selectedContainerForQuantity();
     const shipment = this.selectedShipmentForContainer();
-    if (!shipment) return;
-    this.updatingShipment.set(shipment.id);
-    this.containerService.addShipment(containerId, shipment.id).subscribe({
+    if (!container || !shipment) return;
+
+    const qty = this.quantityToLoad();
+    if (qty === null || qty === undefined || qty < 1 || isNaN(qty)) {
+      this.quantityError.set('Please enter a valid quantity (1 or more)');
+      return;
+    }
+
+    const maxQty = this.getMaxLoadQuantity();
+
+    if (qty > maxQty) {
+      this.quantityError.set(`Cannot load more than ${maxQty} unit(s)`);
+      return;
+    }
+
+    this.doLoadShipment(container.id, shipment.id, qty);
+  }
+
+  loadAllQuantity(): void {
+    const container = this.selectedContainerForQuantity();
+    const shipment = this.selectedShipmentForContainer();
+    if (!container || !shipment) return;
+
+    const expected = this.getExpectedQuantity(shipment);
+    this.doLoadShipment(container.id, shipment.id, expected);
+  }
+
+  loadAllRemainingQuantity(): void {
+    const container = this.selectedContainerForQuantity();
+    const shipment = this.selectedShipmentForContainer();
+    if (!container || !shipment) return;
+
+    const statusData = this.containerStatusData();
+    const remaining = statusData?.remaining_quantity ?? this.getExpectedQuantity(shipment);
+    this.doLoadShipment(container.id, shipment.id, remaining);
+  }
+
+  private doLoadShipment(containerId: string, shipmentId: string, qty: number): void {
+    this.quantityError.set('');
+    this.updatingShipment.set(shipmentId);
+    this.containerService.addShipment(containerId, shipmentId, qty).subscribe({
       next: (response) => {
         if (response.success) {
-          this.toastService.success('Shipment added to container');
+          this.toastService.success(response.message || 'Shipment added to container');
           this.loadShipments();
-          this.selectedShipmentForContainer.set(null);
+          this.closeQuantityModal();
         } else {
           this.toastService.error(response.message || 'Failed to add shipment');
         }
@@ -961,6 +1189,41 @@ export class Shipping implements OnInit, OnDestroy {
         this.updatingShipment.set(null);
       }
     });
+  }
+
+  loadShipmentToContainer(containerId: string): void {
+    const shipment = this.selectedShipmentForContainer();
+    if (!shipment) return;
+
+    const expected = this.getExpectedQuantity(shipment);
+    const container = this.containers().find(c => c.id === containerId);
+    if (!container) return;
+
+    // If quantity is 1 or shipment has no explicit quantity, load directly
+    // Otherwise show quantity modal
+    if (expected <= 1) {
+      this.updatingShipment.set(shipment.id);
+      this.containerService.addShipment(containerId, shipment.id, 1).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.toastService.success('Shipment added to container');
+            this.loadShipments();
+            this.selectedShipmentForContainer.set(null);
+          } else {
+            this.toastService.error(response.message || 'Failed to add shipment');
+          }
+          this.updatingShipment.set(null);
+        },
+        error: (error: any) => {
+          console.error('Failed to add shipment to container:', error);
+          this.toastService.error('Failed to add shipment to container');
+          this.updatingShipment.set(null);
+        }
+      });
+    } else {
+      // Show quantity modal
+      this.openQuantityModal(container, shipment);
+    }
   }
 
   removeShipmentFromContainer(shipment: Shipment): void {
@@ -1241,20 +1504,56 @@ export class Shipping implements OnInit, OnDestroy {
     this.qrScanState.set('processing');
 
     if (this.qrScanPurpose() === 'agent_load_container' && this.qrScanContainerId()) {
-      this.containerService.scanShipment(this.qrScanContainerId()!, uuid).subscribe({
+      // First, get shipment info without loading (preview)
+      this.shipmentService.approveByQrCode(uuid, undefined, true).subscribe({
         next: (response) => {
-          if (response.success && response.info) {
+          if (response.success && response.preview && response.data?.shipment) {
+            const shipment = response.data.shipment;
+            const containerId = this.qrScanContainerId()!;
+            const container = this.containers().find(c => c.id === containerId);
+
+            if (!container) {
+              this.qrScanState.set('error');
+              this.qrScanMessage.set('Container not found');
+              return;
+            }
+
+            // Check if shipment is valid for loading (at_warehouse or half_loaded status)
+            if (shipment.status !== 'at_warehouse' && shipment.status !== 'half_loaded') {
+              this.qrScanState.set('info');
+              this.qrScanMessage.set('Shipment must be at warehouse or half loaded before adding to container. Current status: ' + shipment.status);
+              this.qrScanInfoShipment.set(shipment);
+              return;
+            }
+
+            // Check if already fully loaded by fetching container status
+            this.shipmentService.getContainerStatus(shipment.id).subscribe({
+              next: (statusResponse) => {
+                console.log('QR scan - container status:', statusResponse);
+                if (statusResponse.success && statusResponse.data.is_fully_loaded) {
+                  this.qrScanState.set('info');
+                  this.qrScanMessage.set('All quantity for this shipment is already loaded in containers');
+                  this.qrScanInfoShipment.set(shipment);
+                  return;
+                }
+
+                // Close QR scanner and show quantity modal
+                this.closeQrScannerModal();
+                this.openQuantityModal(container, shipment);
+              },
+              error: () => {
+                // If status fetch fails, still try to show modal
+                this.closeQrScannerModal();
+                this.openQuantityModal(container, shipment);
+              }
+            });
+          } else if (response.success && response.info) {
             this.qrScanState.set('info');
             this.qrScanMessage.set(response.message || 'No update performed');
             this.qrScanInfoShipment.set(response.data?.shipment ?? null);
-          } else if (response.success) {
-            this.qrScanState.set('success');
-            this.qrScanMessage.set(response.message || 'Shipment added to container successfully');
-            this.loadShipments();
-            this.loadContainers();
           } else {
             this.qrScanState.set('error');
-            this.qrScanMessage.set(response.message || 'Failed to add shipment to container');
+            this.qrScanMessage.set(response.message || 'Failed to find shipment');
           }
         },
         error: (err: any) => {

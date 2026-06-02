@@ -244,6 +244,7 @@ export class ScanQr implements OnInit, OnDestroy {
   getStatusMessage(status: string): string {
     const messages: Record<string, string> = {
       'at_warehouse': 'Shipment is already at warehouse',
+      'half_loaded': 'Shipment is partially loaded in a container',
       'at_port_abroad': 'Shipment is already at port abroad',
       'in_transit': 'Shipment is already in transit',
       'delivered': 'Shipment is already delivered',

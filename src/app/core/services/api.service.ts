@@ -13,7 +13,7 @@ export class ApiService {
   constructor(private http: HttpClient) {}
 
   get<T>(endpoint: string, params?: Record<string, string>): Observable<T> {
-    const queryString = params ? '?' + new URLSearchParams(params).toString() : '';
+    const queryString = params && Object.keys(params).length > 0 ? '?' + new URLSearchParams(params).toString() : '';
     return this.http.get<T>(`${this.baseUrl}/${endpoint}${queryString}`).pipe(
       catchError(this.handleError)
     );

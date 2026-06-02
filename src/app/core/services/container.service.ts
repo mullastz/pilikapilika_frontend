@@ -40,10 +40,14 @@ export class ContainerService {
     return this.apiService.get<{ success: boolean; data: { container: Container } }>(`${this.endpoint}/${id}`, {});
   }
 
-  addShipment(containerId: string, shipmentId: string): Observable<{ success: boolean; message: string; data: any }> {
+  addShipment(containerId: string, shipmentId: string, quantity?: number): Observable<{ success: boolean; message: string; data: any }> {
+    const payload: any = { shipment_id: shipmentId };
+    if (quantity !== undefined && quantity !== null) {
+      payload.quantity = quantity;
+    }
     return this.apiService.post<{ success: boolean; message: string; data: any }>(
       `${this.endpoint}/${containerId}/add-shipment`,
-      { shipment_id: shipmentId }
+      payload
     );
   }
 
@@ -61,10 +65,14 @@ export class ContainerService {
     );
   }
 
-  scanShipment(containerId: string, qrCodeUuid: string): Observable<{ success: boolean; info?: boolean; message: string; data: any }> {
+  scanShipment(containerId: string, qrCodeUuid: string, quantity?: number): Observable<{ success: boolean; info?: boolean; message: string; data: any }> {
+    const payload: any = { container_id: containerId, qr_code_uuid: qrCodeUuid };
+    if (quantity !== undefined && quantity !== null) {
+      payload.quantity = quantity;
+    }
     return this.apiService.post<{ success: boolean; info?: boolean; message: string; data: any }>(
       `${this.endpoint}/scan-shipment`,
-      { container_id: containerId, qr_code_uuid: qrCodeUuid }
+      payload
     );
   }
 

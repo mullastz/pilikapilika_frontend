@@ -172,6 +172,10 @@
                                   [ngClass]="getStatusClass(shipment.status)">
                                   {{formatStatus(shipment.status)}}
                                 </span>
+                                <span *ngIf="getExpectedQuantity(shipment) > 1"
+                                  class="text-[10px] bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-md font-medium">
+                                  {{getExpectedQuantity(shipment)}} units
+                                </span>
                             </div>
                         </div>
                         <!-- Tracking info row (separate line) -->
@@ -542,6 +546,147 @@
   </div>
 }
 
+<!-- Container Quantity Modal -->
+@if (containerQuantityModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center" (click)="closeQuantityModal()">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black/50 sheet-backdrop" [class.closing]="containerQuantityModalClosing()"></div>
+
+    <!-- Modal / Bottom Sheet -->
+    <div class="relative bg-white dark:bg-[#1a1a1a] rounded-2xl sm:rounded-2xl max-w-sm w-full shadow-2xl sheet-modal-desktop sheet-modal-mobile" [class.closing]="containerQuantityModalClosing()" (click)="$event.stopPropagation()">
+
+      <!-- Mobile Sheet Handle -->
+      <div class="sheet-handle hidden sticky top-0 z-20 bg-white dark:bg-[#1a1a1a] pt-2 pb-1 rounded-t-2xl">
+        <div class="sheet-handle-bar"></div>
+      </div>
+
+      <!-- Modal Header -->
+      <div class="sheet-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sm:rounded-t-2xl">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <i class="fa-solid fa-boxes-stacked text-orange-500 mr-2"></i>
+          Load Quantity
+        </h3>
+        <button (click)="closeQuantityModal()" class="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-[#333] flex items-center justify-center transition">
+          <i class="fa-solid fa-times text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"></i>
+        </button>
+      </div>
+
+      <div class="sheet-content p-6 space-y-4">
+        <!-- Shipment info -->
+        <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
+          <p class="text-sm text-orange-700 dark:text-orange-300">
+            <i class="fa-solid fa-box mr-1"></i>
+            <strong>{{selectedShipmentForContainer()?.title || 'Untitled'}}</strong>
+          </p>
+          <div *ngIf="containerStatusLoading()" class="text-xs text-orange-600 dark:text-orange-400 mt-1">
+            <div class="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-orange-500 mr-1"></div>
+            Loading status...
+          </div>
+          <div *ngIf="containerStatusError()" class="text-xs text-red-600 dark:text-red-400 mt-1">
+            <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+            {{containerStatusError()}}
+          </div>
+          <!-- Simple view for first load (at_warehouse) -->
+          <ng-container *ngIf="selectedShipmentForContainer()?.status === 'at_warehouse'">
+            <div class="mt-2 space-y-1">
+              <p class="text-xs text-orange-600 dark:text-orange-400">
+                Total Quantity: <strong>{{getExpectedQuantity(selectedShipmentForContainer()!)}}</strong> unit(s)
+              </p>
+            </div>
+          </ng-container>
+
+          <!-- Detailed view for half_loaded -->
+          <ng-container *ngIf="selectedShipmentForContainer()?.status === 'half_loaded' && !containerStatusLoading() && containerStatusData() as status">
+            <div class="mt-2 space-y-1">
+              <p class="text-xs text-orange-600 dark:text-orange-400">
+                Total Quantity: <strong>{{status.expected_quantity}}</strong> unit(s)
+              </p>
+              <ng-container *ngIf="status.loaded_quantity > 0">
+                <p class="text-xs text-green-600 dark:text-green-400">
+                  Already loaded: <strong>{{status.loaded_quantity}}</strong> unit(s)
+                </p>
+                <p *ngIf="status.containers && status.containers.length > 0" class="text-xs text-gray-600 dark:text-gray-400">
+                  <ng-container *ngFor="let c of status.containers; let last = last; let first = first">
+                    <span *ngIf="first">at Container </span>
+                    <span class="font-medium">({{c.reference_number}})</span>: <strong>{{c.quantity}}</strong> unit(s)<span *ngIf="!last">, </span>
+                  </ng-container>
+                </p>
+              </ng-container>
+              <p class="text-xs text-orange-600 dark:text-orange-400">
+                Remaining Quantity (Not loaded): <strong>{{status.remaining_quantity}}</strong> unit(s)
+              </p>
+            </div>
+          </ng-container>
+
+          <!-- Loading state for half_loaded -->
+          <div *ngIf="selectedShipmentForContainer()?.status === 'half_loaded' && containerStatusLoading()" class="text-xs text-orange-600 dark:text-orange-400 mt-1">
+            <div class="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-orange-500 mr-1"></div>
+            Loading container details...
+          </div>
+
+          <!-- Error state -->
+          <div *ngIf="containerStatusError()" class="text-xs text-red-600 dark:text-red-400 mt-1">
+            <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+            {{containerStatusError()}}
+          </div>
+        </div>
+
+        <!-- Quantity input -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Quantity to Load
+          </label>
+          <input
+            type="number"
+            [value]="quantityToLoad() ?? ''"
+            (input)="onQuantityInput($event)"
+            min="1"
+            [max]="getMaxLoadQuantity()"
+            [placeholder]="'Enter quantity (max: ' + getMaxLoadQuantity() + ')'"
+            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#222] text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+          />
+          @if (quantityError()) {
+            <p class="text-red-500 text-xs mt-1">{{quantityError()}}</p>
+          }
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-col gap-2 pt-2">
+          <button
+            (click)="submitLoadWithQuantity()"
+            [disabled]="updatingShipment() === selectedShipmentForContainer()?.id"
+            class="w-full px-4 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition font-medium text-sm disabled:opacity-50">
+            <span *ngIf="updatingShipment() === selectedShipmentForContainer()?.id" class="animate-spin inline-block w-3 h-3 border border-white border-t-transparent rounded-full mr-1"></span>
+            Load to Container
+          </button>
+          <!-- Show "Load All" for at_warehouse (first load) -->
+          <button
+            *ngIf="selectedShipmentForContainer()?.status === 'at_warehouse'"
+            (click)="loadAllQuantity()"
+            [disabled]="updatingShipment() === selectedShipmentForContainer()?.id"
+            class="w-full px-4 py-2.5 bg-green-500 text-white rounded-xl hover:bg-green-600 transition font-medium text-sm disabled:opacity-50">
+            <i class="fa-solid fa-boxes-stacked mr-1"></i> Load All
+          </button>
+
+          <!-- Show "Load All Remaining" for half_loaded -->
+          <button
+            *ngIf="selectedShipmentForContainer()?.status === 'half_loaded'"
+            (click)="loadAllRemainingQuantity()"
+            [disabled]="updatingShipment() === selectedShipmentForContainer()?.id || (containerStatusData()?.remaining_quantity ?? 0) <= 0"
+            class="w-full px-4 py-2.5 bg-green-500 text-white rounded-xl hover:bg-green-600 transition font-medium text-sm disabled:opacity-50">
+            <i class="fa-solid fa-boxes-stacked mr-1"></i> Load All Remaining ({{containerStatusData()?.remaining_quantity ?? 0}})
+          </button>
+          <button
+            (click)="closeQuantityModal()"
+            class="w-full px-4 py-2.5 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-[#444] transition font-medium text-sm">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
 <!-- Container Detail Modal -->
 @if (containerDetailOpen() && selectedContainer()) {
   <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center" (click)="closeContainerDetail()">
@@ -576,7 +721,41 @@
         <div *ngIf="hasContainerShipments()" class="space-y-2">
           <div *ngFor="let s of getContainerShipments()" class="bg-gray-50 dark:bg-[#222] rounded-lg p-3">
             <p class="text-sm font-medium dark:text-white">{{s.title || 'Untitled'}}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">Status: {{formatStatus(s.status)}}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              Status: {{formatStatus(s.status)}}
+              <span *ngIf="s.pivot_quantity" class="ml-2 text-orange-500 font-medium">&middot; Qty in this container: {{s.pivot_quantity}}</span>
+            </p>
+
+            <!-- Distribution info for half_loaded / loading_container shipments -->
+            <ng-container *ngIf="getShipmentDistribution(s.id) as dist">
+              <div *ngIf="dist.loading" class="text-xs text-gray-400 mt-1">
+                <div class="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-gray-400 mr-1"></div>
+                Loading distribution info...
+              </div>
+              <div *ngIf="dist.error" class="text-xs text-red-400 mt-1">
+                {{dist.error}}
+              </div>
+              <div *ngIf="dist.data" class="mt-2 space-y-1 border-t border-gray-200 dark:border-gray-700 pt-2">
+                <p class="text-xs text-orange-600 dark:text-orange-400">
+                  Total Quantity: <strong>{{dist.data.expected_quantity}}</strong>
+                </p>
+                <p class="text-xs text-green-600 dark:text-green-400">
+                  Distributed across <strong>{{dist.data.containers.length}}</strong> container(s):
+                </p>
+                <div class="space-y-1">
+                  <div *ngFor="let c of dist.data.containers" class="flex items-center justify-between text-xs">
+                    <span class="text-gray-600 dark:text-gray-400">
+                      <i class="fa-solid fa-box mr-1"></i>
+                      Container <span class="font-medium">({{c.reference_number}})</span>:
+                    </span>
+                    <span class="text-orange-600 dark:text-orange-400 font-medium">{{c.quantity}} unit(s)</span>
+                  </div>
+                </div>
+                <p class="text-xs text-orange-600 dark:text-orange-400 pt-1 border-t border-gray-200 dark:border-gray-700">
+                  Remaining (not loaded): <strong>{{dist.data.remaining_quantity}}</strong> unit(s)
+                </p>
+              </div>
+            </ng-container>
           </div>
         </div>
       </div>
@@ -701,6 +880,51 @@
                   <span class="text-sm font-medium text-orange-500">{{s.products[0].quantity}}</span>
                 </div>
               </ng-container>
+
+              <!-- Container Distribution -->
+              <ng-container *ngIf="getShipmentDistribution(s.id) as dist">
+                <ng-container *ngIf="dist.data && dist.data.containers.length > 0">
+                  <div class="border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <div class="flex justify-between items-start">
+                      <span class="text-sm text-gray-500">Container Distribution</span>
+                      <div class="text-right">
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                          {{ dist.data.is_fully_loaded ? 'Fully Loaded' : 'Partially Loaded' }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="mt-2 space-y-1.5">
+                      <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Total Quantity</span>
+                        <span class="font-medium dark:text-white">{{dist.data.expected_quantity}}</span>
+                      </div>
+                      <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Loaded</span>
+                        <span class="font-medium text-green-600 dark:text-green-400">{{dist.data.loaded_quantity}}</span>
+                      </div>
+                      <div *ngIf="!dist.data.is_fully_loaded" class="flex justify-between text-sm">
+                        <span class="text-gray-500">Remaining</span>
+                        <span class="font-medium text-orange-500">{{dist.data.remaining_quantity}}</span>
+                      </div>
+                      <div class="pt-1.5">
+                        <p class="text-xs text-gray-500 mb-1">Distributed across {{dist.data.containers.length}} container(s):</p>
+                        <div class="flex flex-wrap gap-1.5">
+                          <span *ngFor="let c of dist.data.containers" class="text-xs px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                            {{c.reference_number}}: <strong>{{c.quantity}}</strong>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="dist.loading">
+                  <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <span class="text-sm text-gray-500">Container Distribution</span>
+                    <span class="text-sm text-gray-400"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading...</span>
+                  </div>
+                </ng-container>
+              </ng-container>
+
               <ng-container *ngIf="s.received_quantity !== undefined && s.received_quantity !== null">
                 <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                   <span class="text-sm text-gray-500">Received Quantity</span>

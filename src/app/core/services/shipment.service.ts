@@ -17,7 +17,7 @@ export interface Shipment {
   agent_address?: string;
   estimated_price: number;
   actual_price?: number;
-  status: 'pending_confirmation' | 'confirmed' | 'at_warehouse' | 'loading_container' | 'loaded_in_container' | 'at_port_abroad' | 'in_transit' | 'at_tanzania_port' | 'at_tanzania_warehouse' | 'delivered' | 'cancelled';
+  status: 'pending_confirmation' | 'confirmed' | 'at_warehouse' | 'half_loaded' | 'loading_container' | 'loaded_in_container' | 'at_port_abroad' | 'in_transit' | 'at_tanzania_port' | 'at_tanzania_warehouse' | 'delivered' | 'cancelled';
   products?: any[];
   packages?: any[];
   notes?: string;
@@ -259,6 +259,16 @@ export class ShipmentService {
     return this.apiService.post<{ success: boolean; info?: boolean; preview?: boolean; message: string; data?: { shipment: Shipment } }>(
       `${this.endpoint}/scan-approve`,
       payload
+    );
+  }
+
+  /**
+   * Get container loading status for a shipment
+   */
+  getContainerStatus(shipmentId: string): Observable<{ success: boolean; data: { expected_quantity: number; loaded_quantity: number; remaining_quantity: number; is_fully_loaded: boolean; containers: { reference_number: string; quantity: number }[] } }> {
+    return this.apiService.get<{ success: boolean; data: { expected_quantity: number; loaded_quantity: number; remaining_quantity: number; is_fully_loaded: boolean; containers: { reference_number: string; quantity: number }[] } }>(
+      `${this.endpoint}/${shipmentId}/container-status`,
+      {}
     );
   }
 
