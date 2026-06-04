@@ -51,6 +51,24 @@ export class Home implements OnInit {
   activeShipments: Shipment[] = [];
   recentProducts: any[] = [];
 
+  // Agent shipments pagination
+  agentShipmentsPage = 1;
+  agentShipmentsPerPage = 10;
+  agentShipmentsHasMore = false;
+  isLoadingMoreShipments = false;
+
+  // Agents pagination
+  agentsPage = 1;
+  agentsPerPage = 10;
+  agentsHasMore = false;
+  isLoadingMoreAgents = false;
+
+  // Products pagination
+  productsPage = 1;
+  productsPerPage = 10;
+  productsHasMore = false;
+  isLoadingMoreProducts = false;
+
   // Track displayed agents to prevent repetition
   private displayedAgentIds: Set<number> = new Set();
 
@@ -79,20 +97,34 @@ export class Home implements OnInit {
 
   loadAgents(): void {
     this.isLoadingAgents = true;
-    this.agentService.getAvailableAgents().subscribe({
-      next: (agents: Agent[]) => {
-        this.allAgents = agents;
+    this.agentService.getAvailableAgents(this.agentsPage, this.agentsPerPage).subscribe({
+      next: (response) => {
+        if (this.agentsPage === 1) {
+          this.allAgents = response.agents;
+        } else {
+          this.allAgents = [...this.allAgents, ...response.agents];
+        }
+        this.agentsHasMore = response.pagination?.has_more ?? false;
         this.categorizeAgents();
         this.isLoadingAgents = false;
+        this.isLoadingMoreAgents = false;
         this.cdr.detectChanges();
       },
       error: (err: any) => {
         console.error('Error loading agents:', err);
         this.toastService.error('Failed to load agents. Please try again.');
         this.isLoadingAgents = false;
+        this.isLoadingMoreAgents = false;
         this.cdr.detectChanges();
       }
     });
+  }
+
+  loadMoreAgents(): void {
+    if (!this.agentsHasMore || this.isLoadingMoreAgents) return;
+    this.isLoadingMoreAgents = true;
+    this.agentsPage++;
+    this.loadAgents();
   }
 
   categorizeAgents(): void {
@@ -186,6 +218,10 @@ export class Home implements OnInit {
     this.router.navigate(['/account/shipping'], { queryParams: { highlight: shipmentId } });
   }
 
+  viewProductDetails(productUuid: string): void {
+    this.router.navigate(['/account/my-products'], { queryParams: { highlight: productUuid } });
+  }
+
   getStatusClass(status: string): string {
     return getStatusBadgeClass(status);
   }
@@ -208,41 +244,90 @@ export class Home implements OnInit {
 
   loadShipments(): void {
     this.isLoadingShipments = true;
-    this.shipmentService.getUserShipments().subscribe({
-      next: (response) => {
-        if (response.success) {
-          // Get active shipments (not cancelled or delivered)
-          this.activeShipments = response.data.shipments
-            .filter(shipment => !['cancelled', 'delivered'].includes(shipment.status))
-            .slice(0, 5); // Show only 5 most recent
+
+    if (this.isAgent) {
+      // Agents see their own active shipments (excluding delivered/cancelled), ordered by status priority
+      this.shipmentService.getAgentShipments(this.agentShipmentsPage, this.agentShipmentsPerPage).subscribe({
+        next: (response) => {
+          if (response.success) {
+            if (this.agentShipmentsPage === 1) {
+              this.activeShipments = response.data.shipments;
+            } else {
+              this.activeShipments = [...this.activeShipments, ...response.data.shipments];
+            }
+            this.agentShipmentsHasMore = response.data.pagination?.has_more ?? false;
+          }
+          this.isLoadingShipments = false;
+          this.isLoadingMoreShipments = false;
+          this.cdr.detectChanges();
+        },
+        error: (err: any) => {
+          console.error('Error loading agent shipments:', err);
+          this.isLoadingShipments = false;
+          this.isLoadingMoreShipments = false;
+          this.cdr.detectChanges();
         }
-        this.isLoadingShipments = false;
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => {
-        console.error('Error loading shipments:', err);
-        this.isLoadingShipments = false;
-        this.cdr.detectChanges();
-      }
-    });
+      });
+    } else {
+      // Customers see their own active shipments
+      this.shipmentService.getUserShipments(1, 10).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.activeShipments = response.data.shipments
+              .filter(shipment => !['cancelled', 'delivered'].includes(shipment.status))
+              .slice(0, 5); // Show only 5 most recent
+          }
+          this.isLoadingShipments = false;
+          this.cdr.detectChanges();
+        },
+        error: (err: any) => {
+          console.error('Error loading shipments:', err);
+          this.isLoadingShipments = false;
+          this.cdr.detectChanges();
+        }
+      });
+    }
+  }
+
+  loadMoreAgentShipments(): void {
+    if (!this.agentShipmentsHasMore || this.isLoadingMoreShipments) return;
+    this.isLoadingMoreShipments = true;
+    this.agentShipmentsPage++;
+    this.loadShipments();
   }
 
   loadProducts(): void {
     this.isLoadingProducts = true;
-    this.qrCodeService.getAll().subscribe({
+    this.qrCodeService.getAll(this.productsPage, this.productsPerPage).subscribe({
       next: (res: any) => {
         console.log('[Home] Products response:', res);
-        this.recentProducts = res?.data ?? [];
-        this.recentProducts = this.recentProducts.slice(0, 5); // Show only 5 most recent
+        // Handle both old flat format and new paginated format
+        const qrCodes = res?.data?.qr_codes ?? res?.data ?? [];
+        const newProducts = Array.isArray(qrCodes) ? qrCodes : [];
+        if (this.productsPage === 1) {
+          this.recentProducts = newProducts;
+        } else {
+          this.recentProducts = [...this.recentProducts, ...newProducts];
+        }
+        this.productsHasMore = res?.data?.pagination?.has_more ?? false;
         this.isLoadingProducts = false;
+        this.isLoadingMoreProducts = false;
         this.cdr.detectChanges();
       },
       error: (err: any) => {
         console.error('[Home] Error loading products:', err);
         this.isLoadingProducts = false;
+        this.isLoadingMoreProducts = false;
         this.cdr.detectChanges();
       }
     });
+  }
+
+  loadMoreProducts(): void {
+    if (!this.productsHasMore || this.isLoadingMoreProducts) return;
+    this.isLoadingMoreProducts = true;
+    this.productsPage++;
+    this.loadProducts();
   }
 
   get isAgent(): boolean {
@@ -281,7 +366,27 @@ export class Home implements OnInit {
     return 'Unassigned';
   }
 
+  getShipmentCustomerName(shipment: Shipment): string {
+    if (shipment.user) {
+      return `${shipment.user.firstname} ${shipment.user.lastname}`;
+    }
+    return 'Unknown';
+  }
+
   getEstimatedDelivery(shipment: Shipment): string {
     return formatShipmentStatus(shipment.status);
+  }
+
+  /**
+   * Capitalize each word in a string (e.g. 'hello world' → 'Hello World')
+   */
+  capitalize(value: string | null | undefined): string {
+    if (!value) return '';
+    return value
+      .toString()
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   }
 }

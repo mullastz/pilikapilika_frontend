@@ -11,6 +11,7 @@
 export const SHIPMENT_STATUS_ORDER: readonly string[] = [
   'pending_confirmation',
   'confirmed',
+  'partially_received',
   'at_warehouse',
   'half_loaded',
   'loading_container',
@@ -26,6 +27,7 @@ export const SHIPMENT_STATUS_ORDER: readonly string[] = [
 export const SHIPMENT_PROGRESS_WEIGHTS: Record<string, number> = {
   pending_confirmation: 5,
   confirmed: 15,
+  partially_received: 20,
   at_warehouse: 25,
   half_loaded: 30,
   loading_container: 35,
@@ -42,6 +44,7 @@ export const SHIPMENT_PROGRESS_WEIGHTS: Record<string, number> = {
 const STAGE_META: Record<string, { label: string; icon: string }> = {
   pending_confirmation: { label: 'Pending', icon: 'fa-clock' },
   confirmed: { label: 'Confirmed', icon: 'fa-check' },
+  partially_received: { label: 'Partially Received', icon: 'fa-triangle-exclamation' },
   at_warehouse: { label: 'At Warehouse', icon: 'fa-warehouse' },
   half_loaded: { label: 'Half Loaded', icon: 'fa-box-open' },
   loading_container: { label: 'Loading', icon: 'fa-dolly' },
@@ -84,6 +87,7 @@ export function getShipmentStageLabel(status: string): string {
   const labels: Record<string, string> = {
     pending_confirmation: 'Pending Confirmation',
     confirmed: 'Confirmed',
+    partially_received: 'Partially Received',
     at_warehouse: 'At Warehouse',
     half_loaded: 'Half Loaded',
     loading_container: 'Loading Container',
@@ -106,6 +110,7 @@ export function getShipmentProgressColor(status: string): string {
   const colors: Record<string, string> = {
     pending_confirmation: 'bg-yellow-500',
     confirmed: 'bg-purple-500',
+    partially_received: 'bg-yellow-500',
     at_warehouse: 'bg-indigo-500',
     half_loaded: 'bg-amber-500',
     loading_container: 'bg-orange-500',

@@ -36,6 +36,17 @@ export class Shipping implements OnInit, OnDestroy {
   public error = signal<string | null>(null);
   public updatingShipment = signal<string | null>(null);
 
+  // Pagination state
+  public page = signal<number>(1);
+  public perPage = signal<number>(10);
+  public pagination = signal<{
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    has_more: boolean;
+  } | null>(null);
+
   // Confirmation modal state
   public confirmModalOpen = signal(false);
   public confirmModalConfig = signal<{
@@ -132,6 +143,20 @@ export class Shipping implements OnInit, OnDestroy {
   private pendingQrScanContainerId = signal<string | null>(null);
   private pendingQrScanShipment = signal<Shipment | null>(null);
 
+  // Partial receipt: client confirmation modal
+  public partialConfirmModalOpen = signal(false);
+  public partialConfirmModalClosing = signal(false);
+  public partialConfirmShipment = signal<Shipment | null>(null);
+  public partialConfirmLoading = signal(false);
+
+  // Partial receipt: agent add remaining quantity modal
+  public addRemainingModalOpen = signal(false);
+  public addRemainingModalClosing = signal(false);
+  public addRemainingShipment = signal<Shipment | null>(null);
+  public addRemainingQuantityInput = signal<number | null>(null);
+  public addRemainingError = signal<string>('');
+  public addRemainingLoading = signal(false);
+
   // Action menu state (per shipment card)
   public openActionMenuId = signal<string | null>(null);
 
@@ -152,6 +177,7 @@ export class Shipping implements OnInit, OnDestroy {
     { id: 'all', label: 'All Shipments', icon: 'fa-list' },
     { id: 'pending_confirmation', label: 'Requests', icon: 'fa-clock' },
     { id: 'confirmed', label: 'Confirmed', icon: 'fa-check-circle' },
+    { id: 'partially_received', label: 'Partially Received', icon: 'fa-triangle-exclamation' },
     { id: 'at_warehouse', label: 'At Warehouse', icon: 'fa-warehouse' },
     { id: 'half_loaded', label: 'Half Loaded', icon: 'fa-box-open' },
     { id: 'loading_container', label: 'Loading', icon: 'fa-dolly' },
@@ -170,6 +196,7 @@ export class Shipping implements OnInit, OnDestroy {
     { id: 'all', label: 'All Shipments', icon: 'fa-list' },
     { id: 'pending_confirmation', label: 'Pending', icon: 'fa-clock' },
     { id: 'confirmed', label: 'Confirmed', icon: 'fa-check-circle' },
+    { id: 'partially_received', label: 'Partially Received', icon: 'fa-triangle-exclamation' },
     { id: 'at_warehouse', label: 'At Warehouse', icon: 'fa-warehouse' },
     { id: 'half_loaded', label: 'Half Loaded', icon: 'fa-box-open' },
     { id: 'loading_container', label: 'Loading', icon: 'fa-dolly' },
@@ -223,7 +250,22 @@ export class Shipping implements OnInit, OnDestroy {
 
   switchTab(tabId: string): void {
     this._activeTab.set(tabId);
+    this.page.set(1);
+    this.pagination.set(null);
     this.loadShipments();
+  }
+
+  goToPage(newPage: number): void {
+    if (newPage < 1) return;
+    const pag = this.pagination();
+    if (pag && newPage > pag.last_page) return;
+    this.page.set(newPage);
+    this.loadShipments();
+    // Scroll to top of shipment list
+    const listEl = document.getElementById('shipments-list-top');
+    if (listEl) {
+      listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   private loadShipments(): void {
@@ -232,31 +274,34 @@ export class Shipping implements OnInit, OnDestroy {
 
     const currentTab = this.activeTab();
     const isAgentUser = this.isAgent();
+    const currentPage = this.page();
+    const currentPerPage = this.perPage();
     
     if (isAgentUser) {
       if (currentTab === 'all') {
-        this.loadAgentShipments();
+        this.loadAgentShipments(currentPage, currentPerPage);
       } else if (currentTab === 'my_shippings') {
-        this.loadUserShipments();
+        this.loadUserShipments(currentPage, currentPerPage);
       } else if (currentTab === 'cancelled') {
-        this.loadCancelledShipments();
+        this.loadAgentShipmentsByStatus('cancelled', currentPage, currentPerPage);
       } else {
-        this.loadAgentShipmentsByStatus(currentTab);
+        this.loadAgentShipmentsByStatus(currentTab, currentPage, currentPerPage);
       }
     } else {
       if (currentTab === 'all') {
-        this.loadUserShipments();
+        this.loadUserShipments(currentPage, currentPerPage);
       } else {
-        this.loadUserShipmentsByStatus(currentTab);
+        this.loadUserShipmentsByStatus(currentTab, currentPage, currentPerPage);
       }
     }
   }
 
-  private loadUserShipments(): void {
-    this.shipmentService.getUserShipments().subscribe({
+  private loadUserShipments(page: number = 1, perPage: number = 10): void {
+    this.shipmentService.getUserShipments(page, perPage).subscribe({
       next: (response) => {
         if (response.success) {
           this._shipments.set(response.data.shipments);
+          this.pagination.set(response.data.pagination ?? null);
           this.scrollToHighlightedShipment();
         } else {
           this.toastService.error('Failed to load shipments');
@@ -272,14 +317,12 @@ export class Shipping implements OnInit, OnDestroy {
     });
   }
 
-  private loadUserShipmentsByStatus(status: string): void {
-    this.shipmentService.getUserShipmentsByStatus(status).subscribe({
+  private loadUserShipmentsByStatus(status: string, page: number = 1, perPage: number = 10): void {
+    this.shipmentService.getUserShipmentsByStatus(status, page, perPage).subscribe({
       next: (response) => {
         if (response.success) {
-          const filteredShipments = status === 'all' 
-            ? response.data.shipments 
-            : response.data.shipments.filter(shipment => shipment.status === status);
-          this._shipments.set(filteredShipments);
+          this._shipments.set(response.data.shipments);
+          this.pagination.set(response.data.pagination ?? null);
           this.scrollToHighlightedShipment();
         } else {
           this.error.set('Failed to load shipments');
@@ -294,11 +337,12 @@ export class Shipping implements OnInit, OnDestroy {
     });
   }
 
-  private loadAgentShipments(): void {
-    this.shipmentService.getAgentShipments().subscribe({
+  private loadAgentShipments(page: number = 1, perPage: number = 10): void {
+    this.shipmentService.getAgentShipments(page, perPage).subscribe({
       next: (response) => {
         if (response.success) {
           this._shipments.set(response.data.shipments);
+          this.pagination.set(response.data.pagination ?? null);
           this.scrollToHighlightedShipment();
         } else {
           this.toastService.error('Failed to load shipments');
@@ -314,14 +358,15 @@ export class Shipping implements OnInit, OnDestroy {
     });
   }
 
-  private loadAgentShipmentsByStatus(status: string): void {
+  private loadAgentShipmentsByStatus(status: string, page: number = 1, perPage: number = 10): void {
     this.loading.set(true);
     this.error.set(null);
 
-    this.shipmentService.getAgentShipmentsByStatus(status).subscribe({
+    this.shipmentService.getAgentShipmentsByStatus(status, page, perPage).subscribe({
       next: (response) => {
         if (response.success) {
           this._shipments.set(response.data.shipments);
+          this.pagination.set(response.data.pagination ?? null);
           this.scrollToHighlightedShipment();
         } else {
           this.error.set('Failed to load shipments');
@@ -336,14 +381,15 @@ export class Shipping implements OnInit, OnDestroy {
     });
   }
 
-  private loadCancelledShipments(): void {
+  private loadCancelledShipments(page: number = 1, perPage: number = 10): void {
     this.loading.set(true);
     this.error.set(null);
 
-    this.shipmentService.getAgentShipmentsByStatus('cancelled').subscribe({
+    this.shipmentService.getAgentShipmentsByStatus('cancelled', page, perPage).subscribe({
       next: (response) => {
         if (response.success) {
           this._shipments.set(response.data.shipments);
+          this.pagination.set(response.data.pagination ?? null);
           this.scrollToHighlightedShipment();
         } else {
           this.error.set('Failed to load cancelled shipments');
@@ -363,6 +409,7 @@ export class Shipping implements OnInit, OnDestroy {
       case 'delivered':        return 'bg-green-100 text-green-600';
       case 'in_transit':       return 'bg-blue-100 text-blue-600';
       case 'at_warehouse':     return 'bg-indigo-100 text-indigo-600';
+      case 'partially_received': return 'bg-yellow-100 text-yellow-600';
       case 'half_loaded':      return 'bg-amber-100 text-amber-600';
       case 'loading_container': return 'bg-orange-100 text-orange-600';
       case 'loaded_in_container': return 'bg-teal-100 text-teal-600';
@@ -398,6 +445,32 @@ export class Shipping implements OnInit, OnDestroy {
 
   formatStatus(status: string): string {
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  // Capitalize helper for names, regions, etc.
+  capitalize(value: string | null | undefined): string {
+    if (!value) return '';
+    return value.toString().toLowerCase().split(' ')
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  // Pagination pages array with smart ellipsis
+  get pages(): (number | string)[] {
+    const pag = this.pagination();
+    if (!pag) return [];
+    const total = pag.last_page;
+    const current = pag.current_page;
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    const pages: (number | string)[] = [1];
+    if (current > 3) pages.push('...');
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (current < total - 2) pages.push('...');
+    pages.push(total);
+    return pages;
   }
 
   // Progress bar helpers
@@ -692,9 +765,21 @@ export class Shipping implements OnInit, OnDestroy {
     return shipment.status === 'at_tanzania_warehouse' || shipment.status === 'in_transit';
   }
 
+  /**
+   * Check if a partially received shipment has been unblocked
+   * (either client confirmed or quantity was adjusted)
+   */
+  isPartiallyReceivedUnblocked(shipment: Shipment): boolean {
+    return shipment.status === 'partially_received' &&
+      (!!shipment.quantity_adjusted || !!shipment.client_confirmed_at);
+  }
+
   canLoadToContainer(shipment: Shipment): boolean {
-    // Allow loading if at warehouse or half loaded (partially loaded)
-    return shipment.status === 'at_warehouse' || shipment.status === 'half_loaded';
+    // Allow loading if at warehouse, half loaded, or partially received but unblocked
+    if (shipment.status === 'at_warehouse' || shipment.status === 'half_loaded') {
+      return true;
+    }
+    return this.isPartiallyReceivedUnblocked(shipment);
   }
 
   getMaxLoadQuantity(): number {
@@ -1697,7 +1782,125 @@ export class Shipping implements OnInit, OnDestroy {
     if (this.canMarkDelivered(shipment)) {
       items.push({ label: 'Mark Delivered', icon: 'fa-check-double', colorClass: 'text-purple-600 dark:text-purple-400', action: () => this.markAsDeliveredAction(shipment), disabled: this.isUpdating(shipment.id) });
     }
+    // Partially received: agent can add remaining quantity manually
+    if (shipment.status === 'partially_received') {
+      items.push({ label: 'Add Remaining Quantity', icon: 'fa-plus', colorClass: 'text-blue-600 dark:text-blue-400', action: () => this.openAddRemainingModal(shipment), disabled: this.isUpdating(shipment.id) });
+    }
 
     return items;
+  }
+
+  // Partial receipt: client confirmation modal
+  openPartialConfirmModal(shipment: Shipment): void {
+    this.menuBarService.hide();
+    this.partialConfirmShipment.set(shipment);
+    this.partialConfirmModalOpen.set(true);
+    this.partialConfirmLoading.set(false);
+  }
+
+  closePartialConfirmModal(): void {
+    this.partialConfirmModalClosing.set(true);
+    setTimeout(() => {
+      this.partialConfirmModalOpen.set(false);
+      this.partialConfirmModalClosing.set(false);
+      this.partialConfirmShipment.set(null);
+      this.partialConfirmLoading.set(false);
+      this.menuBarService.show();
+    }, 280);
+  }
+
+  submitPartialConfirm(): void {
+    const shipment = this.partialConfirmShipment();
+    if (!shipment) return;
+
+    this.partialConfirmLoading.set(true);
+    this.shipmentService.confirmPartialQuantity(shipment.id).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.success(response.message);
+          this.loadShipments();
+          this.closePartialConfirmModal();
+        } else {
+          this.toastService.error(response.message || 'Failed to confirm');
+          this.partialConfirmLoading.set(false);
+        }
+      },
+      error: (error: any) => {
+        console.error('Failed to confirm partial quantity:', error);
+        this.toastService.error('Failed to confirm partial quantity');
+        this.partialConfirmLoading.set(false);
+      }
+    });
+  }
+
+  // Partial receipt: agent add remaining quantity modal
+  openAddRemainingModal(shipment: Shipment): void {
+    this.menuBarService.hide();
+    this.addRemainingShipment.set(shipment);
+    this.addRemainingQuantityInput.set(null);
+    this.addRemainingError.set('');
+    this.addRemainingLoading.set(false);
+    this.addRemainingModalOpen.set(true);
+  }
+
+  closeAddRemainingModal(): void {
+    this.addRemainingModalClosing.set(true);
+    setTimeout(() => {
+      this.addRemainingModalOpen.set(false);
+      this.addRemainingModalClosing.set(false);
+      this.addRemainingShipment.set(null);
+      this.addRemainingQuantityInput.set(null);
+      this.addRemainingError.set('');
+      this.addRemainingLoading.set(false);
+      this.menuBarService.show();
+    }, 280);
+  }
+
+  onAddRemainingInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const val = parseInt(input.value, 10);
+    this.addRemainingQuantityInput.set(isNaN(val) ? null : val);
+    this.addRemainingError.set('');
+  }
+
+  submitAddRemainingQuantity(): void {
+    const shipment = this.addRemainingShipment();
+    const qty = this.addRemainingQuantityInput();
+    if (!shipment) return;
+
+    if (qty === null || qty === undefined || qty < 1 || isNaN(qty)) {
+      this.addRemainingError.set('Please enter a valid quantity (1 or more)');
+      return;
+    }
+
+    // Validate against remaining
+    const expected = this.getExpectedQuantity(shipment);
+    const received = shipment.received_quantity ?? 0;
+    const remaining = expected - received;
+    if (qty > remaining) {
+      this.addRemainingError.set(`Cannot exceed remaining quantity (${remaining})`);
+      return;
+    }
+
+    this.addRemainingError.set('');
+    this.addRemainingLoading.set(true);
+
+    this.shipmentService.addReceivedQuantity(shipment.id, qty).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.success(response.message);
+          this.loadShipments();
+          this.closeAddRemainingModal();
+        } else {
+          this.toastService.error(response.message || 'Failed to add quantity');
+          this.addRemainingLoading.set(false);
+        }
+      },
+      error: (error: any) => {
+        console.error('Failed to add received quantity:', error);
+        this.toastService.error('Failed to add received quantity');
+        this.addRemainingLoading.set(false);
+      }
+    });
   }
 }

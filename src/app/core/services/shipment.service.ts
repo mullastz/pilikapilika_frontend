@@ -17,7 +17,7 @@ export interface Shipment {
   agent_address?: string;
   estimated_price: number;
   actual_price?: number;
-  status: 'pending_confirmation' | 'confirmed' | 'at_warehouse' | 'half_loaded' | 'loading_container' | 'loaded_in_container' | 'at_port_abroad' | 'in_transit' | 'at_tanzania_port' | 'at_tanzania_warehouse' | 'delivered' | 'cancelled';
+  status: 'pending_confirmation' | 'confirmed' | 'partially_received' | 'at_warehouse' | 'half_loaded' | 'loading_container' | 'loaded_in_container' | 'at_port_abroad' | 'in_transit' | 'at_tanzania_port' | 'at_tanzania_warehouse' | 'delivered' | 'cancelled';
   products?: any[];
   packages?: any[];
   notes?: string;
@@ -27,6 +27,9 @@ export interface Shipment {
   agent_delivered_at?: string;
   user_delivered_at?: string;
   received_quantity?: number;
+  quantity_adjusted?: boolean;
+  client_confirmed_at?: string;
+  client_confirmed_by?: string;
   created_at: string;
   updated_at: string;
   user?: {
@@ -81,13 +84,13 @@ export class ShipmentService {
   }
 
   /**
-   * Get user's shipments
+   * Get user's shipments with pagination (default 10 per page)
    */
-  getUserShipments(): Observable<{ success: boolean; data: { shipments: Shipment[] } }> {
+  getUserShipments(page: number = 1, perPage: number = 10): Observable<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }> {
     this.loading.set(true);
     this.error.set(null);
 
-    const observable = this.apiService.get<{ success: boolean; data: { shipments: Shipment[] } }>(this.endpoint, {});
+    const observable = this.apiService.get<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }>(`${this.endpoint}?page=${page}&per_page=${perPage}`, {});
     
     observable.subscribe({
       next: (response) => {
@@ -106,18 +109,17 @@ export class ShipmentService {
   }
 
   /**
-   * Get user's shipments by status (client-side filtering)
+   * Get user's shipments by status with pagination
    */
-  getUserShipmentsByStatus(status: string): Observable<{ success: boolean; data: { shipments: Shipment[] } }> {
-    // First get all user shipments, then filter by status
-    return this.getUserShipments();
+  getUserShipmentsByStatus(status: string, page: number = 1, perPage: number = 10): Observable<{ success: boolean; data: { shipments: Shipment[]; status: string; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }> {
+    return this.apiService.get<{ success: boolean; data: { shipments: Shipment[]; status: string; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }>(`${this.endpoint}/status/${status}?page=${page}&per_page=${perPage}`, {});
   }
 
   /**
-   * Get agent's shipments
+   * Get agent's shipments with pagination (default 10 per page)
    */
-  getAgentShipments(): Observable<{ success: boolean; data: { shipments: Shipment[] } }> {
-    return this.apiService.get<{ success: boolean; data: { shipments: Shipment[] } }>(`${this.endpoint}/agent`, {});
+  getAgentShipments(page: number = 1, perPage: number = 10): Observable<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }> {
+    return this.apiService.get<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }>(`${this.endpoint}/agent?page=${page}&per_page=${perPage}`, {});
   }
 
   /**
@@ -173,10 +175,10 @@ export class ShipmentService {
   }
 
   /**
-   * Get agent's shipments by status
+   * Get agent's shipments by status with pagination
    */
-  getAgentShipmentsByStatus(status: string): Observable<{ success: boolean; data: { shipments: Shipment[]; status: string } }> {
-    return this.apiService.get<{ success: boolean; data: { shipments: Shipment[]; status: string } }>(`${this.endpoint}/agent/${status}`, {});
+  getAgentShipmentsByStatus(status: string, page: number = 1, perPage: number = 10): Observable<{ success: boolean; data: { shipments: Shipment[]; status: string; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }> {
+    return this.apiService.get<{ success: boolean; data: { shipments: Shipment[]; status: string; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }>(`${this.endpoint}/agent/${status}?page=${page}&per_page=${perPage}`, {});
   }
 
   /**
@@ -269,6 +271,26 @@ export class ShipmentService {
     return this.apiService.get<{ success: boolean; data: { expected_quantity: number; loaded_quantity: number; remaining_quantity: number; is_fully_loaded: boolean; containers: { reference_number: string; quantity: number }[] } }>(
       `${this.endpoint}/${shipmentId}/container-status`,
       {}
+    );
+  }
+
+  /**
+   * Client confirms they accept the partial received quantity
+   */
+  confirmPartialQuantity(shipmentId: string): Observable<{ success: boolean; message: string; data?: { shipment: Shipment } }> {
+    return this.apiService.post<{ success: boolean; message: string; data?: { shipment: Shipment } }>(
+      `${this.endpoint}/${shipmentId}/confirm-partial-quantity`,
+      {}
+    );
+  }
+
+  /**
+   * Agent adds additional received quantity to a partially received shipment
+   */
+  addReceivedQuantity(shipmentId: string, additionalQuantity: number): Observable<{ success: boolean; fully_received?: boolean; partial_receipt?: boolean; message: string; data?: { shipment: Shipment; expected_quantity?: number; received_quantity?: number; remaining_quantity?: number } }> {
+    return this.apiService.post<{ success: boolean; fully_received?: boolean; partial_receipt?: boolean; message: string; data?: { shipment: Shipment; expected_quantity?: number; received_quantity?: number; remaining_quantity?: number } }>(
+      `${this.endpoint}/${shipmentId}/add-received-quantity`,
+      { additional_quantity: additionalQuantity }
     );
   }
 

@@ -60,8 +60,8 @@ export class QrCodeService {
     return this.api.post<QrCodeResponse>('qr-codes', formData);
   }
 
-  getAll(): Observable<any> {
-    return this.api.get('qr-codes');
+  getAll(page: number = 1, perPage: number = 10): Observable<any> {
+    return this.api.get(`qr-codes?page=${page}&per_page=${perPage}`);
   }
 
   getByUuid(uuid: string): Observable<any> {

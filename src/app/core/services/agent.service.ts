@@ -80,9 +80,36 @@ export class AgentService {
 
   // ========== Public Agent Discovery (No authentication required) ==========
 
-  getAvailableAgents(): Observable<Agent[]> {
-    return this.api.get<{ data: Agent[] }>('agents').pipe(
-      map(response => response.data)
+  getAvailableAgents(page: number = 1, perPage: number = 10): Observable<{ agents: Agent[]; pagination: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } }> {
+    return this.api.get<any>(`agents?page=${page}&per_page=${perPage}`).pipe(
+      map(response => {
+        // Handle both old flat array format and new paginated format
+        if (Array.isArray(response.data)) {
+          return {
+            agents: response.data,
+            pagination: { current_page: 1, last_page: 1, per_page: response.data.length, total: response.data.length, has_more: false }
+          };
+        }
+        // New paginated response via ResponseHelper::paginatedResponse
+        const content = response.data?.content ?? response.data?.agents ?? [];
+        const pageable = response.data?.pageable;
+        if (pageable) {
+          return {
+            agents: content,
+            pagination: {
+              current_page: (pageable.pageNumber ?? 0) + 1,
+              last_page: response.data.totalPages ?? 1,
+              per_page: pageable.pageSize ?? 10,
+              total: response.data.totalElements ?? content.length,
+              has_more: !response.data.last
+            }
+          };
+        }
+        return {
+          agents: content,
+          pagination: response.data?.pagination ?? { current_page: 1, last_page: 1, per_page: 10, total: content.length, has_more: false }
+        };
+      })
     );
   }
 

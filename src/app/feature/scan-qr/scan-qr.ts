@@ -6,7 +6,7 @@ import { ShipmentService } from '../../core/services/shipment.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
 
-type ScanState = 'idle' | 'scanning' | 'quantity_input' | 'processing' | 'success' | 'info' | 'error';
+type ScanState = 'idle' | 'scanning' | 'quantity_input' | 'partial_confirm' | 'add_remaining' | 'processing' | 'success' | 'info' | 'error';
 
 @Component({
   selector: 'app-scan-qr',
@@ -36,6 +36,16 @@ export class ScanQr implements OnInit, OnDestroy {
   expectedQuantity = signal<number | null>(null);
   receivedQuantity = signal<number | null>(null);
   quantityError = signal<string>('');
+
+  // Partial receipt / add remaining state
+  partialReceiptData = signal<{
+    expected: number;
+    received: number;
+    remaining: number;
+    shipment: any;
+  } | null>(null);
+  addRemainingQuantity = signal<number | null>(null);
+  addRemainingError = signal<string>('');
 
   ngOnInit(): void {
     const user = this.authService.getUser();
@@ -193,6 +203,9 @@ export class ScanQr implements OnInit, OnDestroy {
           if (status === 'pending_confirmation' || status === 'confirmed') {
             // Show quantity input before approving
             this.showQuantityInput(shipment, uuid);
+          } else if (status === 'partially_received') {
+            // Re-scanning a partially received shipment — show add remaining modal
+            this.showAddRemainingModal(shipment);
           } else {
             // Already processed — show info state
             this.resultShipment.set(shipment);
@@ -244,6 +257,7 @@ export class ScanQr implements OnInit, OnDestroy {
   getStatusMessage(status: string): string {
     const messages: Record<string, string> = {
       'at_warehouse': 'Shipment is already at warehouse',
+      'partially_received': 'Shipment is partially received — awaiting confirmation or remaining quantity',
       'half_loaded': 'Shipment is partially loaded in a container',
       'at_port_abroad': 'Shipment is already at port abroad',
       'in_transit': 'Shipment is already in transit',
@@ -285,12 +299,33 @@ export class ScanQr implements OnInit, OnDestroy {
       return;
     }
 
+    const expected = this.expectedQuantity();
+    if (expected !== null && qty < expected) {
+      // Show partial receipt confirmation before submitting
+      this.partialReceiptData.set({
+        expected: expected,
+        received: qty,
+        remaining: expected - qty,
+        shipment: null
+      });
+      this.state.set('partial_confirm');
+      return;
+    }
+
     this.quantityError.set('');
     this.state.set('processing');
 
+    this.doApproveByQrCode(uuid, qty);
+  }
+
+  private doApproveByQrCode(uuid: string, qty: number): void {
     this.shipmentService.approveByQrCode(uuid, qty).subscribe({
       next: (response) => {
-        if (response.success) {
+        if (response.success && (response as any).partial_receipt) {
+          this.resultShipment.set(response.data?.shipment ?? null);
+          this.state.set('success');
+          this.toastService.warning(response.message);
+        } else if (response.success) {
           this.resultShipment.set(response.data?.shipment ?? null);
           this.state.set('success');
           this.toastService.success(response.message);
@@ -334,6 +369,106 @@ export class ScanQr implements OnInit, OnDestroy {
     this.quantityError.set('');
   }
 
+  // Partial receipt confirmation
+  confirmPartialReceipt(): void {
+    const uuid = this.pendingQrUuid();
+    const qty = this.receivedQuantity();
+    if (!uuid || qty === null) return;
+    this.state.set('processing');
+    this.doApproveByQrCode(uuid, qty);
+  }
+
+  cancelPartialConfirm(): void {
+    this.partialReceiptData.set(null);
+    this.state.set('quantity_input');
+  }
+
+  // Add remaining quantity (re-scan flow)
+  showAddRemainingModal(shipment: any): void {
+    const expected = this.getExpectedQuantityFromShipment(shipment);
+    const received = shipment?.received_quantity ?? 0;
+    this.partialReceiptData.set({
+      expected: expected,
+      received: received,
+      remaining: Math.max(0, expected - received),
+      shipment: shipment
+    });
+    this.addRemainingQuantity.set(null);
+    this.addRemainingError.set('');
+    this.state.set('add_remaining');
+  }
+
+  private getExpectedQuantityFromShipment(shipment: any): number {
+    const products = shipment?.products ?? [];
+    if (Array.isArray(products) && products.length > 0) {
+      const first = products[0];
+      if (first && typeof first.quantity === 'number') {
+        return first.quantity;
+      }
+      if (Array.isArray(first) && first.length > 0 && typeof first[0]?.quantity === 'number') {
+        return first[0].quantity;
+      }
+    }
+    return 1;
+  }
+
+  onAddRemainingInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const val = parseInt(input.value, 10);
+    this.addRemainingQuantity.set(isNaN(val) ? null : val);
+    this.addRemainingError.set('');
+  }
+
+  submitAddRemaining(): void {
+    const data = this.partialReceiptData();
+    const qty = this.addRemainingQuantity();
+    if (!data || qty === null || qty === undefined || qty < 1 || isNaN(qty)) {
+      this.addRemainingError.set('Please enter a valid quantity (1 or more)');
+      return;
+    }
+    if (qty > data.remaining) {
+      this.addRemainingError.set(`Cannot exceed remaining quantity (${data.remaining})`);
+      return;
+    }
+
+    this.addRemainingError.set('');
+    this.state.set('processing');
+
+    const shipmentId = data.shipment?.id;
+    if (!shipmentId) {
+      this.state.set('error');
+      this.errorMessage.set('Shipment ID not found');
+      return;
+    }
+
+    this.shipmentService.addReceivedQuantity(shipmentId, qty).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.resultShipment.set(response.data?.shipment ?? null);
+          this.state.set('success');
+          this.toastService.success(response.message);
+        } else {
+          this.state.set('error');
+          this.errorMessage.set(response.message || 'Failed to add quantity');
+          this.toastService.error(response.message || 'Failed to add quantity');
+        }
+      },
+      error: (err: any) => {
+        const message = err?.error?.message || 'Something went wrong. Please try again.';
+        this.state.set('error');
+        this.errorMessage.set(message);
+        this.toastService.error(message);
+      }
+    });
+  }
+
+  cancelAddRemaining(): void {
+    this.partialReceiptData.set(null);
+    this.addRemainingQuantity.set(null);
+    this.addRemainingError.set('');
+    this.resetToIdle();
+  }
+
   resetToIdle(): void {
     this.scanHandled = false;
     this.resultShipment.set(null);
@@ -345,6 +480,9 @@ export class ScanQr implements OnInit, OnDestroy {
     this.expectedQuantity.set(null);
     this.receivedQuantity.set(null);
     this.quantityError.set('');
+    this.partialReceiptData.set(null);
+    this.addRemainingQuantity.set(null);
+    this.addRemainingError.set('');
     this.state.set('idle');
   }
 

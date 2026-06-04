@@ -61,12 +61,12 @@ export class LandingPage implements OnInit {
   loadAgents(): void {
     this.isLoadingAgents = true;
     console.log('Loading agents...');
-    this.agentService.getAvailableAgents().subscribe({
-      next: (agents: Agent[]) => {
-        console.log('Agents loaded:', agents);
-        this.agents = agents;
+    this.agentService.getAvailableAgents(1, 10).subscribe({
+      next: (response) => {
+        console.log('Agents loaded:', response);
+        this.agents = response.agents;
         // Sort by rating for top agents
-        this.topAgents = [...agents].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 6);
+        this.topAgents = [...response.agents].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 6);
         this.isLoadingAgents = false;
         this.cdr.detectChanges(); // Trigger change detection
       },

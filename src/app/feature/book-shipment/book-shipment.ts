@@ -97,8 +97,9 @@ export class BookShipment implements OnInit {
       // For UUID strings, get all agents and find the matching one
       console.log('🔍 [DEBUG] Using UUID lookup method...');
       
-      this.agentService.getAvailableAgents().subscribe({
-        next: (agents: any[]) => {
+      this.agentService.getAvailableAgents(1, 100).subscribe({
+        next: (response) => {
+          const agents = response.agents;
           console.log('🔍 [DEBUG] Available agents loaded:', agents?.length);
           console.log('🔍 [DEBUG] Agents list:', agents.map(a => ({ id: a.id, uuid: a.uuid, name: `${a.firstname} ${a.lastname}` })));
           

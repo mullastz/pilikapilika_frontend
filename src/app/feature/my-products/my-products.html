@@ -102,6 +102,11 @@
     <div *ngIf="!isLoading && !errorMessage && qrCodes.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       <div
         *ngFor="let item of qrCodes"
+        #productCard
+        [class.ring-2]="highlightedUuid === item.uuid"
+        [class.ring-orange-500]="highlightedUuid === item.uuid"
+        [class.ring-offset-2]="highlightedUuid === item.uuid"
+        [class.dark:ring-offset-[#0a0a0a]]="highlightedUuid === item.uuid"
         class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
       >
         <!-- Product Image (first photo) -->
@@ -117,9 +122,11 @@
           <div class="absolute inset-0 bg-linear-to-t from-white/80 via-white/40 to-transparent dark:from-[#1a1a1a]/80 dark:via-[#1a1a1a]/40"></div>
           <div
             *ngIf="!item.photos || item.photos.length === 0"
-            class="absolute inset-0 flex items-center justify-center text-gray-400"
+            class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/20"
           >
-            <i class="fa-solid fa-image text-4xl"></i>
+            <span class="text-5xl font-bold text-orange-500 dark:text-orange-400 uppercase">
+              {{ (item.product_name || '?').charAt(0) }}
+            </span>
           </div>
         </div>
 
@@ -173,6 +180,66 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div *ngIf="!isLoading && !errorMessage && pagination && pagination.last_page > 1" class="flex items-center justify-center gap-2 mt-8 mb-4">
+      <!-- Previous -->
+      <button
+        (click)="goToPage(pagination.current_page - 1)"
+        [disabled]="pagination.current_page <= 1"
+        class="px-3 py-2 rounded-lg text-sm font-medium transition disabled:opacity-40 disabled:cursor-not-allowed"
+        [class.bg-orange-500]="pagination.current_page > 1"
+        [class.text-white]="pagination.current_page > 1"
+        [class.bg-gray-200]="pagination.current_page <= 1"
+        [class.dark:bg-gray-700]="pagination.current_page <= 1"
+        [class.text-gray-700]="pagination.current_page <= 1"
+        [class.dark:text-gray-300]="pagination.current_page <= 1"
+      >
+        <i class="fa-solid fa-chevron-left mr-1"></i> Prev
+      </button>
+
+      <!-- Page Numbers -->
+      <div class="flex items-center gap-1">
+        <ng-container *ngFor="let p of pages">
+          <button
+            *ngIf="p !== -1"
+            (click)="goToPage(p)"
+            class="w-9 h-9 rounded-lg text-sm font-medium transition"
+            [class.bg-orange-500]="p === pagination.current_page"
+            [class.text-white]="p === pagination.current_page"
+            [class.bg-white]="p !== pagination.current_page"
+            [class.dark:bg-[#1a1a1a]]="p !== pagination.current_page"
+            [class.text-gray-700]="p !== pagination.current_page"
+            [class.dark:text-gray-300]="p !== pagination.current_page"
+            [class.hover:bg-gray-100]="p !== pagination.current_page"
+            [class.dark:hover:bg-gray-800]="p !== pagination.current_page"
+          >
+            {{ p }}
+          </button>
+          <span *ngIf="p === -1" class="px-1 text-gray-400 dark:text-gray-600">...</span>
+        </ng-container>
+      </div>
+
+      <!-- Next -->
+      <button
+        (click)="goToPage(pagination.current_page + 1)"
+        [disabled]="pagination.current_page >= pagination.last_page"
+        class="px-3 py-2 rounded-lg text-sm font-medium transition disabled:opacity-40 disabled:cursor-not-allowed"
+        [class.bg-orange-500]="pagination.current_page < pagination.last_page"
+        [class.text-white]="pagination.current_page < pagination.last_page"
+        [class.bg-gray-200]="pagination.current_page >= pagination.last_page"
+        [class.dark:bg-gray-700]="pagination.current_page >= pagination.last_page"
+        [class.text-gray-700]="pagination.current_page >= pagination.last_page"
+        [class.dark:text-gray-300]="pagination.current_page >= pagination.last_page"
+      >
+        Next <i class="fa-solid fa-chevron-right ml-1"></i>
+      </button>
+    </div>
+
+    <!-- Results Info -->
+    <div *ngIf="!isLoading && !errorMessage && pagination" class="text-center text-xs text-gray-400 dark:text-gray-500 mb-6">
+      Showing {{ qrCodes.length }} of {{ pagination.total }} parcels • Page {{ pagination.current_page }} of {{ pagination.last_page }}
     </div>
 
 
@@ -273,5 +340,5 @@
         </div>
       </div>
     </div>
-Max Delivery Distance (km)
-e.g. 50
+  </div>
+</div>

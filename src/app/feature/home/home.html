@@ -59,7 +59,13 @@
   <section class="px-4 sm:px-6 py-4">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-       Active Shipments
+        @if (isAgent) {
+          <i class="fa-solid fa-truck-fast text-[#FF7800]"></i>
+          Active Shipments
+        } @else {
+          <i class="fa-solid fa-box text-[#FF7800]"></i>
+          My Shipments
+        }
       </h2>
       <button (click)="router.navigate(['/account/shipping'])" class="text-[#FF7800] text-sm font-medium hover:underline">
         View all
@@ -75,13 +81,17 @@
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between gap-2">
-              <span class="font-semibold text-gray-900 dark:text-white truncate">{{ shipment.title || shipment.tracking_number }}</span>
+              <span class="font-semibold text-gray-900 dark:text-white truncate">{{ capitalize(shipment.title) || shipment.tracking_number }}</span>
               <span [class]="getStatusClass(shipment.status)" class="px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap">
                 {{ getStatusLabel(shipment.status) }}
               </span>
             </div>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Agent: {{ getAgentName(shipment) }} • {{ getEstimatedDelivery(shipment) }}
+              @if (isAgent) {
+                Customer: {{ capitalize(getShipmentCustomerName(shipment)) }} • {{ capitalize(getEstimatedDelivery(shipment)) }}
+              } @else {
+                Agent: {{ capitalize(getAgentName(shipment)) }} • {{ capitalize(getEstimatedDelivery(shipment)) }}
+              }
             </p>
             <!-- Progress Bar -->
             <div class="mt-3">
@@ -114,6 +124,26 @@
           </div>
         </div>
       </div>
+      }
+
+      <!-- Load More Button for Agents -->
+      @if (isAgent && agentShipmentsHasMore) {
+        <div class="min-w-70 sm:min-w-85 flex items-center justify-center">
+          <button
+            (click)="loadMoreAgentShipments()"
+            [disabled]="isLoadingMoreShipments"
+            class="flex flex-col items-center justify-center gap-2 px-6 py-4 bg-white dark:bg-[#1a1a1a] rounded-xl shadow border border-dashed border-gray-300 dark:border-gray-700 hover:border-[#FF7800] dark:hover:border-[#FF7800] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            @if (isLoadingMoreShipments) {
+              <i class="fa-solid fa-circle-notch fa-spin text-[#FF7800] text-xl"></i>
+              <span class="text-sm text-gray-500 dark:text-gray-400">Loading...</span>
+            } @else {
+              <i class="fa-solid fa-chevron-down text-[#FF7800] text-xl"></i>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Load More</span>
+              <span class="text-xs text-gray-400">Showing {{ activeShipments.length }} shipments</span>
+            }
+          </button>
+        </div>
       }
     </div>
   </section>
@@ -157,14 +187,33 @@
       @for (agent of nearbyAgents; track trackByAgentId($index, agent)) {
       <div (click)="viewAgentProfile(agent.id)" class="min-w-35 sm:min-w-40 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-3 cursor-pointer hover:shadow-lg hover:scale-105 transition-all">
         <img [src]="agent.profile_photo || agent.image || 'assets/landingpage_images/profile4.jpg'" class="w-16 h-16 rounded-full mx-auto mb-2 object-cover" onerror="this.src='assets/landingpage_images/profile4.jpg'" />
-        <h4 class="text-center font-medium text-sm dark:text-white truncate">{{ agent.firstname }} {{ agent.lastname }}</h4>
+        <h4 class="text-center font-medium text-sm dark:text-white truncate">{{ capitalize(agent.firstname) }} {{ capitalize(agent.lastname) }}</h4>
         <div class="flex justify-center items-center gap-1 text-yellow-500 text-xs mt-1">
           <i class="fa-solid fa-star"></i>
           <span class="text-gray-700 dark:text-gray-300">{{ agent.rating || '0.0' }}</span>
         </div>
-        <p class="text-xs text-gray-400 text-center mt-1 truncate">{{ agent.region || 'Unknown' }}</p>
-        <p class="text-center mt-2 font-medium text-sm text-[#FF7800]">{{ agent.base_price ? '$' + agent.base_price : 'Contact' }}</p>
+        <p class="text-xs text-gray-400 text-center mt-1 truncate">{{ capitalize(agent.region) || 'Unknown' }}</p>
       </div>
+      }
+
+      <!-- Load More Button for Nearby Agents -->
+      @if (agentsHasMore) {
+        <div class="min-w-35 sm:min-w-40 flex items-center justify-center">
+          <button
+            (click)="loadMoreAgents()"
+            [disabled]="isLoadingMoreAgents"
+            class="flex flex-col items-center justify-center gap-2 px-4 py-4 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow border border-dashed border-gray-300 dark:border-gray-700 hover:border-[#FF7800] dark:hover:border-[#FF7800] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed h-full w-full"
+          >
+            @if (isLoadingMoreAgents) {
+              <i class="fa-solid fa-circle-notch fa-spin text-[#FF7800] text-xl"></i>
+              <span class="text-sm text-gray-500 dark:text-gray-400">Loading...</span>
+            } @else {
+              <i class="fa-solid fa-chevron-down text-[#FF7800] text-xl"></i>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Load More</span>
+              <span class="text-xs text-gray-400">{{ allAgents.length }} agents</span>
+            }
+          </button>
+        </div>
       }
     </div>
   </section>
@@ -192,7 +241,6 @@
         </div>
         <h4 class="text-center font-medium text-sm dark:text-white truncate">{{ agent.firstname }} {{ agent.lastname }}</h4>
         <p class="text-xs text-gray-400 text-center mt-1">{{ agent.total_reviews }} reviews</p>
-        <p class="text-center mt-2 font-medium text-sm text-[#FF7800]">{{ agent.base_price ? '$' + agent.base_price : 'Contact' }}</p>
       </div>
       }
     </div>
@@ -216,12 +264,11 @@
       <div (click)="viewAgentProfile(agent.id)" class="min-w-35 sm:min-w-40 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-3 cursor-pointer hover:shadow-lg hover:scale-105 transition-all">
         <img [src]="agent.profile_photo || agent.image || 'assets/landingpage_images/profile4.jpg'" class="w-16 h-16 rounded-full mx-auto mb-2 object-cover" onerror="this.src='assets/landingpage_images/profile4.jpg'" />
         <span class="inline-block bg-orange-100 dark:bg-orange-900/30 text-[#FF7800] text-xs px-2 py-0.5 rounded-full mb-1">Express</span>
-        <h4 class="text-center font-medium text-sm dark:text-white truncate">{{ agent.firstname }} {{ agent.lastname }}</h4>
+        <h4 class="text-center font-medium text-sm dark:text-white truncate">{{ capitalize(agent.firstname) }} {{ capitalize(agent.lastname) }}</h4>
         <div class="flex justify-center items-center gap-1 text-yellow-500 text-xs mt-1">
           <i class="fa-solid fa-star"></i>
           <span class="text-gray-700 dark:text-gray-300">{{ agent.rating || 'New' }}</span>
         </div>
-        <p class="text-center mt-2 font-medium text-sm text-[#FF7800]">{{ agent.base_price ? '$' + agent.base_price : 'Contact' }}</p>
       </div>
       }
     </div>
@@ -272,7 +319,7 @@
       <div (click)="viewAgentProfile(agent.id)" class="min-w-35 sm:min-w-40 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-3 cursor-pointer hover:shadow-lg hover:scale-105 transition-all">
         <img [src]="agent.profile_photo || agent.image || 'assets/landingpage_images/profile4.jpg'" class="w-16 h-16 rounded-full mx-auto mb-2 object-cover" onerror="this.src='assets/landingpage_images/profile4.jpg'" />
         <span class="inline-block bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs px-2 py-0.5 rounded-full mb-1">New!</span>
-        <h4 class="text-center font-medium text-sm dark:text-white truncate">{{ agent.firstname }} {{ agent.lastname }}</h4>
+        <h4 class="text-center font-medium text-sm dark:text-white truncate">{{ capitalize(agent.firstname) }} {{ capitalize(agent.lastname) }}</h4>
         <p class="text-xs text-gray-400 text-center mt-1">Just joined</p>
         <p class="text-center mt-2 font-medium text-sm text-[#FF7800]">{{ agent.base_price ? '$' + agent.base_price : 'Contact' }}</p>
       </div>
@@ -319,12 +366,22 @@
       <div class="w-16 h-16 bg-gray-100 dark:bg-[#1a1a1a] rounded-full flex items-center justify-center mx-auto mb-4">
         <i class="fa-solid fa-box text-2xl text-gray-400"></i>
       </div>
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Active Shipments</h3>
-      <p class="text-gray-500 dark:text-gray-400 mb-4">You don't have any active shipments at the moment.</p>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+        @if (isAgent) { No Active Shipments to Deliver } @else { No Active Shipments }
+      </h3>
+      <p class="text-gray-500 dark:text-gray-400 mb-4">
+        @if (isAgent) { You don't have any pending deliveries at the moment. } @else { You don't have any active shipments at the moment. }
+      </p>
       <div class="flex gap-3 justify-center">
-        <button (click)="router.navigate(['/search'])" class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
-          <i class="fa-solid fa-search mr-2"></i>Find Agents
-        </button>
+        @if (isAgent) {
+          <button (click)="router.navigate(['/scan-qr'])" class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
+            <i class="fa-solid fa-camera mr-2"></i>Scan QR
+          </button>
+        } @else {
+          <button (click)="router.navigate(['/search'])" class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
+            <i class="fa-solid fa-search mr-2"></i>Find Agents
+          </button>
+        }
         <button (click)="router.navigate(['/shipping'])" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
           <i class="fa-solid fa-history mr-2"></i>View History
         </button>
@@ -365,7 +422,7 @@
 
     <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth -mx-4 px-4">
       @for (product of recentProducts; track product.uuid) {
-      <div (click)="router.navigate(['/my-products'])" class="min-w-35 sm:min-w-40 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-3 cursor-pointer hover:shadow-lg hover:scale-105 transition-all shrink-0">
+      <div (click)="viewProductDetails(product.uuid)" class="min-w-35 sm:min-w-40 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-3 cursor-pointer hover:shadow-lg hover:scale-105 transition-all shrink-0">
         <!-- Product Image -->
         <div class="h-24 bg-gray-100 dark:bg-[#111] relative rounded-lg overflow-hidden mb-2">
           <img
@@ -379,20 +436,38 @@
           <div class="absolute inset-0 bg-linear-to-t from-white/80 via-white/40 to-transparent dark:from-[#1a1a1a]/80 dark:via-[#1a1a1a]/40"></div>
           <div
             *ngIf="!product.photos || product.photos.length === 0"
-            class="absolute inset-0 flex items-center justify-center text-gray-400"
+            class="absolute inset-0 flex items-center justify-center bg-linear-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/20"
           >
-            <i class="fa-solid fa-image text-xl"></i>
+            <span class="text-3xl font-bold text-orange-500 dark:text-orange-400 uppercase">
+              {{ (product.product_name || '?').charAt(0) }}
+            </span>
           </div>
         </div>
 
         <!-- Product Info -->
-        <h4 class="text-center font-medium text-sm dark:text-white truncate">{{ product.product_name }}</h4>
-        <div class="flex justify-center items-center gap-1 text-xs text-gray-400 mt-1">
-          <i class="fa-solid fa-tag"></i>
-          <span class="truncate">{{ product.currency }} {{ product.product_cost }}</span>
-        </div>
-        <p class="text-xs text-gray-400 text-center mt-1 truncate">{{ product.supplier_name }}</p>
+        <h4 class="text-center font-medium text-sm dark:text-white truncate">{{ capitalize(product.product_name) }}</h4>
+
       </div>
+      }
+
+      <!-- Load More Button for Recent Products -->
+      @if (productsHasMore) {
+        <div class="min-w-35 sm:min-w-40 flex items-center justify-center">
+          <button
+            (click)="loadMoreProducts()"
+            [disabled]="isLoadingMoreProducts"
+            class="flex flex-col items-center justify-center gap-2 px-4 py-4 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow border border-dashed border-gray-300 dark:border-gray-700 hover:border-[#FF7800] dark:hover:border-[#FF7800] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed h-full w-full"
+          >
+            @if (isLoadingMoreProducts) {
+              <i class="fa-solid fa-circle-notch fa-spin text-[#FF7800] text-xl"></i>
+              <span class="text-sm text-gray-500 dark:text-gray-400">Loading...</span>
+            } @else {
+              <i class="fa-solid fa-chevron-down text-[#FF7800] text-xl"></i>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Load More</span>
+              <span class="text-xs text-gray-400">{{ recentProducts.length }} products</span>
+            }
+          </button>
+        </div>
       }
     </div>
   </section>

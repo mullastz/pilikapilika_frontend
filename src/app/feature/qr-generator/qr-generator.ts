@@ -106,9 +106,9 @@ export class QrGenerator implements OnInit {
 
   loadAgents(): void {
     this.isLoadingAgents = true;
-    this.agentService.getAvailableAgents().subscribe({
-      next: (agents) => {
-        this.agents = agents;
+    this.agentService.getAvailableAgents(1, 100).subscribe({
+      next: (response) => {
+        this.agents = response.agents;
         this.isLoadingAgents = false;
         this.cdr.detectChanges();
       },

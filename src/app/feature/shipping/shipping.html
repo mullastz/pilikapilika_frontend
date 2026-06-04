@@ -129,6 +129,7 @@
             </div>
 
             <!-- SHIPMENTS LIST -->
+            <div id="shipments-list-top"></div>
             <div *ngIf="!loading() && !error() && shipments().length > 0" class="flex flex-col gap-4">
 
                 <div *ngFor="let shipment of shipments()"
@@ -156,7 +157,7 @@
                             </h3>
                             <div class="flex items-center gap-2 shrink-0">
                                 <!-- Smart Additional Info Toggle -->
-                                <ng-container *ngIf="shipment.status === 'pending_confirmation' || shipment.container_id || shipment.status === 'delivered'">
+                                <ng-container *ngIf="shipment.status === 'pending_confirmation' || shipment.status === 'partially_received' || shipment.container_id || shipment.status === 'delivered'">
                                     <button
                                         (click)="toggleInfo(shipment.id, $event)"
                                         class="w-7 h-7 rounded-full bg-gray-100 dark:bg-[#222] hover:bg-gray-200 dark:hover:bg-[#333] flex items-center justify-center transition-all duration-200 group"
@@ -288,16 +289,43 @@
                         </div>
                     </div>
 
+                    <!-- Partially received alert (ALWAYS visible) -->
+                    <div *ngIf="shipment.status === 'partially_received'" class="pl-3 mb-3">
+                        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                            <p class="text-xs text-yellow-800 dark:text-yellow-200 flex items-start gap-2">
+                                <i class="fa-solid fa-triangle-exclamation mt-0.5 shrink-0"></i>
+                                <span>
+                                    <strong>Partial Receipt:</strong> Agent received {{ shipment.received_quantity }} of {{ shipment.products?.[0]?.quantity || '?' }} units.
+                                    <ng-container *ngIf="isAgent(); else clientPartialAlert">
+                                        Awaiting client confirmation or remaining quantity before proceeding.
+                                    </ng-container>
+                                    <ng-template #clientPartialAlert>
+                                        Please review and confirm if you accept this partial quantity, or wait for the remaining items.
+                                    </ng-template>
+                                </span>
+                            </p>
+                            <!-- Client: Confirm partial quantity button -->
+                            <div *ngIf="!isAgent()" class="mt-2 flex gap-2">
+                                <button
+                                    (click)="openPartialConfirmModal(shipment); $event.stopPropagation()"
+                                    class="px-3 py-1.5 bg-orange-500 text-white text-xs rounded-lg hover:bg-orange-600 transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-check text-xs"></i>
+                                    Accept & Proceed
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- DETAILS ROW -->
                     <div class="pl-3 mb-3">
                         <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
                             <span *ngIf="shipment.agent" class="inline-flex items-center gap-1.5">
                                 <i class="fa-solid fa-user-tie text-gray-400 text-[10px]"></i>
-                                {{shipment.agent.firstname}} {{shipment.agent.lastname}}
+                                {{capitalize(shipment.agent.firstname)}} {{capitalize(shipment.agent.lastname)}}
                             </span>
                             <span *ngIf="shipment.agent_address" class="hidden sm:inline-flex items-center gap-1.5">
                                 <i class="fa-solid fa-location-dot text-gray-400 text-[10px]"></i>
-                                <span class="truncate max-w-50">{{shipment.agent_address}}</span>
+                                <span class="truncate max-w-50">{{capitalize(shipment.agent_address)}}</span>
                             </span>
                         </div>
                     </div>
@@ -392,6 +420,38 @@
 
                 </div>
 
+            </div>
+
+            <!-- Pagination Controls -->
+            <div *ngIf="pagination() && pagination()!.last_page > 1" class="flex items-center justify-center gap-2 mt-6">
+                <button
+                    (click)="goToPage(page() - 1)"
+                    [disabled]="page() === 1"
+                    class="px-3 py-1.5 text-sm bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-[#222] disabled:opacity-40 disabled:cursor-not-allowed transition">
+                    Previous
+                </button>
+                @for (p of pages; track p) {
+                    <button
+                        (click)="p !== '...' && goToPage(+p)"
+                        [class.bg-[#FF7800]]="p === page()"
+                        [class.text-white]="p === page()"
+                        [class.bg-white]="p !== page()"
+                        [class.dark:bg-[#1a1a1a]]="p !== page()"
+                        [class.border-gray-200]="p !== page()"
+                        [class.dark:border-gray-700]="p !== page()"
+                        [class.text-gray-600]="p !== page()"
+                        [class.dark:text-gray-300]="p !== page()"
+                        [disabled]="p === '...'"
+                        class="min-w-8 h-8 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-[#222] disabled:opacity-40 disabled:cursor-default transition flex items-center justify-center">
+                        {{ p === '...' ? '...' : p }}
+                    </button>
+                }
+                <button
+                    (click)="goToPage(page() + 1)"
+                    [disabled]="!pagination()?.has_more"
+                    class="px-3 py-1.5 text-sm bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-[#222] disabled:opacity-40 disabled:cursor-not-allowed transition">
+                    Next
+                </button>
             </div>
 
         </div>
@@ -881,6 +941,48 @@
                 </div>
               </ng-container>
 
+              <!-- Partial Receipt Alert (View Modal) -->
+              <ng-container *ngIf="s.status === 'partially_received' && s.received_quantity !== undefined && s.received_quantity !== null">
+                <div class="border-b border-gray-200 dark:border-gray-700 pb-2">
+                  <div class="flex justify-between items-start">
+                    <span class="text-sm text-gray-500">Quantity Status</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">Partially Received</span>
+                  </div>
+                  <div class="mt-2 space-y-1.5">
+                    <div class="flex justify-between text-sm">
+                      <span class="text-gray-500">Expected</span>
+                      <span class="font-medium dark:text-white">{{s.products?.[0]?.quantity || '?'}}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                      <span class="text-gray-500">Received</span>
+                      <span class="font-medium text-red-600 dark:text-red-400">{{s.received_quantity}}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                      <span class="text-gray-500">Remaining</span>
+                      <span class="font-medium text-orange-500">{{(s.products?.[0]?.quantity || 0) - s.received_quantity}}</span>
+                    </div>
+                  </div>
+                  <ng-container *ngIf="!isAgent()">
+                    <p class="text-xs text-yellow-700 dark:text-yellow-400 mt-2">
+                      <i class="fa-solid fa-circle-info mr-1"></i>
+                      Please confirm if you accept this partial quantity.
+                    </p>
+                    <button
+                      (click)="openPartialConfirmModal(s); $event.stopPropagation()"
+                      class="mt-2 w-full px-3 py-2 bg-orange-500 text-white text-xs rounded-lg hover:bg-orange-600 transition flex items-center justify-center gap-1.5">
+                      <i class="fa-solid fa-check text-xs"></i>
+                      Accept & Proceed
+                    </button>
+                  </ng-container>
+                  <ng-container *ngIf="isAgent()">
+                    <p class="text-xs text-gray-500 mt-2">
+                      <i class="fa-solid fa-clock mr-1"></i>
+                      Awaiting client confirmation or remaining quantity.
+                    </p>
+                  </ng-container>
+                </div>
+              </ng-container>
+
               <!-- Container Distribution -->
               <ng-container *ngIf="getShipmentDistribution(s.id) as dist">
                 <ng-container *ngIf="dist.data && dist.data.containers.length > 0">
@@ -949,7 +1051,7 @@
               <ng-container *ngIf="s.user">
                 <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                   <span class="text-sm text-gray-500">Customer</span>
-                  <span class="text-sm font-medium dark:text-white">{{s.user.firstname}} {{s.user.lastname}}</span>
+                  <span class="text-sm font-medium dark:text-white">{{capitalize(s.user.firstname)}} {{capitalize(s.user.lastname)}}</span>
                 </div>
                 <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                   <span class="text-sm text-gray-500">Customer Email</span>
@@ -964,14 +1066,14 @@
                 <ng-container *ngIf="s.user.country">
                   <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                     <span class="text-sm text-gray-500">Customer Country</span>
-                    <span class="text-sm font-medium dark:text-white">{{s.user.country}}</span>
+                    <span class="text-sm font-medium dark:text-white">{{capitalize(s.user.country)}}</span>
                   </div>
                 </ng-container>
               </ng-container>
               <ng-container *ngIf="s.agent">
                 <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                   <span class="text-sm text-gray-500">Agent</span>
-                  <span class="text-sm font-medium dark:text-white">{{s.agent.firstname}} {{s.agent.lastname}}</span>
+                  <span class="text-sm font-medium dark:text-white">{{capitalize(s.agent.firstname)}} {{capitalize(s.agent.lastname)}}</span>
                 </div>
                 <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                   <span class="text-sm text-gray-500">Agent Email</span>
@@ -986,7 +1088,7 @@
                 <ng-container *ngIf="s.agent_address">
                   <div class="flex justify-between">
                     <span class="text-sm text-gray-500">Agent Address</span>
-                    <span class="text-sm font-medium dark:text-white text-right">{{s.agent_address}}</span>
+                    <span class="text-sm font-medium dark:text-white text-right">{{capitalize(s.agent_address)}}</span>
                   </div>
                 </ng-container>
               </ng-container>
@@ -1039,11 +1141,11 @@
                       <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
                           <img *ngIf="product.photos && product.photos.length > 0" [src]="product.photos[0]" [alt]="product.product_name" class="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-700" onerror="this.style.display='none'" />
-                          <div *ngIf="!product.photos || product.photos.length === 0" class="w-12 h-12 rounded-lg bg-gray-100 dark:bg-[#111] flex items-center justify-center border border-gray-200 dark:border-gray-700">
-                            <i class="fa-solid fa-image text-gray-400"></i>
+                          <div *ngIf="!product.photos || product.photos.length === 0" class="w-12 h-12 rounded-lg bg-linear-to-br from-orange-100 to-orange-200 dark:from-orange-900/20 dark:to-orange-800/20 flex items-center justify-center border border-gray-200 dark:border-gray-700">
+                            <span class="text-lg font-bold text-[#FF7800] uppercase">{{product.product_name?.charAt(0)?.toUpperCase()}}</span>
                           </div>
                           <div>
-                            <p class="font-medium text-gray-900 dark:text-white">{{product.product_name}}</p>
+                            <p class="font-medium text-gray-900 dark:text-white">{{capitalize(product.product_name)}}</p>
                           </div>
                         </div>
                         <div class="text-right">
@@ -1064,7 +1166,7 @@
 
                               <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                                 <span class="text-sm text-gray-500">Product Name</span>
-                                <span class="text-sm font-medium dark:text-white">{{full.product_name}}</span>
+                                <span class="text-sm font-medium dark:text-white">{{capitalize(full.product_name)}}</span>
                               </div>
                               <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                                 <span class="text-sm text-gray-500">Cost Per Product</span>
@@ -1079,13 +1181,13 @@
                               <ng-container *ngIf="full.category">
                                 <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                                   <span class="text-sm text-gray-500">Category</span>
-                                  <span class="text-sm font-medium dark:text-white">{{full.category}}</span>
+                                  <span class="text-sm font-medium dark:text-white">{{capitalize(full.category)}}</span>
                                 </div>
                               </ng-container>
                               <ng-container *ngIf="full.package_type">
                                 <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                                   <span class="text-sm text-gray-500">Package Type</span>
-                                  <span class="text-sm font-medium dark:text-white">{{full.package_type}}</span>
+                                  <span class="text-sm font-medium dark:text-white">{{capitalize(full.package_type)}}</span>
                                 </div>
                               </ng-container>
                               <ng-container *ngIf="full.quantity !== null">
@@ -1130,12 +1232,12 @@
                               <div class="bg-orange-50 dark:bg-[#111] rounded-xl p-4 space-y-3">
                                 <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                                   <span class="text-sm text-gray-500">Supplier Name</span>
-                                  <span class="text-sm font-medium dark:text-white">{{full.supplier_name}}</span>
+                                  <span class="text-sm font-medium dark:text-white">{{capitalize(full.supplier_name)}}</span>
                                 </div>
                                 <ng-container *ngIf="full.supplier_contact_person">
                                   <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                                     <span class="text-sm text-gray-500">Contact Person</span>
-                                    <span class="text-sm font-medium dark:text-white">{{full.supplier_contact_person}}</span>
+                                    <span class="text-sm font-medium dark:text-white">{{capitalize(full.supplier_contact_person)}}</span>
                                   </div>
                                 </ng-container>
                                 <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
@@ -1145,7 +1247,7 @@
                                 <ng-container *ngIf="full.supplier_pickup_address">
                                   <div class="flex justify-between">
                                     <span class="text-sm text-gray-500">Pickup Address</span>
-                                    <span class="text-sm font-medium dark:text-white text-right">{{full.supplier_pickup_address}}</span>
+                                    <span class="text-sm font-medium dark:text-white text-right">{{capitalize(full.supplier_pickup_address)}}</span>
                                   </div>
                                 </ng-container>
                               </div>
@@ -1572,6 +1674,129 @@
       <div class="p-4 border-t border-gray-100 dark:border-gray-700 flex justify-end">
         <button (click)="closeQrModal()" class="px-6 py-2.5 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-[#444] transition font-medium text-sm w-full sm:w-auto">
           Close
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- PARTIAL RECEIPT: CLIENT CONFIRMATION MODAL -->
+@if (partialConfirmModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center" (click)="closePartialConfirmModal()">
+    <div class="absolute inset-0 bg-black/50 sheet-backdrop" [class.closing]="partialConfirmModalClosing()"></div>
+    <div class="relative bg-white dark:bg-[#1a1a1a] rounded-2xl sm:rounded-2xl max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto sheet-modal-desktop sheet-modal-mobile" [class.closing]="partialConfirmModalClosing()" (click)="$event.stopPropagation()">
+      <div class="sheet-handle hidden sticky top-0 z-20 bg-white dark:bg-[#1a1a1a] pt-2 pb-1 rounded-t-2xl">
+        <div class="sheet-handle-bar"></div>
+      </div>
+      <div class="sheet-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sm:rounded-t-2xl">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Confirm Partial Quantity</h3>
+        <button (click)="closePartialConfirmModal()" class="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-[#333] flex items-center justify-center transition">
+          <i class="fa-solid fa-times text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"></i>
+        </button>
+      </div>
+      <div class="sheet-content p-6 space-y-4">
+        <ng-container *ngIf="partialConfirmShipment() as pcs">
+          <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
+                <i class="fa-solid fa-triangle-exclamation text-yellow-500"></i>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-yellow-800 dark:text-yellow-200">Partial Receipt</p>
+                <p class="text-xs text-yellow-600 dark:text-yellow-400">{{ pcs.title || 'Untitled' }}</p>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">Expected Quantity</span>
+                <span class="font-semibold text-orange-600 dark:text-orange-400">{{ getExpectedQuantity(pcs) }}</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">Received Quantity</span>
+                <span class="font-semibold text-red-600 dark:text-red-400">{{ pcs.received_quantity }}</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">Remaining</span>
+                <span class="font-semibold text-yellow-600 dark:text-yellow-400">{{ getExpectedQuantity(pcs) - (pcs.received_quantity || 0) }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+            <p class="text-xs text-blue-700 dark:text-blue-300">
+              <i class="fa-solid fa-circle-info mr-1"></i>
+              By confirming, you accept that the shipment will proceed with <strong>{{ pcs.received_quantity }}</strong> unit(s). The quantity will be updated automatically.
+            </p>
+          </div>
+        </ng-container>
+      </div>
+      <div class="p-4 border-t border-gray-100 dark:border-gray-700 flex gap-3">
+        <button (click)="closePartialConfirmModal()" class="flex-1 px-4 py-2.5 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-[#444] transition font-medium text-sm">
+          Cancel
+        </button>
+        <button (click)="submitPartialConfirm()" [disabled]="partialConfirmLoading()" class="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition font-medium text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+          <div *ngIf="partialConfirmLoading()" class="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin"></div>
+          {{ partialConfirmLoading() ? 'Confirming...' : 'Accept & Proceed' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- PARTIAL RECEIPT: AGENT ADD REMAINING QUANTITY MODAL -->
+@if (addRemainingModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center" (click)="closeAddRemainingModal()">
+    <div class="absolute inset-0 bg-black/50 sheet-backdrop" [class.closing]="addRemainingModalClosing()"></div>
+    <div class="relative bg-white dark:bg-[#1a1a1a] rounded-2xl sm:rounded-2xl max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto sheet-modal-desktop sheet-modal-mobile" [class.closing]="addRemainingModalClosing()" (click)="$event.stopPropagation()">
+      <div class="sheet-handle hidden sticky top-0 z-20 bg-white dark:bg-[#1a1a1a] pt-2 pb-1 rounded-t-2xl">
+        <div class="sheet-handle-bar"></div>
+      </div>
+      <div class="sheet-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sm:rounded-t-2xl">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Remaining Quantity</h3>
+        <button (click)="closeAddRemainingModal()" class="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-[#333] flex items-center justify-center transition">
+          <i class="fa-solid fa-times text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"></i>
+        </button>
+      </div>
+      <div class="sheet-content p-6 space-y-4">
+        <ng-container *ngIf="addRemainingShipment() as ars">
+          <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+            <p class="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2">{{ ars.title || 'Untitled' }}</p>
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">Expected Quantity</span>
+                <span class="font-semibold text-orange-600 dark:text-orange-400">{{ getExpectedQuantity(ars) }}</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">Previously Received</span>
+                <span class="font-semibold text-green-600 dark:text-green-400">{{ ars.received_quantity || 0 }}</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">Remaining</span>
+                <span class="font-semibold text-blue-600 dark:text-blue-400">{{ getExpectedQuantity(ars) - (ars.received_quantity || 0) }}</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Additional Quantity Received</label>
+            <input
+              type="number"
+              [value]="addRemainingQuantityInput() ?? ''"
+              (input)="onAddRemainingInput($event)"
+              min="1"
+              [max]="getExpectedQuantity(ars) - (ars.received_quantity || 0)"
+              placeholder="Enter additional quantity"
+              class="w-full px-3 py-2.5 bg-white dark:bg-[#222] border border-gray-200 dark:border-gray-700 rounded-lg text-sm dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+            />
+            <p *ngIf="addRemainingError()" class="text-red-500 text-xs mt-1">{{ addRemainingError() }}</p>
+          </div>
+        </ng-container>
+      </div>
+      <div class="p-4 border-t border-gray-100 dark:border-gray-700 flex gap-3">
+        <button (click)="closeAddRemainingModal()" class="flex-1 px-4 py-2.5 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-[#444] transition font-medium text-sm">
+          Cancel
+        </button>
+        <button (click)="submitAddRemainingQuantity()" [disabled]="addRemainingLoading()" class="flex-1 px-4 py-2.5 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition font-medium text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+          <div *ngIf="addRemainingLoading()" class="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin"></div>
+          {{ addRemainingLoading() ? 'Adding...' : 'Add Quantity' }}
         </button>
       </div>
     </div>
