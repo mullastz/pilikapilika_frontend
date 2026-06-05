@@ -205,7 +205,14 @@ export class ScanQr implements OnInit, OnDestroy {
             this.showQuantityInput(shipment, uuid);
           } else if (status === 'partially_received') {
             // Re-scanning a partially received shipment — show add remaining modal
-            this.showAddRemainingModal(shipment);
+            // Use the pre-calculated quantities from the backend response
+            const data = (response as any).data;
+            this.showAddRemainingModalFromData(
+              shipment,
+              data?.expected_quantity ?? this.getExpectedQuantityFromShipment(shipment),
+              data?.received_quantity ?? shipment?.received_quantity ?? 0,
+              data?.remaining_quantity ?? 0
+            );
           } else {
             // Already processed — show info state
             this.resultShipment.set(shipment);
@@ -391,6 +398,18 @@ export class ScanQr implements OnInit, OnDestroy {
       expected: expected,
       received: received,
       remaining: Math.max(0, expected - received),
+      shipment: shipment
+    });
+    this.addRemainingQuantity.set(null);
+    this.addRemainingError.set('');
+    this.state.set('add_remaining');
+  }
+
+  showAddRemainingModalFromData(shipment: any, expected: number, received: number, remaining: number): void {
+    this.partialReceiptData.set({
+      expected: expected,
+      received: received,
+      remaining: Math.max(0, remaining),
       shipment: shipment
     });
     this.addRemainingQuantity.set(null);
