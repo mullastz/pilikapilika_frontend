@@ -105,6 +105,17 @@ export class Shipping implements OnInit, OnDestroy {
     } | null;
   }>>({});
 
+  // Delivery readiness data per shipment
+  public deliveryReadiness = signal<Record<string, {
+    loading: boolean;
+    error: string | null;
+    data: {
+      can_deliver: boolean;
+      reason: string;
+      pending_containers: { reference_number: string; status: string }[];
+    } | null;
+  }>>({});
+
   // Container quantity modal state
   public containerQuantityModalOpen = signal(false);
   public containerQuantityModalClosing = signal(false);
@@ -545,6 +556,10 @@ export class Shipping implements OnInit, OnDestroy {
           this.selectedShipmentDetail.set(response.data.shipment);
           // Fetch container distribution data (will show if shipment was ever loaded into containers)
           this.loadShipmentDistribution(response.data.shipment.id);
+          // Fetch delivery readiness for containerized shipments
+          if (response.data.shipment.container_id) {
+            this.loadDeliveryReadiness(response.data.shipment.id);
+          }
         } else {
           this.viewModalError.set('Failed to load shipment details');
         }
@@ -569,6 +584,7 @@ export class Shipping implements OnInit, OnDestroy {
       this.selectedProductUuid.set(null);
       this.productDetailsMap.set(new Map());
       this.shipmentDistributions.set({});
+      this.deliveryReadiness.set({});
       this.menuBarService.show();
     }, 280);
   }
@@ -1087,6 +1103,38 @@ export class Shipping implements OnInit, OnDestroy {
         console.error('Failed to load container details:', error);
       }
     });
+  }
+
+  loadDeliveryReadiness(shipmentId: string): void {
+    this.deliveryReadiness.update(readiness => ({
+      ...readiness,
+      [shipmentId]: { loading: true, error: null, data: null }
+    }));
+    this.shipmentService.getDeliveryReadiness(shipmentId).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.deliveryReadiness.update(readiness => ({
+            ...readiness,
+            [shipmentId]: { loading: false, error: null, data: response.data }
+          }));
+        } else {
+          this.deliveryReadiness.update(readiness => ({
+            ...readiness,
+            [shipmentId]: { loading: false, error: 'Failed to load', data: null }
+          }));
+        }
+      },
+      error: () => {
+        this.deliveryReadiness.update(readiness => ({
+          ...readiness,
+          [shipmentId]: { loading: false, error: 'Failed to load', data: null }
+        }));
+      }
+    });
+  }
+
+  getDeliveryReadiness(shipmentId: string) {
+    return this.deliveryReadiness()[shipmentId] || null;
   }
 
   loadShipmentDistribution(shipmentId: string): void {

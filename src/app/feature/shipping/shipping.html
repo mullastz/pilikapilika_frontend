@@ -1027,6 +1027,37 @@
                 </ng-container>
               </ng-container>
 
+              <!-- Delivery Readiness -->
+              <ng-container *ngIf="getDeliveryReadiness(s.id) as readiness">
+                <ng-container *ngIf="readiness.data">
+                  <div class="border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <div class="flex justify-between items-start">
+                      <span class="text-sm text-gray-500">Delivery Readiness</span>
+                      <span *ngIf="readiness.data.can_deliver" class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                        <i class="fa-solid fa-check mr-1"></i>Ready
+                      </span>
+                      <span *ngIf="!readiness.data.can_deliver" class="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                        <i class="fa-solid fa-clock mr-1"></i>Pending
+                      </span>
+                    </div>
+                    <div *ngIf="!readiness.data.can_deliver && readiness.data.pending_containers.length > 0" class="mt-1.5">
+                      <p class="text-xs text-gray-500 mb-1">Waiting for containers:</p>
+                      <div class="flex flex-wrap gap-1.5">
+                        <span *ngFor="let c of readiness.data.pending_containers" class="text-xs px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                          {{c.reference_number}} <span class="text-gray-400">({{formatStatus(c.status)}})</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="readiness.loading">
+                  <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <span class="text-sm text-gray-500">Delivery Readiness</span>
+                    <span class="text-sm text-gray-400"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading...</span>
+                  </div>
+                </ng-container>
+              </ng-container>
+
               <ng-container *ngIf="s.received_quantity !== undefined && s.received_quantity !== null">
                 <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                   <span class="text-sm text-gray-500">Received Quantity</span>

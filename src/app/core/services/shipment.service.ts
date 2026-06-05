@@ -275,6 +275,16 @@ export class ShipmentService {
   }
 
   /**
+   * Check if a shipment is ready for delivery (all containers at Tanzania warehouse)
+   */
+  getDeliveryReadiness(shipmentId: string): Observable<{ success: boolean; data: { can_deliver: boolean; reason: string; pending_containers: { reference_number: string; status: string }[] } }> {
+    return this.apiService.get<{ success: boolean; data: { can_deliver: boolean; reason: string; pending_containers: { reference_number: string; status: string }[] } }>(
+      `${this.endpoint}/${shipmentId}/delivery-readiness`,
+      {}
+    );
+  }
+
+  /**
    * Client confirms they accept the partial received quantity
    */
   confirmPartialQuantity(shipmentId: string): Observable<{ success: boolean; message: string; data?: { shipment: Shipment } }> {
