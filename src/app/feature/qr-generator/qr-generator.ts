@@ -68,6 +68,7 @@ export class QrGenerator implements OnInit {
   showActions = false;
   isLoading = false;
   isDownloading = false;
+  isSharing = false;
   errorMessage: string | null = null;
   qrUuid: string | null = null;
   editUuid: string | null = null;
@@ -293,147 +294,214 @@ export class QrGenerator implements OnInit {
   }
 
   isFormValid(): boolean {
-    return this.product.name.trim() !== '';
+    return (
+      this.product.name.trim() !== '' &&
+      this.selectedAgent !== null &&
+      this.selectedAddress !== null
+    );
+  }
+
+  getValidationMessage(): string {
+    if (this.product.name.trim() === '') {
+      return 'Please enter a product name to continue';
+    }
+    if (!this.selectedAgent) {
+      return 'Please select an agent to handle this delivery';
+    }
+    if (!this.selectedAddress) {
+      return 'Please select an agent address for pickup';
+    }
+    return '';
+  }
+
+  // ── PDF generation (shared) ───────────────────────────────────
+
+  private async buildPdf(): Promise<{ doc: jsPDF; filename: string; cleanup: () => void }> {
+    const canvas = document.querySelector('qrcode canvas') as HTMLCanvasElement;
+    if (!canvas) throw new Error('QR canvas not found');
+
+    const qrDataUrl = canvas.toDataURL('image/png');
+
+    // Fetch fresh user profile to ensure country and other fields are up-to-date
+    let currentUser: User | null = this.authService.getUser();
+    try {
+      const profileRes = await this.userService.getProfile().toPromise();
+      if (profileRes?.data) {
+        currentUser = profileRes.data;
+        this.authService.saveUser(profileRes.data);
+      }
+    } catch {
+      // fallback to cached user if API fails
+    }
+
+    const agent = this.selectedAgent;
+
+    const escapeHtml = (str: string): string => {
+      if (!str) return '';
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    const buildRows = (rows: [string, string][]) =>
+      rows
+        .filter(([, v]) => !!v)
+        .map(([label, value], i) => {
+          const bg = i % 2 === 0 ? '#f9fafb' : '#ffffff';
+          return `<tr style="background:${bg};">
+            <td style="padding:5px 10px;color:#6b7280;width:40%;font-size:13px;">${escapeHtml(label)}</td>
+            <td style="padding:5px 10px;color:#111111;font-size:13px;">${escapeHtml(value)}</td>
+          </tr>`;
+        })
+        .join('');
+
+    const buildSection = (title: string, rows: [string, string][]) => {
+      const rowHtml = buildRows(rows);
+      if (!rowHtml) return '';
+      return `
+        <div style="margin-bottom:14px;">
+          <div style="background:#ffedd5;padding:6px 10px;font-weight:bold;font-size:13px;color:#c2410c;border-radius:4px 4px 0 0;">${escapeHtml(title)}</div>
+          <table style="width:100%;border-collapse:collapse;">${rowHtml}</table>
+        </div>`;
+    };
+
+    const productRows: [string, string][] = [
+      ['Product Name', this.product.name],
+      ['Description', this.product.description || ''],
+      ['Category', this.product.category || ''],
+      ['Package Type', this.product.packageType || ''],
+      ['Quantity', this.product.quantity ? String(this.product.quantity) : ''],
+      ['Total Weight', this.product.totalWeight ? `${this.product.totalWeight} kg` : ''],
+      ['Total Volume', this.product.totalVolume ? `${this.product.totalVolume} m³` : ''],
+    ];
+
+    const agentRows: [string, string][] = agent ? [
+      ['Name', `${agent.firstname || ''} ${agent.lastname || ''}`.trim()],
+      ['Phone', agent.phone || ''],
+      ['Address', this.selectedAddress ? (this.selectedAddress.address_line || '') : (agent.address || '')],
+    ] : [];
+
+    const addressRows: [string, string][] = [];
+
+    const customerRows: [string, string][] = currentUser ? [
+      ['Name', `${currentUser.firstname || ''} ${currentUser.lastname || ''}`.trim()],
+      ['Phone', currentUser.phone || ''],
+      ['Country', currentUser.country || ''],
+    ] : [];
+
+    const htmlContent = `
+      <div id="pdf-render-target" style="width:794px;font-family:'DejaVu Sans','Helvetica Neue',Helvetica,Arial,sans-serif;background:#fff;color:#111;">
+        <div style="background:#f97316;padding:14px 24px;color:#fff;font-weight:bold;font-size:17px;">
+          PilikaPilika — Product QR Code
+        </div>
+        <div style="text-align:center;padding:20px;">
+          <img src="${qrDataUrl}" style="width:200px;height:200px;display:block;margin:0 auto;" />
+        </div>
+        <div style="padding:0 30px 20px;">
+          ${buildSection('Product Details', productRows)}
+          ${buildSection('Assigned Agent', agentRows)}
+          ${buildSection('Agent Address', addressRows)}
+          ${buildSection('Customer Details', customerRows)}
+        </div>
+        <div style="background:#f97316;padding:10px 20px;color:#fff;font-size:11px;text-align:center;">
+          Generated on ${new Date().toLocaleDateString()} · PilikaPilika
+        </div>
+      </div>
+    `;
+
+    const container = document.createElement('div');
+    container.innerHTML = htmlContent;
+    const renderTarget = container.firstElementChild as HTMLElement;
+    renderTarget.style.position = 'fixed';
+    renderTarget.style.left = '-9999px';
+    renderTarget.style.top = '0';
+    document.body.appendChild(renderTarget);
+
+    const hCanvas = await html2canvas(renderTarget, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      logging: false
+    });
+    const imgData = hCanvas.toDataURL('image/png');
+
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pdfWidth = doc.internal.pageSize.getWidth();
+    const pdfHeight = (hCanvas.height * pdfWidth) / hCanvas.width;
+
+    doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+    const safeName = (this.product.name || 'product')
+      .trim()
+      .replace(/[\\/:*?"<>|]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 80);
+
+    const cleanup = () => {
+      if (renderTarget.parentNode) {
+        document.body.removeChild(renderTarget);
+      }
+    };
+
+    return { doc, filename: `${safeName}.pdf`, cleanup };
   }
 
   // ── PDF download ────────────────────────────────────────────────
 
   async downloadQR() {
-    if (this.isDownloading) return;
+    if (this.isDownloading || this.isSharing) return;
     this.isDownloading = true;
     this.cdr.detectChanges();
 
     try {
-      const canvas = document.querySelector('qrcode canvas') as HTMLCanvasElement;
-      if (!canvas) throw new Error('QR canvas not found');
-
-      const qrDataUrl = canvas.toDataURL('image/png');
-
-      // Fetch fresh user profile to ensure country and other fields are up-to-date
-      let currentUser: User | null = this.authService.getUser();
-      try {
-        const profileRes = await this.userService.getProfile().toPromise();
-        if (profileRes?.data) {
-          currentUser = profileRes.data;
-          this.authService.saveUser(profileRes.data);
-        }
-      } catch {
-        // fallback to cached user if API fails
-      }
-
-      const agent = this.selectedAgent;
-
-      const escapeHtml = (str: string): string => {
-        if (!str) return '';
-        return str
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#039;');
-      };
-
-      const buildRows = (rows: [string, string][]) =>
-        rows
-          .filter(([, v]) => !!v)
-          .map(([label, value], i) => {
-            const bg = i % 2 === 0 ? '#f9fafb' : '#ffffff';
-            return `<tr style="background:${bg};">
-              <td style="padding:5px 10px;color:#6b7280;width:40%;font-size:13px;">${escapeHtml(label)}</td>
-              <td style="padding:5px 10px;color:#111111;font-size:13px;">${escapeHtml(value)}</td>
-            </tr>`;
-          })
-          .join('');
-
-      const buildSection = (title: string, rows: [string, string][]) => {
-        const rowHtml = buildRows(rows);
-        if (!rowHtml) return '';
-        return `
-          <div style="margin-bottom:14px;">
-            <div style="background:#ffedd5;padding:6px 10px;font-weight:bold;font-size:13px;color:#c2410c;border-radius:4px 4px 0 0;">${escapeHtml(title)}</div>
-            <table style="width:100%;border-collapse:collapse;">${rowHtml}</table>
-          </div>`;
-      };
-
-      const productRows: [string, string][] = [
-        ['Product Name', this.product.name],
-        ['Description', this.product.description || ''],
-        ['Category', this.product.category || ''],
-        ['Package Type', this.product.packageType || ''],
-        ['Quantity', this.product.quantity ? String(this.product.quantity) : ''],
-        ['Total Weight', this.product.totalWeight ? `${this.product.totalWeight} kg` : ''],
-        ['Total Volume', this.product.totalVolume ? `${this.product.totalVolume} m³` : ''],
-      ];
-
-      const agentRows: [string, string][] = agent ? [
-        ['Name', `${agent.firstname || ''} ${agent.lastname || ''}`.trim()],
-        ['Phone', agent.phone || ''],
-        ['Address', this.selectedAddress ? (this.selectedAddress.address_line || '') : (agent.address || '')],
-      ] : [];
-
-      const addressRows: [string, string][] = [];
-
-      const customerRows: [string, string][] = currentUser ? [
-        ['Name', `${currentUser.firstname || ''} ${currentUser.lastname || ''}`.trim()],
-        ['Phone', currentUser.phone || ''],
-        ['Country', currentUser.country || ''],
-      ] : [];
-
-      const htmlContent = `
-        <div id="pdf-render-target" style="width:794px;font-family:'DejaVu Sans','Helvetica Neue',Helvetica,Arial,sans-serif;background:#fff;color:#111;">
-          <div style="background:#f97316;padding:14px 24px;color:#fff;font-weight:bold;font-size:17px;">
-            PilikaPilika — Product QR Code
-          </div>
-          <div style="text-align:center;padding:20px;">
-            <img src="${qrDataUrl}" style="width:200px;height:200px;display:block;margin:0 auto;" />
-          </div>
-          <div style="padding:0 30px 20px;">
-            ${buildSection('Product Details', productRows)}
-            ${buildSection('Assigned Agent', agentRows)}
-            ${buildSection('Agent Address', addressRows)}
-            ${buildSection('Customer Details', customerRows)}
-          </div>
-          <div style="background:#f97316;padding:10px 20px;color:#fff;font-size:11px;text-align:center;">
-            Generated on ${new Date().toLocaleDateString()} · PilikaPilika
-          </div>
-        </div>
-      `;
-
-      const container = document.createElement('div');
-      container.innerHTML = htmlContent;
-      const renderTarget = container.firstElementChild as HTMLElement;
-      renderTarget.style.position = 'fixed';
-      renderTarget.style.left = '-9999px';
-      renderTarget.style.top = '0';
-      document.body.appendChild(renderTarget);
-
-      const hCanvas = await html2canvas(renderTarget, { 
-        scale: 2, 
-        useCORS: true,
-        allowTaint: true,
-        logging: false
-      });
-      const imgData = hCanvas.toDataURL('image/png');
-
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pdfWidth = doc.internal.pageSize.getWidth();
-      const pdfHeight = (hCanvas.height * pdfWidth) / hCanvas.width;
-
-      doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-      const safeName = (this.product.name || 'product')
-        .trim()
-        .replace(/[\\/:*?"<>|]/g, '')
-        .replace(/\s+/g, '_')
-        .substring(0, 80);
-
-      doc.save(`${safeName}.pdf`);
-      document.body.removeChild(renderTarget);
+      const { doc, filename, cleanup } = await this.buildPdf();
+      doc.save(filename);
+      cleanup();
     } catch (err) {
       console.error('PDF generation error:', err);
       alert('Failed to generate PDF. Please try again.');
     } finally {
       this.isDownloading = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  // ── PDF share (mobile native share sheet) ───────────────────────
+
+  async sharePdf() {
+    if (this.isSharing || this.isDownloading) return;
+    this.isSharing = true;
+    this.cdr.detectChanges();
+
+    try {
+      const { doc, filename, cleanup } = await this.buildPdf();
+      const pdfBlob = doc.output('blob');
+      cleanup();
+
+      const pdfFile = new File([pdfBlob], filename, { type: 'application/pdf' });
+      const shareData: ShareData = {
+        title: 'Product QR Code',
+        text: `Product: ${this.product.name}`,
+        files: [pdfFile],
+      };
+
+      if (navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback: try URL share, then clipboard
+        this.shareQR();
+      }
+    } catch (err) {
+      // User cancelled share or error occurred
+      if ((err as Error)?.name !== 'AbortError') {
+        console.error('PDF share error:', err);
+        alert('Failed to share PDF. Please try again.');
+      }
+    } finally {
+      this.isSharing = false;
       this.cdr.detectChanges();
     }
   }

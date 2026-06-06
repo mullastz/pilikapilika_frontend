@@ -190,12 +190,23 @@
               <!-- Download PDF -->
               <button
                 (click)="downloadQR()"
-                [disabled]="isDownloading"
+                [disabled]="isDownloading || isSharing"
                 class="w-full py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <i *ngIf="!isDownloading" class="fa-solid fa-file-pdf"></i>
                 <i *ngIf="isDownloading" class="fa-solid fa-circle-notch fa-spin"></i>
                 {{ isDownloading ? 'Generating PDF...' : 'Download PDF' }}
+              </button>
+
+              <!-- Share PDF -->
+              <button
+                (click)="sharePdf()"
+                [disabled]="isDownloading || isSharing"
+                class="w-full py-3 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <i *ngIf="!isSharing" class="fa-solid fa-share-nodes"></i>
+                <i *ngIf="isSharing" class="fa-solid fa-circle-notch fa-spin"></i>
+                {{ isSharing ? 'Preparing PDF...' : 'Share PDF' }}
               </button>
 
             </div>
