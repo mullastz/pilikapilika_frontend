@@ -421,18 +421,18 @@ export class QrGenerator implements OnInit {
     document.body.appendChild(renderTarget);
 
     const hCanvas = await html2canvas(renderTarget, {
-      scale: 2,
+      scale: 1.5,
       useCORS: true,
       allowTaint: true,
       logging: false
     });
-    const imgData = hCanvas.toDataURL('image/png');
+    const imgData = hCanvas.toDataURL('image/jpeg', 0.85);
 
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
     const pdfWidth = doc.internal.pageSize.getWidth();
     const pdfHeight = (hCanvas.height * pdfWidth) / hCanvas.width;
 
-    doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    doc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'MEDIUM');
 
     const safeName = (this.product.name || 'product')
       .trim()
