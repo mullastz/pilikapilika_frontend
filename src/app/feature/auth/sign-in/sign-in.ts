@@ -58,7 +58,7 @@ export class SignIn {
         if (response.data?.is_admin) {
           this.router.navigate(['/admin/dashboard']);
         } else {
-          this.router.navigate(['/']);
+          this.router.navigate(['/home']);
         }
       },
       error: (err: HttpErrorResponse) => {

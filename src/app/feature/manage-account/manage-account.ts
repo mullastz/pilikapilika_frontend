@@ -2,20 +2,23 @@ import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild } from '@an
 import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AddressService, Address, CreateAddressRequest, UpdateAddressRequest } from '../../core/services/address.service';
+import { ProfileCompletionService, ProfileAnalysis } from '../../core/services/profile-completion.service';
 import { User, UpdateProfileRequest, UpdateProfileResponse } from '../../core/interfaces/auth.interface';
+import { ProfileOnboardingWizard } from '../../shared/components/profile-onboarding-wizard/profile-onboarding-wizard';
 
 @Component({
   selector: 'app-manage-account',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, ProfileOnboardingWizard],
   templateUrl: './manage-account.html',
   styleUrl: './manage-account.css',
 })
 export class ManageAccount implements OnInit {
-[x: string]: any;
+  [x: string]: any;
   @ViewChild('photoInput') photoInput!: ElementRef<HTMLInputElement>;
 
   profileForm: FormGroup;
@@ -24,6 +27,11 @@ export class ManageAccount implements OnInit {
   isSaving = false;
   passwordChangeRequested = false;
   isRequestingPasswordChange = false;
+
+  // Onboarding wizard state
+  profileAnalysis: ProfileAnalysis | null = null;
+  showOnboarding = false;
+  isFirstTime = false;
 
   // Photo upload state
   photoPreview: string | null = null;
@@ -64,8 +72,10 @@ export class ManageAccount implements OnInit {
     private authService: AuthService,
     private userService: UserService,
     private addressService: AddressService,
+    private profileCompletionService: ProfileCompletionService,
     private cdr: ChangeDetectorRef,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private route: ActivatedRoute,
   ) {
     this.profileForm = this.fb.group({
       firstname: ['', [Validators.required, Validators.maxLength(255)]],
@@ -90,6 +100,7 @@ export class ManageAccount implements OnInit {
   ngOnInit(): void {
     this.loadUserProfile();
     this.loadAddresses();
+    this.checkForOnboarding();
   }
 
   loadUserProfile(): void {
@@ -142,6 +153,61 @@ export class ManageAccount implements OnInit {
       ward: user.ward || '',
       address: user.address || '',
     });
+  }
+
+  // ── Onboarding Wizard ────────────────────────────────────────────
+
+  /**
+   * Check if user was redirected here for profile completion
+   * and show the onboarding wizard
+   */
+  checkForOnboarding(): void {
+    // Check URL query param for incomplete profile redirect
+    const reason = this.route.snapshot.queryParamMap.get('reason');
+    const isIncomplete = this.authService.needsProfileCompletion();
+
+    if (reason === 'incomplete_profile' || isIncomplete) {
+      this.isFirstTime = reason === 'incomplete_profile';
+
+      // Build profile analysis for the wizard
+      const user = this.authService.getUser();
+      if (user) {
+        this.profileAnalysis = this.profileCompletionService.analyzeProfile(user, null);
+
+        // Show onboarding after a short delay for the page to settle
+        setTimeout(() => {
+          this.showOnboarding = true;
+          this.cdr.detectChanges();
+        }, 600);
+      }
+    }
+  }
+
+  /**
+   * Handle wizard profile update — refresh data from backend
+   */
+  onProfileUpdated(): void {
+    // Refresh user profile data
+    this.loadUserProfile();
+    this.showOnboarding = false;
+  }
+
+  /**
+   * Handle wizard completion — redirect to home
+   */
+  onWizardComplete(): void {
+    this.showOnboarding = false;
+    this.toastService.success('Profile setup complete! Welcome aboard!');
+
+    // Redirect to home after a brief moment
+    setTimeout(() => {
+      this.location.go('/home');
+      window.location.href = '/home';
+    }, 1000);
+  }
+
+  onWizardClose(): void {
+    this.showOnboarding = false;
   }
 
   // ── Photo handling ──────────────────────────────────────────────
@@ -255,6 +321,12 @@ export class ManageAccount implements OnInit {
         this.user = response.data;
         if (response.profile?.is_complete) {
           this.authService.setProfileComplete();
+        } else if (response.profile) {
+          // Update profile completion status with missing fields
+          localStorage.setItem('profile_completion', JSON.stringify({
+            is_complete: false,
+            missing_fields: response.profile.missing_fields || []
+          }));
         }
         this.toastService.success('Profile updated successfully!');
         this.cdr.detectChanges();
@@ -440,4 +512,21 @@ export class ManageAccount implements OnInit {
   get address() { return this.profileForm.get('address'); }
 
   get addressLine() { return this.addressForm.get('address_line'); }
+
+  // ── Profile Completion Helpers ───────────────────────────────────
+
+  /**
+   * Check if user needs to complete their BASIC profile
+   * (Only checks essential fields, not agent-specific ones)
+   */
+  needsProfileCompletion(): boolean {
+    const user = this.authService.getUser();
+    if (!user) return false;
+
+    const basicFields = ['firstname', 'lastname', 'phone', 'region', 'district'];
+    return basicFields.some(field => {
+      const value = (user as any)[field];
+      return !value || value === '' || value === null;
+    });
+  }
 }

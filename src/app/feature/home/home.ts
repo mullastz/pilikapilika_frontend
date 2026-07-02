@@ -6,9 +6,11 @@ import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ShipmentService, Shipment } from '../../core/services/shipment.service';
 import { QrCodeService } from '../../core/services/qr-code.service';
+import { ProfileCompletionService, ProfileAnalysis } from '../../core/services/profile-completion.service';
 import { Agent, User } from '../../core/interfaces/auth.interface';
 import { Footer } from '../../shared/footer/footer';
 import { Header } from '../../shared/header/header';
+import { ProfileCompletionPopup } from '../../shared/components/profile-completion-popup/profile-completion-popup';
 import {
   getShipmentProgress,
   getShipmentProgressColor,
@@ -23,7 +25,7 @@ import {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, Footer, Header],
+  imports: [CommonModule, RouterModule, Footer, Header, ProfileCompletionPopup],
   templateUrl: './home.html',
   styleUrl: './home.css'
 })
@@ -32,6 +34,10 @@ export class Home implements OnInit {
   isLoadingAgents = true;
   isLoadingShipments = true;
   isLoadingProducts = true;
+
+  // Profile completion
+  profileAnalysis: ProfileAnalysis | null = null;
+  showProfilePopup = false;
 
   // Services exposed for template
   protected toastService: ToastService;
@@ -78,6 +84,7 @@ export class Home implements OnInit {
     private authService: AuthService,
     private shipmentService: ShipmentService,
     private qrCodeService: QrCodeService,
+    private profileCompletionService: ProfileCompletionService,
     toastService: ToastService,
     private cdr: ChangeDetectorRef
   ) {
@@ -86,6 +93,7 @@ export class Home implements OnInit {
 
   ngOnInit(): void {
     this.loadCurrentUser();
+    this.checkProfileCompletion();
     this.loadAgents();
     this.loadShipments();
     this.loadProducts();
@@ -93,6 +101,52 @@ export class Home implements OnInit {
 
   loadCurrentUser(): void {
     this.currentUser = this.authService.getUser();
+  }
+
+  /**
+   * Check if the user's BASIC profile is complete and show popup if needed.
+   * Only checks essential fields (name, phone, location) — agent-specific
+   * fields (pricing, bio, etc.) are not required for the popup.
+   */
+  checkProfileCompletion(): void {
+    const user = this.authService.getUser();
+    if (!user) return;
+
+    const basicFields = ['firstname', 'lastname', 'phone', 'region', 'district'];
+    const missingBasic = basicFields.filter(field => {
+      const value = (user as any)[field];
+      return !value || value === '' || value === null;
+    });
+
+    if (missingBasic.length > 0) {
+      // Build a simple analysis for the popup
+      this.profileAnalysis = {
+        isComplete: false,
+        missingFields: missingBasic.map(field => ({
+          field,
+          label: field.charAt(0).toUpperCase() + field.slice(1),
+          description: '',
+          importance: 'critical' as const,
+          whyItMatters: ''
+        })),
+        completionPercentage: Math.round(((5 - missingBasic.length) / 5) * 100),
+        role: this.profileCompletionService.getRole(user),
+        nextRecommendedField: missingBasic[0]
+      };
+
+      setTimeout(() => {
+        this.showProfilePopup = true;
+        this.cdr.detectChanges();
+      }, 800);
+    }
+  }
+
+  onProfilePopupClose(): void {
+    this.showProfilePopup = false;
+  }
+
+  onProfileComplete(): void {
+    this.showProfilePopup = false;
   }
 
   loadAgents(): void {

@@ -1,0 +1,342 @@
+@if (isVisible) {
+<!-- Full-screen overlay -->
+<div class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+
+  <!-- Wizard Container -->
+  <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl w-full max-w-xl h-[85vh] max-h-[700px] flex flex-col animate-in fade-in zoom-in duration-300">
+
+    <!-- ========== WELCOME SCREEN ========== -->
+    @if (showWelcome) {
+    <div class="flex-1 overflow-y-auto min-h-0">
+      <!-- Header Banner -->
+      <div class="relative bg-orange-500 px-6 py-6 text-center overflow-hidden shrink-0">
+        <div class="absolute top-0 left-0 w-32 h-32 bg-white/10 rounded-full -translate-x-16 -translate-y-16"></div>
+        <div class="absolute bottom-0 right-0 w-24 h-24 bg-white/10 rounded-full translate-x-12 translate-y-12"></div>
+
+        <div class="relative z-10">
+          <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+            <i class="fa-solid fa-hand-sparkles text-white text-2xl"></i>
+          </div>
+          <h1 class="text-xl font-bold text-white mb-2">
+            {{ getWelcomeTitle() }}
+          </h1>
+          <p class="text-orange-100 text-sm max-w-md mx-auto leading-relaxed">
+            {{ getWelcomeMessage() }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Benefits Section -->
+      <div class="px-6 py-5">
+        <p class="text-sm font-semibold text-gray-500 dark:text-gray-400 text-center mb-4">
+          What you'll unlock:
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          @for (benefit of getWelcomeBenefits(); track benefit.title) {
+          <div class="bg-gray-50 dark:bg-[#222] rounded-xl p-3 text-center hover:bg-orange-50 dark:hover:bg-orange-900/10 transition">
+            <div class="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+              <i [class]="benefit.icon" class="text-orange-500 text-sm"></i>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">{{ benefit.title }}</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ benefit.description }}</p>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Progress Preview -->
+      <div class="px-6 pb-4">
+        <div class="bg-orange-50 dark:bg-orange-900/10 rounded-xl p-4 border border-orange-200 dark:border-orange-900/20">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-orange-800 dark:text-orange-300">
+              <i class="fa-solid fa-list-check mr-1.5"></i>
+              Quick Setup
+            </span>
+            <span class="text-sm font-bold text-orange-600 dark:text-orange-400">
+              {{ totalSteps }} steps
+            </span>
+          </div>
+          <!-- Step dots -->
+          <div class="flex items-center gap-2 mb-2">
+            @for (step of steps; track step.stepNumber; let i = $index) {
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition"
+                     [class.bg-orange-500]="i === 0"
+                     [class.text-white]="i === 0"
+                     [class.bg-gray-200]="i > 0"
+                     [class.dark:bg-gray-700]="i > 0"
+                     [class.text-gray-500]="i > 0">
+                  {{ i + 1 }}
+                </div>
+                @if (!$last) {
+                  <div class="w-8 h-0.5 bg-gray-200 dark:bg-gray-700"></div>
+                }
+              </div>
+            }
+          </div>
+          <p class="text-xs text-orange-600 dark:text-orange-400">
+            @if (userRole === 'agent') {
+              Just the essentials to get you started. Add pricing & bio later in your profile.
+            } @else {
+              Just the essentials to get you started. You're almost there!
+            }
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Welcome Footer -->
+    <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#1a1a1a] shrink-0">
+      <button
+        (click)="startWizard()"
+        class="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2"
+      >
+        <span>Let's Get Started</span>
+        <i class="fa-solid fa-arrow-right"></i>
+      </button>
+      <p class="text-xs text-gray-400 text-center mt-3">
+        Takes about 1 minute • Agent details can be added later
+      </p>
+    </div>
+    }
+
+    <!-- ========== GROUPED STEP FORM ========== -->
+    @if (!showWelcome && !showCompletion && currentStep) {
+    <!-- Step Header -->
+    <div class="px-6 py-3 border-b border-gray-100 dark:border-gray-800 shrink-0">
+      <!-- Top row: close + step indicator -->
+      <div class="flex items-center justify-between mb-2">
+        <button
+          (click)="onClose()"
+          class="w-8 h-8 rounded-full bg-gray-100 dark:bg-[#333] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition"
+        >
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+        <span class="text-xs text-gray-400 font-medium">Step {{ getStepNumber() }}</span>
+      </div>
+      <!-- Progress dots -->
+      <div class="flex items-center gap-2">
+        @for (step of steps; track step.stepNumber; let i = $index) {
+          <div class="flex items-center gap-1.5">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition"
+                 [class]="getStepDotColor(i)"
+                 [class.text-white]="i <= currentStepIndex"
+                 [class.text-gray-500]="i > currentStepIndex">
+              <i class="fa-solid fa-check" *ngIf="i < currentStepIndex"></i>
+              <span *ngIf="i >= currentStepIndex">{{ i + 1 }}</span>
+            </div>
+            @if (!$last) {
+              <div class="w-6 h-0.5 rounded-full transition"
+                   [class.bg-green-500]="i < currentStepIndex"
+                   [class.bg-orange-500]="i === currentStepIndex"
+                   [class.bg-gray-200]="i > currentStepIndex"
+                   [class.dark:bg-gray-700]="i > currentStepIndex"></div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Step Body - Scrollable -->
+    <div class="flex-1 overflow-y-auto min-h-0 px-6 py-5">
+      <!-- Step Title -->
+      <div class="text-center mb-5">
+        <div class="w-14 h-14 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mx-auto mb-3">
+          <i [class]="currentStep.icon" class="text-orange-500 text-xl"></i>
+        </div>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-1">
+          {{ currentStep.title }}
+        </h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          {{ currentStep.subtitle }}
+        </p>
+      </div>
+
+      <!-- Fields in this step -->
+      <div class="space-y-4">
+        @for (field of currentStep.fields; track field.name) {
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {{ field.label }}
+            @if (field.required) {
+              <span class="text-red-500 ml-1">*</span>
+            } @else {
+              <span class="text-gray-400 text-xs font-normal ml-1">(optional)</span>
+            }
+          </label>
+
+          @if (field.inputType === 'textarea') {
+            <textarea
+              [(ngModel)]="fieldValues[field.name]"
+              (input)="onFieldInput(field.name, $any($event.target).value)"
+              (blur)="onFieldBlur(field.name)"
+              [placeholder]="field.placeholder"
+              rows="3"
+              class="w-full p-3 rounded-xl bg-gray-100 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500 transition resize-none"
+              [class.ring-2]="hasFieldError(field.name)"
+              [class.ring-red-500]="hasFieldError(field.name)"
+              [class.bg-red-50]="hasFieldError(field.name)"
+            ></textarea>
+          } @else if (field.inputType === 'select') {
+            <select
+              [(ngModel)]="fieldValues[field.name]"
+              (change)="onFieldInput(field.name, $any($event.target).value)"
+              (blur)="onFieldBlur(field.name)"
+              class="w-full p-3 rounded-xl bg-gray-100 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500 transition appearance-none cursor-pointer"
+              [class.ring-2]="hasFieldError(field.name)"
+              [class.ring-red-500]="hasFieldError(field.name)"
+              [class.bg-red-50]="hasFieldError(field.name)"
+            >
+              <option value="">{{ field.placeholder }}</option>
+              @for (option of field.options; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          } @else {
+            <input
+              [type]="field.inputType"
+              [(ngModel)]="fieldValues[field.name]"
+              (input)="onFieldInput(field.name, $any($event.target).value)"
+              (blur)="onFieldBlur(field.name)"
+              [placeholder]="field.placeholder"
+              class="w-full p-3 rounded-xl bg-gray-100 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500 transition"
+              [class.ring-2]="hasFieldError(field.name)"
+              [class.ring-red-500]="hasFieldError(field.name)"
+              [class.bg-red-50]="hasFieldError(field.name)"
+            />
+          }
+
+          <!-- Error Message -->
+          @if (hasFieldError(field.name)) {
+          <div class="mt-2 flex items-center gap-1.5 text-red-500 text-xs">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span>{{ getFieldError(field.name) }}</span>
+          </div>
+          }
+
+          <!-- Tip -->
+          <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
+            <i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i>
+            {{ field.tip }}
+          </p>
+
+          <!-- Example -->
+          @if (field.example) {
+          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+            <i class="fa-solid fa-circle-check text-green-500 mr-1"></i>
+            {{ field.example }}
+          </p>
+          }
+        </div>
+        }
+      </div>
+    </div>
+
+    <!-- Step Footer - Always visible -->
+    <div class="px-6 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#1a1a1a] shrink-0">
+      <div class="flex items-center gap-3">
+        <button
+          (click)="prevStep()"
+          [disabled]="!canGoBack || isSaving"
+          class="px-4 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1"
+        >
+          <i class="fa-solid fa-arrow-left text-xs"></i>
+          Back
+        </button>
+
+        <button
+          (click)="nextStep()"
+          [disabled]="isSaving"
+          class="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-xl text-sm font-bold transition shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2"
+        >
+          @if (isSaving) {
+            <i class="fa-solid fa-circle-notch fa-spin"></i>
+            <span>Saving...</span>
+          } @else if (isLastStep) {
+            <i class="fa-solid fa-check"></i>
+            <span>Save & Finish</span>
+          } @else {
+            <span>Next</span>
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+          }
+        </button>
+      </div>
+    </div>
+    }
+
+    <!-- ========== COMPLETION SCREEN ========== -->
+    @if (showCompletion) {
+    <div class="flex-1 overflow-y-auto min-h-0 px-6 py-6 text-center">
+      <div class="mb-5">
+        <div class="w-20 h-20 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-3 animate-bounce">
+          <i class="fa-solid fa-party-horn text-green-500 text-3xl"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          🎉 You're All Set!
+        </h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400 max-w-sm mx-auto leading-relaxed">
+          @if (userRole === 'agent') {
+            Your profile is ready! Customers can now find you. Don't forget to add your pricing and bio later for more bookings.
+          } @else {
+            Your profile is complete! You can now book agents and track shipments.
+          }
+        </p>
+      </div>
+
+      <!-- What's Next -->
+      <div class="bg-gray-50 dark:bg-[#222] rounded-xl p-4 mb-5 text-left">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+          <i class="fa-solid fa-rocket text-orange-500 mr-1.5"></i>
+          What's next?
+        </h3>
+        @if (userRole === 'agent') {
+        <ul class="space-y-2">
+          <li class="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <i class="fa-solid fa-check text-green-500 mt-0.5 text-xs"></i>
+            <span>Your profile is visible to customers searching for agents</span>
+          </li>
+          <li class="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <i class="fa-solid fa-check text-green-500 mt-0.5 text-xs"></i>
+            <span>Go to <strong>Account → Agent Profile</strong> to add pricing, bio, and services</span>
+          </li>
+          <li class="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <i class="fa-solid fa-check text-green-500 mt-0.5 text-xs"></i>
+            <span>Request verification for a blue badge — it builds trust!</span>
+          </li>
+        </ul>
+        } @else {
+        <ul class="space-y-2">
+          <li class="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <i class="fa-solid fa-check text-green-500 mt-0.5 text-xs"></i>
+            <span>Search for verified agents near your location</span>
+          </li>
+          <li class="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <i class="fa-solid fa-check text-green-500 mt-0.5 text-xs"></i>
+            <span>Book shipments and track them in real-time</span>
+          </li>
+          <li class="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <i class="fa-solid fa-check text-green-500 mt-0.5 text-xs"></i>
+            <span>Generate QR codes for easy package tracking</span>
+          </li>
+        </ul>
+        }
+      </div>
+    </div>
+
+    <!-- Completion Footer -->
+    <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#1a1a1a] shrink-0">
+      <button
+        (click)="onComplete()"
+        class="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition shadow-lg shadow-green-500/20 flex items-center justify-center gap-2"
+      >
+        <i class="fa-solid fa-rocket"></i>
+        <span>
+          @if (userRole === 'agent') { Go to Dashboard } @else { Explore Pilika-Pilika }
+        </span>
+      </button>
+    </div>
+    }
+
+  </div>
+</div>
+}

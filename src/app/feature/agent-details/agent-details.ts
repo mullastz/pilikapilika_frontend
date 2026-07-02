@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { AgentService } from '../../core/services/agent.service';
 import { AuthService } from '../../core/services/auth.service';
+import { UserService } from '../../core/services/user.service';
 import { Agent, AgentProfileResponse, User, UpdateAgentProfileRequest } from '../../core/interfaces/auth.interface';
 import { ToastService } from '../../core/services/toast.service';
 
@@ -49,6 +50,7 @@ export class AgentDetails implements OnInit {
     private fb: FormBuilder,
     private authService: AuthService,
     private agentService: AgentService,
+    private userService: UserService,
     private cdr: ChangeDetectorRef,
     private toastService: ToastService,
     private route: ActivatedRoute,
@@ -211,6 +213,8 @@ export class AgentDetails implements OnInit {
         this.agent = response.data;
         this.user  = response.data;
         this.toastService.success('Agent profile updated successfully!');
+        // Refresh profile completion status after agent profile update
+        this.refreshProfileCompletion();
         this.cdr.detectChanges();
       },
       error: (err: any) => {
@@ -222,6 +226,29 @@ export class AgentDetails implements OnInit {
   }
 
   goBack(): void { this.location.back(); }
+
+  /**
+   * Refresh the profile completion status from the backend
+   */
+  refreshProfileCompletion(): void {
+    this.userService.getProfile().subscribe({
+      next: (response: any) => {
+        if (response.profile) {
+          if (response.profile.is_complete) {
+            this.authService.setProfileComplete();
+          } else {
+            localStorage.setItem('profile_completion', JSON.stringify({
+              is_complete: false,
+              missing_fields: response.profile.missing_fields || []
+            }));
+          }
+        }
+      },
+      error: (err) => {
+        console.error('Error refreshing profile completion:', err);
+      }
+    });
+  }
 
   isSpecializationSelected(spec: string): boolean {
     return this.selectedSpecializations.includes(spec);

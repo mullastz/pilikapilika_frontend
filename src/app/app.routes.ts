@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { ProfileCompletionGuard } from './core/guards/profile-completion.guard';
 import { SignUp } from './feature/auth/sign-up/sign-up';
 import { SignIn } from './feature/auth/sign-in/sign-in';
 import { VerifyEmail } from './feature/auth/verify-email/verify-email';
@@ -45,22 +46,22 @@ export const routes: Routes = [
   { path: 'forgot-password', component: ForgotPassword },
   { path: 'reset-password/:uuid', component: ResetPassword },
   { path: '', component: LandingPage },
-  { path: 'home', component: Home },
-  { path: 'profile-management', component: ProfileManagement },
+  { path: 'home', component: Home, canActivate: [ProfileCompletionGuard] },
+  { path: 'profile-management', component: ProfileManagement, canActivate: [ProfileCompletionGuard] },
   { path: 'account/details', component: ManageAccount },
-  { path: 'account/agent', component: AgentDetails },
-  { path: 'account/shipping', component: Shipping },
-  { path: 'account/help', component: HelpCenter },
-  { path: 'agent/:id', component: AgentPage },
-  { path: 'track-shipping/:id', component: TrackShipping },
-  { path: 'messages', component: Messages },
-  { path: 'search', component: Search },
-  { path: 'qr-generator', component: QrGenerator },
-  { path: 'qr/:uuid', component: QrView },
-  { path: 'package-generator', component: PackageGenerator },
-  { path: 'package/:uuid', component: PackageView },
-  { path: 'book-shipment/:agentId', component: BookShipment },
-  { path: 'account/my-products', component: MyProducts },
+  { path: 'account/agent', component: AgentDetails, canActivate: [AgentGuard] },
+  { path: 'account/shipping', component: Shipping, canActivate: [ProfileCompletionGuard] },
+  { path: 'account/help', component: HelpCenter, canActivate: [ProfileCompletionGuard] },
+  { path: 'agent/:id', component: AgentPage, canActivate: [ProfileCompletionGuard] },
+  { path: 'track-shipping/:id', component: TrackShipping, canActivate: [ProfileCompletionGuard] },
+  { path: 'messages', component: Messages, canActivate: [ProfileCompletionGuard] },
+  { path: 'search', component: Search, canActivate: [ProfileCompletionGuard] },
+  { path: 'qr-generator', component: QrGenerator, canActivate: [ProfileCompletionGuard] },
+  { path: 'qr/:uuid', component: QrView, canActivate: [ProfileCompletionGuard] },
+  { path: 'package-generator', component: PackageGenerator, canActivate: [ProfileCompletionGuard] },
+  { path: 'package/:uuid', component: PackageView, canActivate: [ProfileCompletionGuard] },
+  { path: 'book-shipment/:agentId', component: BookShipment, canActivate: [ProfileCompletionGuard] },
+  { path: 'account/my-products', component: MyProducts, canActivate: [ProfileCompletionGuard] },
   { path: 'scan-qr', component: ScanQr, canActivate: [AgentGuard] },
   { path: 'account/scan-qr', component: ScanQr, canActivate: [AgentGuard] },
 
