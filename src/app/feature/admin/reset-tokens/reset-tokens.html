@@ -1,0 +1,105 @@
+<div>
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Password Reset Tokens</h1>
+    <div class="flex gap-2">
+      <select
+        [(ngModel)]="usedFilter"
+        (change)="onUsedChange()"
+        class="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-200"
+      >
+        <option value="">All Statuses</option>
+        <option value="true">Used</option>
+        <option value="false">Unused</option>
+      </select>
+      <div class="relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="onSearch()"
+          placeholder="Search by email..."
+          class="pl-9 pr-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-200 w-48 sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#FF7800]"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-gray-50 dark:bg-[#222] text-gray-600 dark:text-gray-300 uppercase text-xs font-semibold">
+        <tr>
+          <th class="px-4 py-3">User</th>
+          <th class="px-4 py-3">Token Preview</th>
+          <th class="px-4 py-3">Type</th>
+          <th class="px-4 py-3">Expires</th>
+          <th class="px-4 py-3">Used At</th>
+          <th class="px-4 py-3 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+        @if (loading()) {
+          <tr *ngFor="let _ of [1,2,3,4,5]">
+            <td *ngFor="let _ of [1,2,3,4,5,6]" class="px-4 py-3">
+              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
+            </td>
+          </tr>
+        } @else if (tokens().length === 0) {
+          <tr>
+            <td colspan="6" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+              No password reset tokens found.
+            </td>
+          </tr>
+        } @else {
+          <tr *ngFor="let token of tokens()" class="bg-white dark:bg-[#1a1a1a] hover:bg-gray-50 dark:hover:bg-[#222] transition-colors">
+            <td class="px-4 py-3 text-gray-800 dark:text-gray-200">
+              {{ token.user?.firstname }} {{ token.user?.lastname }}
+              <div class="text-xs text-gray-500">{{ token.user?.email }}</div>
+            </td>
+            <td class="px-4 py-3 text-gray-800 dark:text-gray-200 font-mono text-xs">{{ token.token_preview }}</td>
+            <td class="px-4 py-3 text-gray-800 dark:text-gray-200 capitalize">{{ token.type?.replace('_', ' ') }}</td>
+            <td class="px-4 py-3 text-gray-800 dark:text-gray-200">{{ token.expires_at | date:'medium' }}</td>
+            <td class="px-4 py-3 text-gray-800 dark:text-gray-200">
+              @if (token.used_at) {
+                {{ token.used_at | date:'medium' }}
+              } @else {
+                <span class="text-yellow-600 dark:text-yellow-400 text-xs font-medium">Unused</span>
+              }
+            </td>
+            <td class="px-4 py-3 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <button
+                  (click)="onRevoke(token)"
+                  [disabled]="token.used_at"
+                  class="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition disabled:opacity-40"
+                  title="Revoke"
+                >
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex items-center justify-between mt-4 text-sm text-gray-600 dark:text-gray-400">
+    <span>Total: {{ total() }}</span>
+    <div class="flex items-center gap-2">
+      <button
+        [disabled]="currentPage() <= 1"
+        (click)="prevPage()"
+        class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#222] disabled:opacity-40 transition"
+      >
+        Prev
+      </button>
+      <span>Page {{ currentPage() }} / {{ lastPage() }}</span>
+      <button
+        [disabled]="currentPage() >= lastPage()"
+        (click)="nextPage()"
+        class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#222] disabled:opacity-40 transition"
+      >
+        Next
+      </button>
+    </div>
+  </div>
+</div>

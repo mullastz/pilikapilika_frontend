@@ -1,0 +1,114 @@
+<div>
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Addresses</h1>
+    <div class="flex flex-col sm:flex-row gap-2">
+      <input
+        [(ngModel)]="userFilter"
+        (keyup.enter)="onUserFilterChange()"
+        type="number"
+        placeholder="Filter by user ID..."
+        class="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-200 w-44 focus:outline-none focus:ring-2 focus:ring-[#FF7800]"
+      />
+      <div class="relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="onSearch()"
+          placeholder="Search addresses..."
+          class="pl-9 pr-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-200 w-48 sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#FF7800]"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-gray-50 dark:bg-[#222] text-gray-600 dark:text-gray-300 uppercase text-xs font-semibold">
+        <tr>
+          <th class="px-4 py-3">User</th>
+          <th class="px-4 py-3">Label</th>
+          <th class="px-4 py-3">Address Line</th>
+          <th class="px-4 py-3">Default</th>
+          <th class="px-4 py-3">Created</th>
+          <th class="px-4 py-3 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+        @if (loading()) {
+          @for (_ of [1,2,3,4,5]; track $index) {
+            <tr>
+              <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-32"></div></td>
+              <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-24"></div></td>
+              <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-48"></div></td>
+              <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-16"></div></td>
+              <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-20"></div></td>
+              <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-24 ml-auto"></div></td>
+            </tr>
+          }
+        } @else if (addresses().length === 0) {
+          <tr>
+            <td colspan="6" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No addresses found.</td>
+          </tr>
+        } @else {
+          @for (address of addresses(); track address.id) {
+            <tr class="bg-white dark:bg-[#1a1a1a] hover:bg-gray-50 dark:hover:bg-[#222] transition-colors">
+              <td class="px-4 py-3 text-gray-800 dark:text-gray-200">{{ getUserName(address) }}</td>
+              <td class="px-4 py-3 text-gray-800 dark:text-gray-200 font-medium">{{ address.label }}</td>
+              <td class="px-4 py-3 text-gray-800 dark:text-gray-200">{{ address.address_line }}</td>
+              <td class="px-4 py-3">
+                @if (address.is_default) {
+                  <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Default</span>
+                } @else {
+                  <span class="text-gray-400">-</span>
+                }
+              </td>
+              <td class="px-4 py-3 text-gray-800 dark:text-gray-200">{{ address.created_at | date:'mediumDate' }}</td>
+              <td class="px-4 py-3 text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <button (click)="onEdit(address)" class="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                  <button (click)="onSetDefault(address)" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition" title="Set Default"><i class="fa-solid fa-star"></i></button>
+                  <button (click)="onDelete(address)" class="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex items-center justify-between mt-4 text-sm text-gray-600 dark:text-gray-400">
+    <span>Total: {{ total() }}</span>
+    <div class="flex items-center gap-2">
+      <button [disabled]="currentPage() <= 1" (click)="prevPage()" class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#222] disabled:opacity-40 transition">Prev</button>
+      <span>Page {{ currentPage() }} / {{ lastPage() }}</span>
+      <button [disabled]="currentPage() >= lastPage()" (click)="nextPage()" class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#222] disabled:opacity-40 transition">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+@if (modalMode() === 'edit') {
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeModal()">
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 max-w-md w-full shadow-2xl" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Edit Address</h3>
+        <button (click)="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fa-solid fa-times"></i></button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Label</label>
+          <input [(ngModel)]="editLabel" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Address Line</label>
+          <textarea [(ngModel)]="editAddressLine" rows="3" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200"></textarea>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button (click)="closeModal()" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 transition">Cancel</button>
+        <button (click)="saveEdit()" class="flex-1 px-4 py-2 bg-[#FF7800] text-white rounded-lg hover:bg-orange-600 transition">Save</button>
+      </div>
+    </div>
+  </div>
+}

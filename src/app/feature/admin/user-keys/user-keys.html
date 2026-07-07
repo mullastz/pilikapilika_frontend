@@ -1,0 +1,136 @@
+<div>
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">User Keys</h1>
+    <div class="relative">
+      <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+      <input
+        [(ngModel)]="searchQuery"
+        (keyup.enter)="onSearch()"
+        placeholder="Search users..."
+        class="pl-9 pr-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-200 w-48 sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#FF7800]"
+      />
+    </div>
+  </div>
+
+  <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-gray-50 dark:bg-[#222] text-gray-600 dark:text-gray-300 uppercase text-xs font-semibold">
+        <tr>
+          <th class="px-4 py-3">User</th>
+          <th class="px-4 py-3">Key Fingerprint</th>
+          <th class="px-4 py-3">Created</th>
+          <th class="px-4 py-3 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+        @if (loading()) {
+          <tr *ngFor="let _ of [1,2,3,4,5]">
+            <td *ngFor="let _ of [1,2,3,4]" class="px-4 py-3">
+              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
+            </td>
+          </tr>
+        } @else if (keys().length === 0) {
+          <tr>
+            <td colspan="4" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+              No user keys found.
+            </td>
+          </tr>
+        } @else {
+          <tr *ngFor="let key of keys()" class="bg-white dark:bg-[#1a1a1a] hover:bg-gray-50 dark:hover:bg-[#222] transition-colors">
+            <td class="px-4 py-3 text-gray-800 dark:text-gray-200">
+              {{ key.user?.firstname }} {{ key.user?.lastname }}
+              <div class="text-xs text-gray-500">{{ key.user?.email }}</div>
+            </td>
+            <td class="px-4 py-3 text-gray-800 dark:text-gray-200 font-mono text-xs">{{ key.fingerprint }}</td>
+            <td class="px-4 py-3 text-gray-800 dark:text-gray-200">{{ key.created_at | date:'medium' }}</td>
+            <td class="px-4 py-3 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <button
+                  (click)="onView(key)"
+                  class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
+                  title="View"
+                >
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex items-center justify-between mt-4 text-sm text-gray-600 dark:text-gray-400">
+    <span>Total: {{ total() }}</span>
+    <div class="flex items-center gap-2">
+      <button
+        [disabled]="currentPage() <= 1"
+        (click)="prevPage()"
+        class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#222] disabled:opacity-40 transition"
+      >
+        Prev
+      </button>
+      <span>Page {{ currentPage() }} / {{ lastPage() }}</span>
+      <button
+        [disabled]="currentPage() >= lastPage()"
+        (click)="nextPage()"
+        class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#222] disabled:opacity-40 transition"
+      >
+        Next
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Key Detail Drawer -->
+@if (selectedKey(); as key) {
+  <div class="fixed inset-0 bg-black/50 flex justify-end z-50" (click)="closeDetail()">
+    <div
+      class="bg-white dark:bg-[#1a1a1a] w-full max-w-lg h-full shadow-2xl p-6 overflow-y-auto"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Public Key Detail</h3>
+        <button (click)="closeDetail()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+
+      @if (detailLoading()) {
+        <div class="space-y-3">
+          <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
+          <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-1/2"></div>
+          <div class="h-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+        </div>
+      } @else {
+        <div class="space-y-4 text-sm">
+          <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+            <span class="text-gray-500">User</span>
+            <span class="text-gray-900 dark:text-white">{{ key.user?.firstname }} {{ key.user?.lastname }}</span>
+          </div>
+          <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+            <span class="text-gray-500">Email</span>
+            <span class="text-gray-900 dark:text-white">{{ key.user?.email }}</span>
+          </div>
+          <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+            <span class="text-gray-500">Created</span>
+            <span class="text-gray-900 dark:text-white">{{ key.created_at | date:'medium' }}</span>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-gray-500 font-medium">Public Key JSON</span>
+              <button
+                (click)="copyKey()"
+                class="text-xs px-3 py-1.5 rounded-lg bg-[#FF7800] text-white hover:bg-orange-600 transition"
+              >
+                Copy
+              </button>
+            </div>
+            <pre class="bg-gray-50 dark:bg-[#222] p-4 rounded-xl overflow-x-auto text-xs text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">{{ key.public_key | json }}</pre>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}

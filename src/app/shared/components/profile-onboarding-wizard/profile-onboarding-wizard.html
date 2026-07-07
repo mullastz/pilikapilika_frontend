@@ -177,6 +177,16 @@
               [class.ring-red-500]="hasFieldError(field.name)"
               [class.bg-red-50]="hasFieldError(field.name)"
             ></textarea>
+          } @else if (field.inputType === 'checkbox') {
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                [(ngModel)]="fieldValues[field.name]"
+                (change)="onFieldInput(field.name, $any($event.target).checked ? 'true' : 'false')"
+                class="w-5 h-5 text-orange-500 rounded focus:ring-orange-500"
+              />
+              <span class="text-sm text-gray-600 dark:text-gray-300">{{ field.placeholder }}</span>
+            </label>
           } @else if (field.inputType === 'select') {
             <select
               [(ngModel)]="fieldValues[field.name]"

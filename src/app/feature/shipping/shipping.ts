@@ -168,9 +168,6 @@ export class Shipping implements OnInit, OnDestroy {
   public addRemainingError = signal<string>('');
   public addRemainingLoading = signal(false);
 
-  // Action menu state (per shipment card)
-  public openActionMenuId = signal<string | null>(null);
-
   // Additional info tooltip state (per shipment card)
   public expandedInfoId = signal<string | null>(null);
 
@@ -1774,21 +1771,6 @@ export class Shipping implements OnInit, OnDestroy {
   getContainerShipments(): any[] {
     const container = this.selectedContainer();
     return container?.shipments || [];
-  }
-
-  // Action menu methods
-  toggleActionMenu(shipmentId: string, event: Event): void {
-    event.stopPropagation();
-    const current = this.openActionMenuId();
-    this.openActionMenuId.set(current === shipmentId ? null : shipmentId);
-  }
-
-  closeActionMenu(): void {
-    this.openActionMenuId.set(null);
-  }
-
-  isActionMenuOpen(shipmentId: string): boolean {
-    return this.openActionMenuId() === shipmentId;
   }
 
   // Additional info tooltip methods

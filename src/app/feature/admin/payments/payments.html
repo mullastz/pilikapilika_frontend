@@ -1,0 +1,175 @@
+<div>
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Payments</h1>
+    <div class="flex flex-wrap gap-2">
+      <select [(ngModel)]="statusFilter" (change)="onStatusChange()" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-200">
+        <option value="">All Statuses</option>
+        <option value="pending">Pending</option>
+        <option value="paid">Paid</option>
+        <option value="failed">Failed</option>
+        <option value="refunded">Refunded</option>
+      </select>
+      <div class="relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="onSearch()"
+          placeholder="Search payments..."
+          class="pl-9 pr-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-200 w-48 sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#FF7800]"
+        />
+      </div>
+      <button (click)="openCreate()" class="px-4 py-2 bg-[#FF7800] text-white text-sm rounded-lg hover:bg-orange-600 transition"><i class="fa-solid fa-plus mr-1"></i> New Payment</button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a]">
+      <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Total Amount</div>
+      <div class="text-xl font-bold text-gray-900 dark:text-white mt-1">{{ stats().total_amount | number:'1.2-2' }} <span class="text-sm font-normal text-gray-500">TZS</span></div>
+    </div>
+    <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a]">
+      <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Pending</div>
+      <div class="text-xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{{ stats().pending_count }}</div>
+    </div>
+    <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a]">
+      <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Paid</div>
+      <div class="text-xl font-bold text-green-600 dark:text-green-400 mt-1">{{ stats().paid_count }}</div>
+    </div>
+    <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a]">
+      <div class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">Total Commission</div>
+      <div class="text-xl font-bold text-gray-900 dark:text-white mt-1">{{ stats().total_commission | number:'1.2-2' }} <span class="text-sm font-normal text-gray-500">TZS</span></div>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-gray-50 dark:bg-[#222] text-gray-600 dark:text-gray-300 uppercase text-xs font-semibold">
+        <tr>
+          <th class="px-4 py-3">Shipment</th>
+          <th class="px-4 py-3">Payer → Payee</th>
+          <th class="px-4 py-3">Amount</th>
+          <th class="px-4 py-3">Commission</th>
+          <th class="px-4 py-3">Status</th>
+          <th class="px-4 py-3">Method</th>
+          <th class="px-4 py-3">Date</th>
+          <th class="px-4 py-3 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+        @if (loading()) {
+          @for (_ of [1,2,3,4,5]; track $index) {
+            <tr>
+              @for (__ of [1,2,3,4,5,6,7,8]; track $index) {
+                <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div></td>
+              }
+            </tr>
+          }
+        } @else if (payments().length === 0) {
+          <tr>
+            <td colspan="8" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No payments found.</td>
+          </tr>
+        } @else {
+          @for (payment of payments(); track payment.id) {
+            <tr class="bg-white dark:bg-[#1a1a1a] hover:bg-gray-50 dark:hover:bg-[#222] transition-colors">
+              <td class="px-4 py-3 text-gray-800 dark:text-gray-200">
+                @if (payment.shipment) {
+                  <a [routerLink]="['/track-shipping', payment.shipment.id]" class="text-[#FF7800] hover:underline">#{{ shipmentLabel(payment.shipment) }}</a>
+                } @else {
+                  <span>-</span>
+                }
+              </td>
+              <td class="px-4 py-3 text-gray-800 dark:text-gray-200">{{ fullName(payment.payer) }} <span class="text-gray-400">→</span> {{ fullName(payment.payee) }}</td>
+              <td class="px-4 py-3 text-gray-800 dark:text-gray-200">{{ payment.amount | number:'1.2-2' }} {{ payment.currency }}</td>
+              <td class="px-4 py-3 text-gray-800 dark:text-gray-200">{{ payment.commission_amount | number:'1.2-2' }}</td>
+              <td class="px-4 py-3">
+                <span [class]="statusBadge(payment.status).class + ' px-2 py-0.5 rounded-full text-xs font-medium'">{{ statusBadge(payment.status).text }}</span>
+              </td>
+              <td class="px-4 py-3 text-gray-600 dark:text-gray-400 capitalize">{{ payment.method || '-' }}</td>
+              <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ payment.created_at | date:'mediumDate' }}</td>
+              <td class="px-4 py-3 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <button (click)="openEdit(payment)" class="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                  <button (click)="deletePayment(payment)" class="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex items-center justify-between mt-4 text-sm text-gray-600 dark:text-gray-400">
+    <span>Total: {{ total() }}</span>
+    <div class="flex items-center gap-2">
+      <button [disabled]="currentPage() <= 1" (click)="prevPage()" class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#222] disabled:opacity-40 transition">Prev</button>
+      <span>Page {{ currentPage() }} / {{ lastPage() }}</span>
+      <button [disabled]="currentPage() >= lastPage()" (click)="nextPage()" class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#222] disabled:opacity-40 transition">Next</button>
+    </div>
+  </div>
+</div>
+
+@if (modalOpen() && selectedPayment(); as payment) {
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeModal()">
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 max-w-xl w-full shadow-2xl max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ modalMode() === 'create' ? 'Create Payment' : 'Edit Payment' }}</h3>
+        <button (click)="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fa-solid fa-times"></i></button>
+      </div>
+
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Shipment ID</label>
+            <input [(ngModel)]="payment.shipment_id" placeholder="Shipment UUID" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF7800]" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Transaction Reference</label>
+            <input [(ngModel)]="payment.transaction_reference" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF7800]" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Payer ID</label>
+            <input type="number" [(ngModel)]="payment.payer_id" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF7800]" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Payee ID</label>
+            <input type="number" [(ngModel)]="payment.payee_id" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF7800]" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Amount</label>
+            <input type="number" [(ngModel)]="payment.amount" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF7800]" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Currency</label>
+            <input [(ngModel)]="payment.currency" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF7800]" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Method</label>
+            <select [(ngModel)]="payment.method" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF7800]">
+              @for (m of methods; track m) {
+                <option [value]="m">{{ m | titlecase }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Status</label>
+            <select [(ngModel)]="payment.status" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF7800]">
+              @for (s of statuses; track s) {
+                <option [value]="s">{{ s | titlecase }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Admin Note</label>
+          <textarea [(ngModel)]="payment.admin_note" rows="3" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF7800]"></textarea>
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-6">
+        <button (click)="closeModal()" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 transition">Cancel</button>
+        <button (click)="savePayment()" class="flex-1 px-4 py-2 bg-[#FF7800] text-white rounded-lg hover:bg-orange-600 transition">{{ modalMode() === 'create' ? 'Create' : 'Save' }}</button>
+      </div>
+    </div>
+  </div>
+}

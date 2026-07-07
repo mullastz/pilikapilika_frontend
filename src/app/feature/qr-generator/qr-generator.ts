@@ -85,6 +85,16 @@ export class QrGenerator implements OnInit {
   addresses: Address[] = [];
   selectedAddress: Address | null = null;
   isLoadingAddresses = false;
+  addressSearchQuery = '';
+  showAddressDropdown = false;
+
+  // Category dropdown
+  categorySearchQuery = '';
+  showCategoryDropdown = false;
+
+  // Package type dropdown
+  packageTypeSearchQuery = '';
+  showPackageTypeDropdown = false;
 
   categories = [
     'Electronics', 'Fashion', 'Home Appliances', 'Toys',
@@ -102,6 +112,27 @@ export class QrGenerator implements OnInit {
       `${a.firstname} ${a.lastname}`.toLowerCase().includes(q) ||
       (a.region || '').toLowerCase().includes(q) ||
       (a.district || '').toLowerCase().includes(q),
+    );
+  }
+
+  get filteredCategories(): string[] {
+    const q = this.categorySearchQuery.toLowerCase().trim();
+    if (!q) return this.categories;
+    return this.categories.filter(c => c.toLowerCase().includes(q));
+  }
+
+  get filteredPackageTypes(): string[] {
+    const q = this.packageTypeSearchQuery.toLowerCase().trim();
+    if (!q) return this.packageTypes;
+    return this.packageTypes.filter(p => p.toLowerCase().includes(q));
+  }
+
+  get filteredAddresses(): Address[] {
+    const q = this.addressSearchQuery.toLowerCase().trim();
+    if (!q) return this.addresses;
+    return this.addresses.filter(a =>
+      (a.label || '').toLowerCase().includes(q) ||
+      (a.address_line || '').toLowerCase().includes(q),
     );
   }
 
@@ -167,6 +198,72 @@ export class QrGenerator implements OnInit {
     }, 200);
   }
 
+  // ── Category dropdown ───────────────────────────────────────────
+
+  onCategoryFocus(): void {
+    this.showCategoryDropdown = true;
+  }
+
+  onCategoryBlur(): void {
+    setTimeout(() => {
+      this.showCategoryDropdown = false;
+      this.cdr.detectChanges();
+    }, 200);
+  }
+
+  selectCategory(category: string): void {
+    this.product.category = category;
+    this.categorySearchQuery = '';
+    this.showCategoryDropdown = false;
+    this.cdr.detectChanges();
+  }
+
+  clearCategory(): void {
+    this.product.category = '';
+    this.categorySearchQuery = '';
+    this.cdr.detectChanges();
+  }
+
+  // ── Package type dropdown ───────────────────────────────────────
+
+  onPackageTypeFocus(): void {
+    this.showPackageTypeDropdown = true;
+  }
+
+  onPackageTypeBlur(): void {
+    setTimeout(() => {
+      this.showPackageTypeDropdown = false;
+      this.cdr.detectChanges();
+    }, 200);
+  }
+
+  selectPackageType(type: string): void {
+    this.product.packageType = type;
+    this.packageTypeSearchQuery = '';
+    this.showPackageTypeDropdown = false;
+    this.cdr.detectChanges();
+  }
+
+  clearPackageType(): void {
+    this.product.packageType = '';
+    this.packageTypeSearchQuery = '';
+    this.cdr.detectChanges();
+  }
+
+  // ── Address dropdown ────────────────────────────────────────────
+
+  onAddressFocus(): void {
+    if (!this.selectedAgent) return;
+    this.showAddressDropdown = true;
+  }
+
+  onAddressBlur(): void {
+    setTimeout(() => {
+      this.showAddressDropdown = false;
+      this.cdr.detectChanges();
+    }, 200);
+  }
+
   // ── Address loading ───────────────────────────────────────────────
 
   loadAddresses(): void {
@@ -186,6 +283,8 @@ export class QrGenerator implements OnInit {
 
   selectAddress(address: Address): void {
     this.selectedAddress = address;
+    this.addressSearchQuery = '';
+    this.showAddressDropdown = false;
     this.cdr.detectChanges();
   }
 

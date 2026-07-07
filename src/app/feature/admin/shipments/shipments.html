@@ -1,25 +1,95 @@
 <div>
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
     <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Shipments</h1>
-    <div class="relative">
-      <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-      <input
-        [(ngModel)]="searchQuery"
-        (keyup.enter)="onSearch()"
-        placeholder="Search shipments..."
-        class="pl-9 pr-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-200 w-48 sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#FF7800]"
-      />
+    <div class="flex flex-col sm:flex-row gap-3">
+      <div class="relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="onSearch()"
+          placeholder="Search shipments..."
+          class="pl-9 pr-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-200 w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#FF7800]"
+        />
+      </div>
+      <select
+        [(ngModel)]="statusFilter"
+        (change)="onFilterChange()"
+        class="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF7800]"
+      >
+        <option value="">All statuses</option>
+        @for (s of statuses; track s) {
+          <option [value]="s">{{ formatStatus(s) }}</option>
+        }
+      </select>
+      <select
+        [(ngModel)]="agentFilter"
+        (change)="onFilterChange()"
+        class="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FF7800]"
+      >
+        <option value="">All agents</option>
+        @for (agent of agents(); track agent.uuid) {
+          <option [value]="agent.uuid">{{ agent.firstname }} {{ agent.lastname }}</option>
+        }
+      </select>
+      <button
+        (click)="openBulkStatus()"
+        [disabled]="selectedIds().length === 0"
+        class="px-4 py-2 rounded-lg bg-[#FF7800] text-white text-sm font-medium hover:bg-orange-600 disabled:opacity-40 transition"
+      >
+        Bulk Update ({{ selectedIds().length }})
+      </button>
     </div>
   </div>
 
-  <app-data-table
-    [columns]="columns"
-    [rows]="shipments()"
-    [loading]="loading()"
-    (view)="onView($event)"
-    (edit)="onEdit($event)"
-    (delete)="onDelete($event)"
-  ></app-data-table>
+  <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 mb-4">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-gray-50 dark:bg-[#222] text-gray-600 dark:text-gray-300 uppercase text-xs font-semibold">
+        <tr>
+          <th class="px-4 py-3 w-10">
+            <input type="checkbox" [checked]="selectedIds().length === shipments().length && shipments().length > 0" (change)="toggleAll()" class="rounded border-gray-300" />
+          </th>
+          <th *ngFor="let col of columns" class="px-4 py-3">{{ col.label }}</th>
+          <th class="px-4 py-3 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+        @if (loading()) {
+          <tr *ngFor="let _ of [1,2,3,4,5]">
+            <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-4"></div></td>
+            <td *ngFor="let col of columns" class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div></td>
+            <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-16 ml-auto"></div></td>
+          </tr>
+        } @else if (shipments().length === 0) {
+          <tr>
+            <td [attr.colspan]="columns.length + 2" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+              No shipments found.
+            </td>
+          </tr>
+        } @else {
+          <tr *ngFor="let row of shipments()" class="bg-white dark:bg-[#1a1a1a] hover:bg-gray-50 dark:hover:bg-[#222] transition-colors">
+            <td class="px-4 py-3">
+              <input type="checkbox" [checked]="isSelected(row.id)" (change)="toggleSelection(row.id)" class="rounded border-gray-300" />
+            </td>
+            <td *ngFor="let col of columns" class="px-4 py-3 text-gray-800 dark:text-gray-200">
+              @if (getBadge(col, row); as badge) {
+                <span [class]="badge.class + ' px-2 py-0.5 rounded-full text-xs font-medium'">{{ badge.text }}</span>
+              } @else {
+                {{ getCellValue(col, row) }}
+              }
+            </td>
+            <td class="px-4 py-3 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <button (click)="onView(row)" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition" title="View"><i class="fa-solid fa-eye"></i></button>
+                <button (click)="onEdit(row)" class="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                <button (click)="onUpdateStatus(row)" class="p-1.5 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition" title="Update Status"><i class="fa-solid fa-truck-fast"></i></button>
+                <button (click)="onDelete(row)" class="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title="Delete"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
 
   <div class="flex items-center justify-between mt-4 text-sm text-gray-600 dark:text-gray-400">
     <span>Total: {{ total() }}</span>
@@ -31,36 +101,205 @@
   </div>
 </div>
 
-<!-- Shipment Modal -->
-@if (modalMode() !== 'none' && selectedShipment(); as pkg) {
+<!-- View / Edit / Status Modal -->
+@if (modalMode() !== 'none' && (selectedShipment() || modalMode() === 'bulkStatus'); as ctx) {
   <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeModal()">
-    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 max-w-lg w-full shadow-2xl max-h-[80vh] overflow-y-auto" (click)="$event.stopPropagation()">
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 max-w-2xl w-full shadow-2xl max-h-[85vh] overflow-y-auto" (click)="$event.stopPropagation()">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ modalMode() === 'view' ? 'Shipment Details' : 'Edit Shipment' }}</h3>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          {{ modalMode() === 'view' ? 'Shipment Details' : modalMode() === 'edit' ? 'Edit Shipment' : modalMode() === 'status' ? 'Update Status' : 'Bulk Update Status' }}
+        </h3>
         <button (click)="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fa-solid fa-times"></i></button>
       </div>
 
-      @if (modalMode() === 'view') {
-        <div class="space-y-3 text-sm">
-          <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500">UUID</span><span class="text-gray-900 dark:text-white font-mono">{{ pkg.uuid }}</span></div>
-          <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500">Name</span><span class="text-gray-900 dark:text-white">{{ pkg.name }}</span></div>
-          <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500">Owner</span><span class="text-gray-900 dark:text-white">{{ pkg.user?.firstname }} {{ pkg.user?.lastname }}</span></div>
-          <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500">Tracking #</span><span class="text-gray-900 dark:text-white">{{ pkg.tracking_number || '-' }}</span></div>
-          <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500">From</span><span class="text-gray-900 dark:text-white">{{ pkg.pickup_address || '-' }}</span></div>
-          <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"><span class="text-gray-500">To</span><span class="text-gray-900 dark:text-white">{{ pkg.destination_address || '-' }}</span></div>
-          <div class="flex justify-between py-2"><span class="text-gray-500">Created</span><span class="text-gray-900 dark:text-white">{{ pkg.created_at | date:'medium' }}</span></div>
+      @if (modalMode() === 'view' && selectedShipment(); as s) {
+        <div class="space-y-4 text-sm">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="p-3 rounded-lg bg-gray-50 dark:bg-[#222]">
+              <div class="text-xs text-gray-500 mb-1">Tracking #</div>
+              <div class="font-medium text-gray-900 dark:text-white">{{ s.tracking_number || '-' }}</div>
+            </div>
+            <div class="p-3 rounded-lg bg-gray-50 dark:bg-[#222]">
+              <div class="text-xs text-gray-500 mb-1">External Tracking #</div>
+              <div class="font-medium text-gray-900 dark:text-white">{{ s.external_tracking_number || '-' }}</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="p-3 rounded-lg bg-gray-50 dark:bg-[#222]">
+              <div class="text-xs text-gray-500 mb-1">Buyer</div>
+              <div class="font-medium text-gray-900 dark:text-white">{{ s.user?.firstname }} {{ s.user?.lastname }}<div class="text-xs text-gray-500">{{ s.user?.email }}</div></div>
+            </div>
+            <div class="p-3 rounded-lg bg-gray-50 dark:bg-[#222]">
+              <div class="text-xs text-gray-500 mb-1">Agent</div>
+              <div class="font-medium text-gray-900 dark:text-white">{{ s.agent?.firstname }} {{ s.agent?.lastname }}<div class="text-xs text-gray-500">{{ s.agent?.email }}</div></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4">
+            <div class="p-3 rounded-lg bg-gray-50 dark:bg-[#222]">
+              <div class="text-xs text-gray-500 mb-1">Status</div>
+              <span [class]="statusBadgeClass(s.status) + ' px-2 py-0.5 rounded-full text-xs font-medium'">{{ formatStatus(s.status) }}</span>
+            </div>
+            <div class="p-3 rounded-lg bg-gray-50 dark:bg-[#222]">
+              <div class="text-xs text-gray-500 mb-1">Estimated Price</div>
+              <div class="font-medium text-gray-900 dark:text-white">{{ s.estimated_price ? ('$' + (s.estimated_price | number:'1.2-2')) : '-' }}</div>
+            </div>
+            <div class="p-3 rounded-lg bg-gray-50 dark:bg-[#222]">
+              <div class="text-xs text-gray-500 mb-1">Actual Price</div>
+              <div class="font-medium text-gray-900 dark:text-white">{{ s.actual_price ? ('$' + (s.actual_price | number:'1.2-2')) : '-' }}</div>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-lg bg-gray-50 dark:bg-[#222]">
+            <div class="text-xs text-gray-500 mb-1">Quantity</div>
+            <div class="font-medium text-gray-900 dark:text-white">{{ s.received_quantity ?? 0 }} / {{ totalExpectedQuantity(s) }} received</div>
+          </div>
+
+          @if (s.title || s.description) {
+            <div class="p-3 rounded-lg bg-gray-50 dark:bg-[#222]">
+              <div class="text-xs text-gray-500 mb-1">Description</div>
+              <div class="font-medium text-gray-900 dark:text-white">{{ s.title || '-' }}</div>
+              <div class="text-gray-600 dark:text-gray-400 mt-1">{{ s.description || '-' }}</div>
+            </div>
+          }
+
+          @if (s.pickup_address || s.destination_address) {
+            <div class="grid grid-cols-2 gap-4">
+              <div class="p-3 rounded-lg bg-gray-50 dark:bg-[#222]">
+                <div class="text-xs text-gray-500 mb-1">Pickup Address</div>
+                <div class="font-medium text-gray-900 dark:text-white">{{ s.pickup_address || '-' }}</div>
+              </div>
+              <div class="p-3 rounded-lg bg-gray-50 dark:bg-[#222]">
+                <div class="text-xs text-gray-500 mb-1">Destination Address</div>
+                <div class="font-medium text-gray-900 dark:text-white">{{ s.destination_address || '-' }}</div>
+              </div>
+            </div>
+          }
+
+          @if (s.products && productsArray(s).length > 0) {
+            <div>
+              <div class="text-xs font-semibold text-gray-500 uppercase mb-2">Products</div>
+              <div class="space-y-2">
+                @for (product of productsArray(s); track $index) {
+                  <div class="p-3 rounded-lg bg-gray-50 dark:bg-[#222] flex justify-between items-center">
+                    <div>
+                      <div class="font-medium text-gray-900 dark:text-white">{{ product.name || 'Product' }}</div>
+                      <div class="text-xs text-gray-500">{{ product.description || '' }}</div>
+                    </div>
+                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300">Qty: {{ product.quantity || 1 }}</div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          @if (s.packages && packagesArray(s).length > 0) {
+            <div>
+              <div class="text-xs font-semibold text-gray-500 uppercase mb-2">Packages</div>
+              <div class="space-y-2">
+                @for (pkg of packagesArray(s); track $index) {
+                  <div class="p-3 rounded-lg bg-gray-50 dark:bg-[#222]">
+                    <div class="font-medium text-gray-900 dark:text-white">{{ pkg.name || 'Package' }}</div>
+                    <div class="text-xs text-gray-500">{{ pkg.description || '' }}</div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          @if (s.admin_note) {
+            <div class="p-3 rounded-lg bg-gray-50 dark:bg-[#222]">
+              <div class="text-xs text-gray-500 mb-1">Admin Note</div>
+              <div class="text-gray-700 dark:text-gray-300">{{ s.admin_note }}</div>
+            </div>
+          }
+
+          @if (s.containers && s.containers.length > 0) {
+            <div>
+              <div class="text-xs font-semibold text-gray-500 uppercase mb-2">Container Assignments</div>
+              <div class="space-y-2">
+                @for (container of s.containers; track container.id) {
+                  <div class="p-3 rounded-lg bg-gray-50 dark:bg-[#222] flex justify-between items-center">
+                    <div>
+                      <div class="font-medium text-gray-900 dark:text-white">{{ container.reference_number }}</div>
+                      <div class="text-xs text-gray-500">Pivot: {{ container.pivot?.status || container.status }}</div>
+                    </div>
+                    <span [class]="statusBadgeClass(container.status) + ' px-2 py-0.5 rounded-full text-xs font-medium'">{{ formatStatus(container.status) }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
         </div>
       }
 
-      @if (modalMode() === 'edit') {
+      @if (modalMode() === 'edit' && selectedShipment(); as s) {
         <div class="space-y-3">
-          <div><label class="block text-xs font-medium text-gray-500 mb-1">Package Name</label><input [(ngModel)]="pkg.name" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" /></div>
-          <div><label class="block text-xs font-medium text-gray-500 mb-1">Pickup Address</label><input [(ngModel)]="pkg.pickup_address" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" /></div>
-          <div><label class="block text-xs font-medium text-gray-500 mb-1">Destination Address</label><input [(ngModel)]="pkg.destination_address" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" /></div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Tracking Number</label>
+            <input [(ngModel)]="s.tracking_number" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">External Tracking Number</label>
+            <input [(ngModel)]="s.external_tracking_number" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Actual Price</label>
+            <input type="number" step="0.01" [(ngModel)]="s.actual_price" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Admin Note</label>
+            <textarea [(ngModel)]="s.admin_note" rows="3" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200"></textarea>
+          </div>
         </div>
         <div class="flex gap-3 mt-6">
           <button (click)="closeModal()" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 transition">Cancel</button>
           <button (click)="saveShipmentEdit()" class="flex-1 px-4 py-2 bg-[#FF7800] text-white rounded-lg hover:bg-orange-600 transition">Save</button>
+        </div>
+      }
+
+      @if (modalMode() === 'status' && selectedShipment(); as s) {
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Current Status</label>
+            <div class="px-3 py-2 rounded-lg bg-gray-50 dark:bg-[#222] text-sm text-gray-900 dark:text-white">{{ formatStatus(s.status) }}</div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">New Status</label>
+            <select [(ngModel)]="selectedStatus" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200">
+              <option value="">Select status</option>
+              @for (s of statuses; track s) {
+                <option [value]="s">{{ formatStatus(s) }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <div class="flex gap-3 mt-6">
+          <button (click)="closeModal()" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 transition">Cancel</button>
+          <button (click)="saveStatusUpdate()" class="flex-1 px-4 py-2 bg-[#FF7800] text-white rounded-lg hover:bg-orange-600 transition">Update</button>
+        </div>
+      }
+
+      @if (modalMode() === 'bulkStatus') {
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Selected Shipments</label>
+            <div class="px-3 py-2 rounded-lg bg-gray-50 dark:bg-[#222] text-sm text-gray-900 dark:text-white">{{ selectedIds().length }} shipment(s)</div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">New Status</label>
+            <select [(ngModel)]="selectedStatus" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200">
+              <option value="">Select status</option>
+              @for (s of statuses; track s) {
+                <option [value]="s">{{ formatStatus(s) }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <div class="flex gap-3 mt-6">
+          <button (click)="closeModal()" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 transition">Cancel</button>
+          <button (click)="saveBulkStatusUpdate()" class="flex-1 px-4 py-2 bg-[#FF7800] text-white rounded-lg hover:bg-orange-600 transition">Update</button>
         </div>
       }
     </div>

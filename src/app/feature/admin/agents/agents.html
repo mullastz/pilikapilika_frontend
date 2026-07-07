@@ -35,13 +35,59 @@
   </div>
 
   @if (activeTab() === 'all') {
-    <app-data-table
-      [columns]="columns"
-      [rows]="agents()"
-      [loading]="loading()"
-      (view)="onView($event)"
-      (edit)="onEdit($event)"
-    ></app-data-table>
+    <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-gray-50 dark:bg-[#222] text-gray-600 dark:text-gray-300 uppercase text-xs font-semibold">
+          <tr>
+            <th *ngFor="let col of columns" class="px-4 py-3">{{ col.label }}</th>
+            <th class="px-4 py-3 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          @if (loading()) {
+            <tr *ngFor="let _ of [1,2,3,4,5]">
+              <td *ngFor="let col of columns" class="px-4 py-3">
+                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-16 ml-auto"></div>
+              </td>
+            </tr>
+          } @else if (agents().length === 0) {
+            <tr>
+              <td [attr.colspan]="columns.length + 1" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                No agents found.
+              </td>
+            </tr>
+          } @else {
+            @for (agent of agents(); track agent.id) {
+              <tr class="bg-white dark:bg-[#1a1a1a] hover:bg-gray-50 dark:hover:bg-[#222] transition-colors">
+                <td *ngFor="let col of columns" class="px-4 py-3 text-gray-800 dark:text-gray-200">
+                  @if (getBadge(col, agent); as badge) {
+                    <span [class]="badge.class + ' px-2 py-0.5 rounded-full text-xs font-medium'">{{ badge.text }}</span>
+                  } @else {
+                    {{ getCellValue(col, agent) }}
+                  }
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <div class="flex items-center justify-end gap-2">
+                    <button (click)="onView(agent)" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition" title="View">
+                      <i class="fa-solid fa-eye"></i>
+                    </button>
+                    <button (click)="onEdit(agent)" class="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition" title="Edit">
+                      <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button (click)="onEditProfile(agent)" class="p-1.5 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition" title="Edit Profile">
+                      <i class="fa-solid fa-id-card"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
     <div class="flex items-center justify-between mt-4 text-sm text-gray-600 dark:text-gray-400">
       <span>Total: {{ total() }}</span>
       <div class="flex items-center gap-2">
@@ -131,6 +177,115 @@
           <button (click)="saveAgentEdit()" class="flex-1 px-4 py-2 bg-[#FF7800] text-white rounded-lg hover:bg-orange-600 transition">Save</button>
         </div>
       }
+    </div>
+  </div>
+}
+
+<!-- Edit Agent Profile Modal -->
+@if (profileModalOpen() && selectedProfile(); as profile) {
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeProfileModal()">
+    <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 max-w-2xl w-full shadow-2xl max-h-[85vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Edit Agent Profile</h3>
+        <button (click)="closeProfileModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fa-solid fa-times"></i></button>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Availability Status</label>
+          <select [(ngModel)]="profile.availability_status" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200">
+            <option [ngValue]="null">Select status</option>
+            <option value="available">Available</option>
+            <option value="busy">Busy</option>
+            <option value="offline">Offline</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Base Price</label>
+            <input [(ngModel)]="profile.base_price" type="number" min="0" step="0.01" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Price per KM</label>
+            <input [(ngModel)]="profile.price_per_km" type="number" min="0" step="0.01" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Currency</label>
+            <select [(ngModel)]="profile.currency" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200">
+              <option [ngValue]="null">Select currency</option>
+              <option value="TZS">TZS</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="GBP">GBP</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Max Delivery Distance (km)</label>
+            <input [(ngModel)]="profile.max_delivery_distance" type="number" min="0" step="0.01" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Avg Delivery Time (min)</label>
+            <input [(ngModel)]="profile.avg_delivery_time" type="number" min="0" step="1" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Bio</label>
+          <textarea [(ngModel)]="profile.bio" rows="3" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Specializations</label>
+          <div class="flex flex-wrap gap-2 mb-2">
+            @for (tag of profile.specializations; track $index) {
+              <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 text-xs">
+                {{ tag }}
+                <button (click)="removeTag('specializations', $index)" class="text-orange-700 dark:text-orange-300 hover:text-orange-900 dark:hover:text-orange-100" type="button">
+                  <i class="fa-solid fa-times"></i>
+                </button>
+              </span>
+            }
+          </div>
+          <input #specInput (keydown.enter)="addTag('specializations', specInput.value, specInput)" placeholder="Add specialization and press Enter" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Transport Methods</label>
+          <div class="flex flex-wrap gap-2 mb-2">
+            @for (tag of profile.transport_methods; track $index) {
+              <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-xs">
+                {{ tag }}
+                <button (click)="removeTag('transport_methods', $index)" class="text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100" type="button">
+                  <i class="fa-solid fa-times"></i>
+                </button>
+              </span>
+            }
+          </div>
+          <input #transportInput (keydown.enter)="addTag('transport_methods', transportInput.value, transportInput)" placeholder="Add transport method and press Enter" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">ID Number</label>
+            <input [(ngModel)]="profile.id_number" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Verification Status</label>
+            <div class="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200">
+              {{ profile.is_verified ? 'Verified' : 'Not Verified' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-6">
+        <button (click)="closeProfileModal()" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 transition">Cancel</button>
+        <button (click)="saveProfile()" class="flex-1 px-4 py-2 bg-[#FF7800] text-white rounded-lg hover:bg-orange-600 transition">Save Profile</button>
+      </div>
     </div>
   </div>
 }

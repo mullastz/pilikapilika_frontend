@@ -1,7 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DataTable, TableColumn } from '../../../shared/data-table/data-table';
+import { TableColumn } from '../../../shared/data-table/data-table';
 import { AdminService } from '../../../core/services/admin.service';
 import { AgentService } from '../../../core/services/agent.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -10,7 +10,7 @@ import { Agent } from '../../../core/interfaces/auth.interface';
 @Component({
   selector: 'app-admin-agents',
   standalone: true,
-  imports: [CommonModule, FormsModule, DataTable],
+  imports: [CommonModule, FormsModule],
   templateUrl: './agents.html',
   styleUrl: './agents.css'
 })
@@ -25,6 +25,8 @@ export class AdminAgents implements OnInit {
   searchQuery = signal('');
   modalMode = signal<'none' | 'view' | 'edit'>('none');
   selectedAgent = signal<any | null>(null);
+  profileModalOpen = signal(false);
+  selectedProfile = signal<any | null>(null);
 
   columns: TableColumn[] = [
     { key: 'id', label: 'ID' },
@@ -47,6 +49,25 @@ export class AdminAgents implements OnInit {
   ngOnInit(): void {
     this.loadAgents();
     this.loadPending();
+  }
+
+  // Custom table helpers
+  getCellValue(col: TableColumn, row: any): string {
+    const value = this.getNestedValue(row, col.key);
+    if (col.format) {
+      return col.format(value, row);
+    }
+    return value !== null && value !== undefined ? String(value) : '-';
+  }
+
+  getBadge(col: TableColumn, row: any) {
+    if (!col.badge) return null;
+    const value = this.getNestedValue(row, col.key);
+    return col.badge(value, row);
+  }
+
+  private getNestedValue(obj: any, path: string): any {
+    return path.split('.').reduce((o, p) => o?.[p], obj);
   }
 
   loadAgents(): void {
@@ -115,6 +136,13 @@ export class AdminAgents implements OnInit {
     }
   }
 
+  nextPage(): void {
+    if (this.currentPage() < this.lastPage()) {
+      this.currentPage.update(p => p + 1);
+      this.loadAgents();
+    }
+  }
+
   onView(agent: Agent): void {
     this.selectedAgent.set({ ...agent });
     this.modalMode.set('view');
@@ -152,10 +180,77 @@ export class AdminAgents implements OnInit {
     });
   }
 
-  nextPage(): void {
-    if (this.currentPage() < this.lastPage()) {
-      this.currentPage.update(p => p + 1);
-      this.loadAgents();
+  onEditProfile(agent: Agent): void {
+    this.selectedAgent.set(agent);
+    this.selectedProfile.set(null);
+    this.adminService.getAgentProfile(agent.id).subscribe({
+      next: (res: any) => {
+        const profile = res?.agentProfile ? { ...res.agentProfile } : {};
+        profile.specializations = Array.isArray(profile.specializations) ? profile.specializations : [];
+        profile.transport_methods = Array.isArray(profile.transport_methods) ? profile.transport_methods : [];
+        this.selectedProfile.set(profile);
+        this.profileModalOpen.set(true);
+      },
+      error: () => this.toastService.error('Failed to load agent profile')
+    });
+  }
+
+  closeProfileModal(): void {
+    this.profileModalOpen.set(false);
+    this.selectedProfile.set(null);
+    this.selectedAgent.set(null);
+  }
+
+  addTag(field: 'specializations' | 'transport_methods', value: string, input: HTMLInputElement): void {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    const profile = this.selectedProfile();
+    if (!profile) return;
+    const current = Array.isArray(profile[field]) ? profile[field] : [];
+    if (current.includes(trimmed)) {
+      input.value = '';
+      return;
     }
+    this.selectedProfile.set({ ...profile, [field]: [...current, trimmed] });
+    input.value = '';
+  }
+
+  removeTag(field: 'specializations' | 'transport_methods', index: number): void {
+    const profile = this.selectedProfile();
+    if (!profile) return;
+    const current = Array.isArray(profile[field]) ? [...profile[field]] : [];
+    current.splice(index, 1);
+    this.selectedProfile.set({ ...profile, [field]: current });
+  }
+
+  saveProfile(): void {
+    const agent = this.selectedAgent();
+    const profile = this.selectedProfile();
+    if (!agent || !profile) return;
+
+    const toNumberOrNull = (v: any) =>
+      v === '' || v === undefined || v === null ? null : Number(v);
+
+    const payload = {
+      availability_status: profile.availability_status || null,
+      base_price: toNumberOrNull(profile.base_price),
+      price_per_km: toNumberOrNull(profile.price_per_km),
+      currency: profile.currency || null,
+      max_delivery_distance: toNumberOrNull(profile.max_delivery_distance),
+      avg_delivery_time: toNumberOrNull(profile.avg_delivery_time),
+      bio: profile.bio || null,
+      specializations: Array.isArray(profile.specializations) ? profile.specializations : [],
+      transport_methods: Array.isArray(profile.transport_methods) ? profile.transport_methods : [],
+      id_number: profile.id_number || null,
+    };
+
+    this.adminService.updateAgentProfile(agent.id, payload).subscribe({
+      next: () => {
+        this.toastService.success('Agent profile updated');
+        this.closeProfileModal();
+        this.loadAgents();
+      },
+      error: () => this.toastService.error('Failed to update agent profile')
+    });
   }
 }

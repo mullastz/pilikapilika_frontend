@@ -49,10 +49,21 @@ export class AdminDashboard implements OnInit {
       { icon: 'fa-solid fa-users', label: 'Total Users', value: String(data.totals.users), color: 'bg-blue-500' },
       { icon: 'fa-solid fa-user-check', label: 'Verified Agents', value: String(data.totals.verified_agents), color: 'bg-green-500' },
       { icon: 'fa-solid fa-hourglass-half', label: 'Pending Verifications', value: String(data.totals.pending_verifications), color: 'bg-yellow-500' },
-      { icon: 'fa-solid fa-box', label: 'Total Shipments', value: String(data.totals.packages), color: 'bg-purple-500' },
+      { icon: 'fa-solid fa-truck-fast', label: 'Shipments', value: String(data.totals.shipments), color: 'bg-purple-500' },
+      { icon: 'fa-solid fa-container-storage', label: 'Containers', value: String(data.totals.containers), color: 'bg-orange-500' },
+      { icon: 'fa-solid fa-cubes', label: 'Packages', value: String(data.totals.packages), color: 'bg-indigo-500' },
       { icon: 'fa-solid fa-qrcode', label: 'QR Codes', value: String(data.totals.qr_codes), color: 'bg-pink-500' },
+      { icon: 'fa-solid fa-star', label: 'Reviews', value: String(data.totals.reviews), color: 'bg-amber-500' },
+      { icon: 'fa-solid fa-credit-card', label: 'Payments', value: String(data.totals.payments), color: 'bg-emerald-500' },
+      { icon: 'fa-solid fa-money-bill-wave', label: 'Revenue', value: this.formatCurrency(data.totals.revenue), color: 'bg-teal-500' },
+      { icon: 'fa-solid fa-location-dot', label: 'Addresses', value: String(data.totals.addresses), color: 'bg-red-500' },
       { icon: 'fa-solid fa-message', label: 'Messages', value: String(data.totals.messages), color: 'bg-cyan-500' },
     ]);
+  }
+
+  private formatCurrency(value: number): string {
+    if (value === undefined || value === null) return '0';
+    return value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   }
 
   drawCharts(data: DashboardStats): void {

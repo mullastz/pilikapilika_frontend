@@ -35,6 +35,14 @@ import { AdminMessages } from './feature/admin/messages/messages';
 import { AdminLogs } from './feature/admin/logs/logs';
 import { AdminSettings } from './feature/admin/settings/settings';
 import { AdminAccount } from './feature/admin/account/account';
+import { AdminContainers } from './feature/admin/containers/containers';
+import { AdminPackages } from './feature/admin/packages/packages';
+import { AdminAddresses } from './feature/admin/addresses/addresses';
+import { AdminReviews } from './feature/admin/reviews/reviews';
+import { AdminPayments } from './feature/admin/payments/payments';
+import { AdminVerifications } from './feature/admin/verifications/verifications';
+import { AdminResetTokens } from './feature/admin/reset-tokens/reset-tokens';
+import { AdminUserKeys } from './feature/admin/user-keys/user-keys';
 import { AgentShipping } from './feature/agent-shipping/agent-shipping';
 import { AgentGuard } from './core/guards/agent.guard';
 
@@ -76,7 +84,15 @@ export const routes: Routes = [
       { path: 'users', component: AdminUsers },
       { path: 'agents', component: AdminAgents },
       { path: 'shipments', component: AdminShipments },
+      { path: 'containers', component: AdminContainers },
+      { path: 'packages', component: AdminPackages },
+      { path: 'addresses', component: AdminAddresses },
       { path: 'qr-codes', component: AdminQrCodes },
+      { path: 'reviews', component: AdminReviews },
+      { path: 'payments', component: AdminPayments },
+      { path: 'verifications', component: AdminVerifications },
+      { path: 'reset-tokens', component: AdminResetTokens },
+      { path: 'user-keys', component: AdminUserKeys },
       { path: 'regions', component: AdminRegions },
       { path: 'settings', component: AdminSettings },
       { path: 'account', component: AdminAccount },

@@ -196,14 +196,9 @@ export class ManageAccount implements OnInit {
    * Handle wizard completion — redirect to home
    */
   onWizardComplete(): void {
+    // The wizard itself redirects to /home after a successful save.
+    // Parent just needs to close the modal.
     this.showOnboarding = false;
-    this.toastService.success('Profile setup complete! Welcome aboard!');
-
-    // Redirect to home after a brief moment
-    setTimeout(() => {
-      this.location.go('/home');
-      window.location.href = '/home';
-    }, 1000);
   }
 
   onWizardClose(): void {

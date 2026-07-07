@@ -55,31 +55,93 @@
             </div>
 
             <!-- Product Category -->
-            <div>
+            <div class="relative">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Product Category
               </label>
-              <select
-                [(ngModel)]="product.category"
-                class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+              <div class="relative">
+                <input
+                  type="text"
+                  [(ngModel)]="categorySearchQuery"
+                  (focus)="onCategoryFocus()"
+                  (blur)="onCategoryBlur()"
+                  [placeholder]="product.category || 'Select Category'"
+                  class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                />
+                <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+                <button
+                  *ngIf="product.category"
+                  type="button"
+                  (click)="clearCategory()"
+                  class="absolute right-8 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition"
+                  aria-label="Clear category"
+                >
+                  <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+              </div>
+              <div
+                *ngIf="showCategoryDropdown"
+                class="absolute z-20 w-full mt-1 bg-white dark:bg-[#222] rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 max-h-56 overflow-y-auto"
               >
-                <option value="">Select Category</option>
-                <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
-              </select>
+                <div *ngIf="filteredCategories.length === 0" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                  No categories found
+                </div>
+                <button
+                  *ngFor="let cat of filteredCategories"
+                  type="button"
+                  (mousedown)="selectCategory(cat)"
+                  class="w-full px-4 py-2.5 text-left text-sm dark:text-white hover:bg-orange-50 dark:hover:bg-[#333] transition"
+                  [class.bg-orange-50]="product.category === cat"
+                  [class.dark:bg-orange-900/20]="product.category === cat"
+                >
+                  {{ cat }}
+                </button>
+              </div>
             </div>
 
             <!-- Package Type -->
-            <div>
+            <div class="relative">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Package Type
               </label>
-              <select
-                [(ngModel)]="product.packageType"
-                class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+              <div class="relative">
+                <input
+                  type="text"
+                  [(ngModel)]="packageTypeSearchQuery"
+                  (focus)="onPackageTypeFocus()"
+                  (blur)="onPackageTypeBlur()"
+                  [placeholder]="product.packageType || 'Select Package Type'"
+                  class="w-full px-3 py-2 bg-gray-100 dark:bg-[#111] rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                />
+                <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+                <button
+                  *ngIf="product.packageType"
+                  type="button"
+                  (click)="clearPackageType()"
+                  class="absolute right-8 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition"
+                  aria-label="Clear package type"
+                >
+                  <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+              </div>
+              <div
+                *ngIf="showPackageTypeDropdown"
+                class="absolute z-20 w-full mt-1 bg-white dark:bg-[#222] rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 max-h-56 overflow-y-auto"
               >
-                <option value="">Select Package Type</option>
-                <option *ngFor="let type of packageTypes" [value]="type">{{ type }}</option>
-              </select>
+                <div *ngIf="filteredPackageTypes.length === 0" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                  No package types found
+                </div>
+                <button
+                  *ngFor="let type of filteredPackageTypes"
+                  type="button"
+                  (mousedown)="selectPackageType(type)"
+                  class="w-full px-4 py-2.5 text-left text-sm dark:text-white hover:bg-orange-50 dark:hover:bg-[#333] transition"
+                  [class.bg-orange-50]="product.packageType === type"
+                  [class.dark:bg-orange-900/20]="product.packageType === type"
+                >
+                  {{ type }}
+                </button>
+              </div>
             </div>
 
             <!-- Quantity -->
@@ -207,22 +269,52 @@
 
             <!-- Address dropdown -->
             <div *ngIf="!selectedAddress" class="relative">
-              <select
-                [(ngModel)]="selectedAddress"
-                (change)="selectedAddress && selectAddress(selectedAddress)"
-                class="w-full px-3 py-2 rounded-lg text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition appearance-none cursor-pointer"
-                [ngClass]="{
-                  'bg-gray-100 dark:bg-[#111]': !selectedAgent,
-                  'bg-red-50 dark:bg-[#331111] ring-1 ring-red-300': selectedAgent && !selectedAddress
-                }"
+              <div class="relative">
+                <input
+                  type="text"
+                  [(ngModel)]="addressSearchQuery"
+                  (focus)="onAddressFocus()"
+                  (blur)="onAddressBlur()"
+                  [placeholder]="selectedAgent ? 'Search or select address...' : 'Select an agent first...'"
+                  [disabled]="!selectedAgent"
+                  class="w-full px-3 py-2 rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                  [ngClass]="{
+                    'bg-gray-100 dark:bg-[#111] cursor-not-allowed': !selectedAgent,
+                    'bg-red-50 dark:bg-[#331111] ring-1 ring-red-300': selectedAgent && !selectedAddress
+                  }"
+                />
+                <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+                <span *ngIf="isLoadingAddresses" class="absolute right-8 top-1/2 -translate-y-1/2">
+                  <i class="fa-solid fa-circle-notch fa-spin text-orange-500 text-sm"></i>
+                </span>
+              </div>
+              <div
+                *ngIf="showAddressDropdown && selectedAgent"
+                class="absolute z-20 w-full mt-1 bg-white dark:bg-[#222] rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 max-h-56 overflow-y-auto"
               >
-                <option [ngValue]="null">Select an address...</option>
-                <option *ngIf="isLoadingAddresses" disabled>Loading addresses...</option>
-                <option *ngFor="let address of addresses" [ngValue]="address">
-                  {{ address.label }} - {{ address.address_line }}
-                </option>
-              </select>
-              <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+                <div *ngIf="filteredAddresses.length === 0" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                  <span *ngIf="isLoadingAddresses">Loading addresses...</span>
+                  <span *ngIf="!isLoadingAddresses">No addresses found</span>
+                </div>
+                <button
+                  *ngFor="let address of filteredAddresses"
+                  type="button"
+                  (mousedown)="selectAddress(address)"
+                  class="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 dark:hover:bg-[#333] transition text-left"
+                >
+                  <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white shrink-0">
+                    <i class="fa-solid fa-location-dot text-xs"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium dark:text-white truncate">
+                      {{ address.label || 'Address' }}
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {{ address.address_line }}
+                    </p>
+                  </div>
+                </button>
+              </div>
             </div>
 
             <p *ngIf="selectedAgent && !selectedAddress && addresses.length > 0" class="text-xs text-red-500 mt-2">

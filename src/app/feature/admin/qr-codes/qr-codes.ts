@@ -74,6 +74,12 @@ export class AdminQrCodes implements OnInit {
   onEdit(qr: any): void {
     this.selectedQr.set({ ...qr });
     this.modalMode.set('edit');
+    this.adminService.getQrCode(qr.uuid).subscribe({
+      next: (data: any) => {
+        this.selectedQr.set({ ...data });
+      },
+      error: () => this.toastService.error('Failed to load QR code details')
+    });
   }
 
   closeModal(): void {
@@ -84,13 +90,20 @@ export class AdminQrCodes implements OnInit {
   saveQrEdit(): void {
     const qr = this.selectedQr();
     if (!qr) return;
+
     const payload = {
       product_name: qr.product_name,
-      product_cost: qr.product_cost,
-      category: qr.category,
-      description: qr.description,
-      quantity: qr.quantity,
+      product_cost: qr.product_cost === '' || qr.product_cost === null || qr.product_cost === undefined
+        ? null
+        : String(qr.product_cost),
+      currency: qr.currency || null,
+      category: qr.category || null,
+      description: qr.description || null,
+      quantity: qr.quantity === '' || qr.quantity === null || qr.quantity === undefined
+        ? null
+        : Number(qr.quantity),
     };
+
     this.adminService.updateQrCode(qr.uuid, payload).subscribe({
       next: () => {
         this.toastService.success('QR code updated');

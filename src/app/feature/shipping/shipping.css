@@ -57,23 +57,6 @@
   }
 }
 
-/* Action menu animation */
-.action-menu {
-  animation: menuPopIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-origin: bottom right;
-}
-
-@keyframes menuPopIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.9) translateY(4px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
 /* ============================================
    BOTTOM SHEET MODAL SYSTEM
    Modern mobile-first slide-up pattern
@@ -290,29 +273,6 @@
     padding: 0.875rem;
   }
 
-  /* Action menu full-width on very small screens */
-  .action-menu {
-    position: fixed !important;
-    left: 1rem;
-    right: 1rem;
-    bottom: auto;
-    top: 50%;
-    transform: translateY(-50%);
-    width: auto;
-    max-width: none;
-    animation: menuCenterPop 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  @keyframes menuCenterPop {
-    0% {
-      opacity: 0;
-      transform: translateY(-50%) scale(0.9);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(-50%) scale(1);
-    }
-  }
 }
 
 @media (max-width: 768px) {
