@@ -7,9 +7,12 @@ import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AddressService, Address, CreateAddressRequest, UpdateAddressRequest } from '../../core/services/address.service';
+import { AgentService } from '../../core/services/agent.service';
 import { ProfileCompletionService, ProfileAnalysis } from '../../core/services/profile-completion.service';
 import { User, UpdateProfileRequest, UpdateProfileResponse } from '../../core/interfaces/auth.interface';
 import { ProfileOnboardingWizard } from '../../shared/components/profile-onboarding-wizard/profile-onboarding-wizard';
+import { resolveImageUrl } from '../../core/utils/image-url.util';
+import { TRANSPORT_CATALOG, transportLabel, transportIcon } from '../../core/utils/transport-methods.util';
 
 @Component({
   selector: 'app-manage-account',
@@ -46,6 +49,13 @@ export class ManageAccount implements OnInit {
   editingAddressId: number | null = null;
   showAddressForm = false;
 
+  // Transport method selection (agents only)
+  isAgent = false;
+  agentTransportOptions: { value: string; label: string; icon: string }[] = [];
+  isTransportDropdownOpen = false;
+
+  readonly transportCatalog = TRANSPORT_CATALOG;
+
   // Address form
   addressForm: FormGroup;
 
@@ -72,6 +82,7 @@ export class ManageAccount implements OnInit {
     private authService: AuthService,
     private userService: UserService,
     private addressService: AddressService,
+    private agentService: AgentService,
     private profileCompletionService: ProfileCompletionService,
     private cdr: ChangeDetectorRef,
     private toastService: ToastService,
@@ -93,6 +104,7 @@ export class ManageAccount implements OnInit {
     this.addressForm = this.fb.group({
       label: [''],
       address_line: ['', [Validators.required, Validators.maxLength(500)]],
+      transport_method: [''],
       is_default: [false],
     });
   }
@@ -101,6 +113,53 @@ export class ManageAccount implements OnInit {
     this.loadUserProfile();
     this.loadAddresses();
     this.checkForOnboarding();
+    this.loadAgentTransportMethods();
+  }
+
+  /**
+   * Agents tag each physical address with one of the transport methods
+   * they offer on their agent profile.
+   */
+  loadAgentTransportMethods(): void {
+    const user = this.authService.getUser();
+    this.isAgent = user?.role === 'Seller' || user?.role === 'seller';
+    if (!this.isAgent || !user?.id) return;
+
+    this.agentService.getAgentProfile(user.id).subscribe({
+      next: (agent) => {
+        const offered = agent.transport_methods || [];
+        this.agentTransportOptions = this.transportCatalog.filter(o => offered.includes(o.value));
+        // Gracefully include values not present in the catalog
+        offered.filter(v => !this.transportCatalog.some(o => o.value === v))
+          .forEach(v => this.agentTransportOptions.push({ value: v, label: v, icon: 'fa-solid fa-truck-fast' }));
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        // Not critical — dropdown just stays hidden
+      }
+    });
+  }
+
+  get selectedTransportOption(): { value: string; label: string; icon: string } | null {
+    const value = this.addressForm.get('transport_method')?.value;
+    return this.agentTransportOptions.find(o => o.value === value) || null;
+  }
+
+  toggleTransportDropdown(): void {
+    this.isTransportDropdownOpen = !this.isTransportDropdownOpen;
+  }
+
+  selectTransportMethod(value: string): void {
+    this.addressForm.patchValue({ transport_method: value });
+    this.isTransportDropdownOpen = false;
+  }
+
+  transportLabel(value: string | null | undefined): string {
+    return transportLabel(value);
+  }
+
+  transportIcon(value: string | null | undefined): string {
+    return transportIcon(value);
   }
 
   loadUserProfile(): void {
@@ -209,7 +268,7 @@ export class ManageAccount implements OnInit {
 
   get currentPhotoSrc(): string {
     // Priority: local preview > server photo > fallback
-    return this.photoPreview ?? this.user?.profile_photo ?? this.FALLBACK_PHOTO;
+    return this.photoPreview ?? resolveImageUrl(this.user?.profile_photo, this.FALLBACK_PHOTO);
   }
 
   triggerPhotoInput(): void {
@@ -387,9 +446,11 @@ export class ManageAccount implements OnInit {
   showAddAddressForm(): void {
     this.isEditingAddress = false;
     this.editingAddressId = null;
+    this.isTransportDropdownOpen = false;
     this.addressForm.reset({
       label: '',
       address_line: '',
+      transport_method: '',
       is_default: false,
     });
     this.showAddressForm = true;
@@ -398,9 +459,11 @@ export class ManageAccount implements OnInit {
   editAddress(address: Address): void {
     this.isEditingAddress = true;
     this.editingAddressId = address.id;
+    this.isTransportDropdownOpen = false;
     this.addressForm.patchValue({
       label: address.label || '',
       address_line: address.address_line,
+      transport_method: address.transport_method || '',
       is_default: address.is_default,
     });
     this.showAddressForm = true;
@@ -410,6 +473,7 @@ export class ManageAccount implements OnInit {
     this.showAddressForm = false;
     this.isEditingAddress = false;
     this.editingAddressId = null;
+    this.isTransportDropdownOpen = false;
     this.addressForm.reset();
   }
 
@@ -422,11 +486,21 @@ export class ManageAccount implements OnInit {
     this.isSavingAddress = true;
     const formValue = this.addressForm.getRawValue();
 
+    // Only agents tag addresses with a transport method
+    const transportMethod = this.isAgent ? (formValue.transport_method || null) : null;
+
+    if (this.isAgent && !transportMethod) {
+      this.addressForm.get('transport_method')?.markAsTouched();
+      this.toastService.error('Please select the transport method for this address.');
+      return;
+    }
+
     if (this.isEditingAddress && this.editingAddressId) {
       // Update existing address
       const updateData: UpdateAddressRequest = {
         label: formValue.label || undefined,
         address_line: formValue.address_line,
+        transport_method: transportMethod,
         is_default: formValue.is_default,
       };
 
@@ -448,6 +522,7 @@ export class ManageAccount implements OnInit {
       const createData: CreateAddressRequest = {
         label: formValue.label || undefined,
         address_line: formValue.address_line,
+        transport_method: transportMethod,
         is_default: formValue.is_default,
       };
 

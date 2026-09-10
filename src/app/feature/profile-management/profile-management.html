@@ -30,9 +30,10 @@
 
                     <!-- PROFILE IMAGE -->
                     <img 
-                        [src]="user?.profile_photo || 'assets/landingpage_images/profile1.webp'"
+                        [src]="profilePhotoSrc"
                         alt="Profile photo"
                         class="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-orange-500"
+                        onerror="this.src='assets/landingpage_images/profile1.webp'"
                     />
 
                     <!-- NAME + LOCATION -->

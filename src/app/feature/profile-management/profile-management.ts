@@ -2,8 +2,10 @@ import { Component, signal, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { UserService } from '../../core/services/user.service';
 import { ToastService } from '../../core/services/toast.service';
 import { User } from '../../core/interfaces/auth.interface';
+import { resolveImageUrl } from '../../core/utils/image-url.util';
 
 @Component({
   selector: 'app-profile-management',
@@ -15,6 +17,11 @@ export class ProfileManagement implements OnInit {
   showLogoutModal = signal(false);
   user: User | null = null;
   isAgent = false;
+  readonly fallbackPhoto = 'assets/landingpage_images/profile1.webp';
+
+  get profilePhotoSrc(): string {
+    return resolveImageUrl(this.user?.profile_photo, this.fallbackPhoto);
+  }
   
   tabs = [
     {
@@ -73,6 +80,7 @@ export class ProfileManagement implements OnInit {
     private location: Location,
     private router: Router,
     private authService: AuthService,
+    private userService: UserService,
     private toastService: ToastService
   ) {}
 
@@ -84,6 +92,17 @@ export class ProfileManagement implements OnInit {
     this.user = this.authService.getUser();
     // Backend uses 'Seller' for agents and 'Buyer' for clients
     this.isAgent = this.user?.role === 'Seller' || this.user?.role === 'seller';
+
+    // Refresh from server so a recently uploaded photo shows up
+    this.userService.getProfile().subscribe({
+      next: (response: any) => {
+        this.user = response.data;
+        this.authService.saveUser(response.data);
+      },
+      error: () => {
+        // Keep cached user on failure
+      }
+    });
   }
 
   goBack() {

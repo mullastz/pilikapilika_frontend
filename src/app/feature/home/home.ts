@@ -8,6 +8,7 @@ import { ShipmentService, Shipment } from '../../core/services/shipment.service'
 import { QrCodeService } from '../../core/services/qr-code.service';
 import { ProfileCompletionService, ProfileAnalysis } from '../../core/services/profile-completion.service';
 import { Agent, User } from '../../core/interfaces/auth.interface';
+import { resolveImageUrl } from '../../core/utils/image-url.util';
 import { Footer } from '../../shared/footer/footer';
 import { Header } from '../../shared/header/header';
 import { ProfileCompletionPopup } from '../../shared/components/profile-completion-popup/profile-completion-popup';
@@ -31,6 +32,10 @@ import {
 })
 export class Home implements OnInit {
   currentUser: User | null = null;
+
+  agentPhoto(agent: Agent): string {
+    return resolveImageUrl(agent.profile_photo || agent.image, 'assets/landingpage_images/profile4.jpg');
+  }
   isLoadingAgents = true;
   isLoadingShipments = true;
   isLoadingProducts = true;

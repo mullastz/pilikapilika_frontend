@@ -7,6 +7,7 @@ import { QrCodeService, QrCodeResponse } from '../../core/services/qr-code.servi
 import { AgentService } from '../../core/services/agent.service';
 import { AuthService } from '../../core/services/auth.service';
 import { AddressService, Address } from '../../core/services/address.service';
+import { transportLabel, transportIcon } from '../../core/utils/transport-methods.util';
 import { Agent, User } from '../../core/interfaces/auth.interface';
 import { UserService } from '../../core/services/user.service';
 import { environment } from '../../../environments/environment';
@@ -287,6 +288,9 @@ export class QrGenerator implements OnInit {
     this.showAddressDropdown = false;
     this.cdr.detectChanges();
   }
+
+  transportLabel = transportLabel;
+  transportIcon = transportIcon;
 
   clearAddress(): void {
     this.selectedAddress = null;

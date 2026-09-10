@@ -7,6 +7,7 @@ export interface Address {
   user_id: number;
   label: string;
   address_line: string;
+  transport_method: string | null;
   is_default: boolean;
   created_at: string;
   updated_at: string;
@@ -15,12 +16,14 @@ export interface Address {
 export interface CreateAddressRequest {
   label?: string;
   address_line: string;
+  transport_method?: string | null;
   is_default?: boolean;
 }
 
 export interface UpdateAddressRequest {
   label?: string;
   address_line?: string;
+  transport_method?: string | null;
   is_default?: boolean;
 }
 

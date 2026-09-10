@@ -7,6 +7,7 @@ import { RouterLink } from '@angular/router';
 import { AgentService } from '../../core/services/agent.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Agent } from '../../core/interfaces/auth.interface';
+import { resolveImageUrl } from '../../core/utils/image-url.util';
 import { ToastService } from '../../core/services/toast.service';
 
 @Component({
@@ -17,6 +18,10 @@ import { ToastService } from '../../core/services/toast.service';
 })
 
 export class LandingPage implements OnInit {
+  agentPhoto(agent: Agent): string {
+    return resolveImageUrl(agent.profile_photo || agent.image, 'assets/landingpage_images/profile4.jpg');
+  }
+
   @ViewChild('agentsContainer') agentsContainer!: ElementRef;
   @ViewChild('topAgentsContainer') topAgentsContainer!: ElementRef;
 
