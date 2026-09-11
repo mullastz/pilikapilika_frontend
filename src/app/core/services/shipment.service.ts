@@ -15,6 +15,7 @@ export interface Shipment {
   pickup_address: string;
   destination_address: string;
   agent_address?: string;
+  agent_transport_method?: string | null;
   estimated_price: number;
   actual_price?: number;
   status: 'pending_confirmation' | 'confirmed' | 'partially_received' | 'at_warehouse' | 'half_loaded' | 'loading_container' | 'loaded_in_container' | 'at_port_abroad' | 'in_transit' | 'at_tanzania_port' | 'at_tanzania_warehouse' | 'delivered' | 'cancelled';

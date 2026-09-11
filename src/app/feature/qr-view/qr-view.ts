@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef, NO_ERRORS_SCHEMA } from '@angular
 import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { QrCodeService } from '../../core/services/qr-code.service';
+import { transportLabel, transportIcon } from '../../core/utils/transport-methods.util';
 import { AuthService } from '../../core/services/auth.service';
 import { QRCodeComponent } from 'angularx-qrcode';
 import jsPDF from 'jspdf';
@@ -26,6 +27,7 @@ interface AgentAddress {
   id: number;
   label: string;
   address_line: string;
+  transport_method: string | null;
   is_default: boolean;
 }
 
@@ -71,6 +73,9 @@ interface QrCodeData {
   schemas: [NO_ERRORS_SCHEMA],
 })
 export class QrView implements OnInit {
+  transportLabel = transportLabel;
+  transportIcon = transportIcon;
+
   qrData: QrCodeData | null = null;
   isLoading = true;
   isDownloading = false;

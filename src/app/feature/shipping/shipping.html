@@ -901,7 +901,20 @@
               <ng-container *ngIf="s.agent_address">
                 <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
                   <span class="text-sm text-gray-500">Agent Address</span>
-                  <span class="text-sm font-medium dark:text-white text-right">{{s.agent_address}}</span>
+                  <span class="text-sm font-medium dark:text-white text-right flex items-center justify-end gap-2 flex-wrap">
+                    {{s.agent_address}}
+                    <span
+                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium shrink-0"
+                      [ngClass]="s.agent_transport_method
+                        ? (s.agent_transport_method === 'air'
+                            ? 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400'
+                            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400')
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'"
+                    >
+                      <i class="{{ s.agent_transport_method ? transportIcon(s.agent_transport_method) : 'fa-solid fa-circle-question' }}"></i>
+                      {{ s.agent_transport_method ? transportLabel(s.agent_transport_method) : 'Not Assigned' }}
+                    </span>
+                  </span>
                 </div>
               </ng-container>
               <ng-container *ngIf="s.external_tracking_number">
@@ -1101,7 +1114,20 @@
                 <ng-container *ngIf="s.agent_address">
                   <div class="flex justify-between">
                     <span class="text-sm text-gray-500">Agent Address</span>
-                    <span class="text-sm font-medium dark:text-white text-right">{{capitalize(s.agent_address)}}</span>
+                    <span class="text-sm font-medium dark:text-white text-right flex items-center justify-end gap-2 flex-wrap">
+                      {{capitalize(s.agent_address)}}
+                      <span
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium shrink-0"
+                        [ngClass]="s.agent_transport_method
+                          ? (s.agent_transport_method === 'air'
+                              ? 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400'
+                              : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400')
+                          : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'"
+                      >
+                        <i class="{{ s.agent_transport_method ? transportIcon(s.agent_transport_method) : 'fa-solid fa-circle-question' }}"></i>
+                        {{ s.agent_transport_method ? transportLabel(s.agent_transport_method) : 'Not Assigned' }}
+                      </span>
+                    </span>
                   </div>
                 </ng-container>
               </ng-container>

@@ -16,6 +16,7 @@ import {
 import { ContainerService, Container } from '../../core/services/container.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
+import { transportLabel, transportIcon } from '../../core/utils/transport-methods.util';
 import { QrCodeService } from '../../core/services/qr-code.service';
 import { MenuBarService } from '../../core/services/menu-bar.service';
 import { QRCodeComponent } from 'angularx-qrcode';
@@ -461,6 +462,9 @@ export class Shipping implements OnInit, OnDestroy {
     return value.toString().toLowerCase().split(' ')
       .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
+
+  transportLabel = transportLabel;
+  transportIcon = transportIcon;
 
   // Pagination pages array with smart ellipsis
   get pages(): (number | string)[] {
