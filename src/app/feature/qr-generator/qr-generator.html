@@ -349,6 +349,53 @@
             </p>
           </div>
 
+          <!-- Transport method selection (shown when the selected agent offers transport methods) -->
+          <div *ngIf="selectedAgent && agentTransportOptions.length > 0" class="mt-4">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Transport Method <span class="text-red-500">*</span>
+            </label>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              Choose how this shipment should be transported
+            </p>
+
+            <div class="grid grid-cols-2 gap-3">
+              <button
+                *ngFor="let option of agentTransportOptions"
+                type="button"
+                (click)="selectTransportMethod(option.value)"
+                class="flex items-center gap-3 p-3 rounded-xl border-2 transition text-left"
+                [ngClass]="selectedTransportMethod === option.value
+                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] hover:border-orange-300 dark:hover:border-orange-700'"
+              >
+                <div
+                  class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition"
+                  [ngClass]="selectedTransportMethod === option.value
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-gray-100 dark:bg-[#333] text-orange-500'"
+                >
+                  <i class="{{ option.icon }}"></i>
+                </div>
+                <span
+                  class="text-sm font-medium flex-1"
+                  [ngClass]="selectedTransportMethod === option.value
+                    ? 'text-orange-600 dark:text-orange-400'
+                    : 'text-gray-700 dark:text-gray-200'"
+                >
+                  {{ option.label }}
+                </span>
+                <i
+                  *ngIf="selectedTransportMethod === option.value"
+                  class="fa-solid fa-circle-check text-orange-500"
+                ></i>
+              </button>
+            </div>
+
+            <p *ngIf="!selectedTransportMethod" class="text-xs text-red-500 mt-2">
+              <i class="fa-solid fa-circle-exclamation mr-1"></i>Please choose a transport method
+            </p>
+          </div>
+
           <!-- Search input -->
           <div *ngIf="!selectedAgent" class="relative">
             <div class="relative">

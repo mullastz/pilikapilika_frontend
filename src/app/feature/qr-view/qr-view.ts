@@ -57,6 +57,7 @@ interface QrCodeData {
   assigned_agent_uuid: string | null;
   agent: AgentDetails | null;
   agent_address: AgentAddress | null;
+  transport_method: string | null;
   customer: CustomerDetails | null;
   photos: string[] | null;
   qr_data: string;

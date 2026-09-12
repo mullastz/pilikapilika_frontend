@@ -91,7 +91,7 @@
             <div class="flex items-center justify-between gap-2">
               <span class="font-semibold text-gray-900 dark:text-white truncate">{{ capitalize(shipment.title) || shipment.tracking_number }}</span>
               <span [class]="getStatusClass(shipment.status)" class="px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap">
-                {{ getStatusLabel(shipment.status) }}
+                {{ getStatusLabel(shipment.status, shipment.transport_method) }}
               </span>
             </div>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -112,7 +112,7 @@
               </div>
               <!-- Mini stage dots -->
               <div class="flex items-center justify-between mt-2 px-0.5">
-                @for (stage of getProgressStagesForShipment(shipment.status); let last = $last; track stage.key) {
+                @for (stage of getProgressStagesForShipment(shipment.status, shipment.transport_method); let last = $last; track stage.key) {
                   <div class="flex flex-col items-center" [class.flex-1]="!last">
                     <div class="w-1.5 h-1.5 rounded-full transition-colors duration-300"
                          [class.bg-green-500]="stage.completed"

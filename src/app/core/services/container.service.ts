@@ -6,6 +6,7 @@ export interface Container {
   id: string;
   agent_id: string;
   reference_number: string;
+  transport_method?: 'air' | 'sea' | null;
   status: 'draft' | 'closed' | 'in_transit' | 'at_tanzania_port' | 'at_tanzania_warehouse';
   closed_at?: string;
   in_transit_at?: string;
@@ -25,14 +26,15 @@ export class ContainerService {
 
   constructor(private apiService: ApiService) {}
 
-  getContainers(): Observable<{ success: boolean; data: { containers: Container[] } }> {
-    return this.apiService.get<{ success: boolean; data: { containers: Container[] } }>(this.endpoint, {});
+  getContainers(transportMethod?: string | null): Observable<{ success: boolean; data: { containers: Container[] } }> {
+    const params = transportMethod ? `?transport_method=${transportMethod}` : '';
+    return this.apiService.get<{ success: boolean; data: { containers: Container[] } }>(this.endpoint + params, {});
   }
 
-  createContainer(referenceNumber: string): Observable<{ success: boolean; message: string; data: { container: Container } }> {
+  createContainer(referenceNumber: string, transportMethod?: string | null): Observable<{ success: boolean; message: string; data: { container: Container } }> {
     return this.apiService.post<{ success: boolean; message: string; data: { container: Container } }>(
       this.endpoint,
-      { reference_number: referenceNumber }
+      { reference_number: referenceNumber, transport_method: transportMethod ?? null }
     );
   }
 

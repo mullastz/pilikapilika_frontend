@@ -23,6 +23,21 @@ export const SHIPMENT_STATUS_ORDER: readonly string[] = [
   'delivered',
 ] as const;
 
+/**
+ * Localizes wording for the transport method: air freight uses
+ * "Batch"/"Airport" terminology instead of "Container"/"Port".
+ */
+export function localizeShipmentLabel(label: string, transportMethod?: string | null): string {
+  if (transportMethod !== 'air') return label;
+  return label
+    .replace(/Port/g, 'Airport')
+    .replace(/port/g, 'airport')
+    .replace(/Container/g, 'Batch')
+    .replace(/Containers/g, 'Batches')
+    .replace(/container/g, 'batch')
+    .replace(/containers/g, 'batches');
+}
+
 /** Mapping of each status to its completion percentage. */
 export const SHIPMENT_PROGRESS_WEIGHTS: Record<string, number> = {
   pending_confirmation: 5,
@@ -83,7 +98,7 @@ export function getShipmentStageIndex(status: string): number {
 /**
  * Returns a user-friendly label for a shipment status.
  */
-export function getShipmentStageLabel(status: string): string {
+export function getShipmentStageLabel(status: string, transportMethod?: string | null): string {
   const labels: Record<string, string> = {
     pending_confirmation: 'Pending Confirmation',
     confirmed: 'Confirmed',
@@ -100,7 +115,8 @@ export function getShipmentStageLabel(status: string): string {
     cancelled: 'Cancelled',
   };
 
-  return labels[status] ?? status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  const label = labels[status] ?? status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  return localizeShipmentLabel(label, transportMethod);
 }
 
 /**
@@ -153,12 +169,13 @@ export function isStageCurrent(shipmentStatus: string, stageStatus: string): boo
  */
 export function getProgressStages(
   status: string,
-  dates?: Record<string, string | null>
+  dates?: Record<string, string | null>,
+  transportMethod?: string | null
 ): ProgressStage[] {
   if (status === 'cancelled') {
     return SHIPMENT_STATUS_ORDER.map((key) => ({
       key,
-      label: STAGE_META[key]?.label ?? getShipmentStageLabel(key),
+      label: localizeShipmentLabel(STAGE_META[key]?.label ?? getShipmentStageLabel(key), transportMethod),
       icon: STAGE_META[key]?.icon ?? 'fa-circle',
       completed: false,
       current: false,
@@ -170,7 +187,7 @@ export function getProgressStages(
 
   return SHIPMENT_STATUS_ORDER.map((key, index) => ({
     key,
-    label: STAGE_META[key]?.label ?? getShipmentStageLabel(key),
+    label: localizeShipmentLabel(STAGE_META[key]?.label ?? getShipmentStageLabel(key), transportMethod),
     icon: STAGE_META[key]?.icon ?? 'fa-circle',
     completed: index <= currentIndex,
     current: index === currentIndex,

@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Html5Qrcode } from 'html5-qrcode';
 import { ShipmentService, Shipment } from '../../core/services/shipment.service';
 import {
+  localizeShipmentLabel,
   getShipmentProgress,
   getShipmentProgressColor,
   getShipmentStageLabel,
@@ -452,8 +453,9 @@ export class Shipping implements OnInit, OnDestroy {
     }
   }
 
-  formatStatus(status: string): string {
-    return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  formatStatus(status: string, transportMethod?: string | null): string {
+    const label = status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return localizeShipmentLabel(label, transportMethod);
   }
 
   // Capitalize helper for names, regions, etc.
@@ -465,6 +467,29 @@ export class Shipping implements OnInit, OnDestroy {
 
   transportLabel = transportLabel;
   transportIcon = transportIcon;
+
+  /**
+   * Transport-aware wording: air freight uses "Batch"/"Airport",
+   * sea freight (and unset) uses "Container"/"Port".
+   */
+  containerTerm(shipment?: Shipment | null, plural = false): string {
+    const air = shipment?.transport_method === 'air';
+    if (plural) return air ? 'Batches' : 'Containers';
+    return air ? 'Batch' : 'Container';
+  }
+
+  portTerm(shipment?: Shipment | null): string {
+    return shipment?.transport_method === 'air' ? 'Airport' : 'Port';
+  }
+
+  /** Wording context for the container/batch modal */
+  get modalTerm(): string {
+    return this.containerTerm(this.selectedShipmentForContainer());
+  }
+
+  get modalTermPlural(): string {
+    return this.containerTerm(this.selectedShipmentForContainer(), true);
+  }
 
   // Pagination pages array with smart ellipsis
   get pages(): (number | string)[] {
@@ -494,8 +519,8 @@ export class Shipping implements OnInit, OnDestroy {
     return getShipmentProgressColor(status);
   }
 
-  getShipmentStageLabel(status: string): string {
-    return getShipmentStageLabel(status);
+  getShipmentStageLabel(status: string, transportMethod?: string | null): string {
+    return getShipmentStageLabel(status, transportMethod);
   }
 
   isStageCompleted(shipmentStatus: string, stageStatus: string): boolean {
@@ -506,8 +531,8 @@ export class Shipping implements OnInit, OnDestroy {
     return isStageCurrent(shipmentStatus, stageStatus);
   }
 
-  getProgressStages(status: string): ProgressStage[] {
-    return getProgressStages(status);
+  getProgressStages(status: string, transportMethod?: string | null): ProgressStage[] {
+    return getProgressStages(status, undefined, transportMethod);
   }
 
   trackShipment(shipment: Shipment): void {
@@ -704,7 +729,7 @@ export class Shipping implements OnInit, OnDestroy {
     this.shipmentService.markAsAtPortAbroad(shipment.id).subscribe({
       next: (response) => {
         if (response.success) {
-          this.toastService.success('Shipment marked as at port abroad');
+          this.toastService.success(`Shipment marked as at ${this.portTerm(shipment).toLowerCase()} abroad`);
           this.loadShipments();
         } else {
           this.toastService.error(response.message || 'Failed to update shipment');
@@ -1049,7 +1074,9 @@ export class Shipping implements OnInit, OnDestroy {
   // Container management methods
   loadContainers(): void {
     this.containersLoading.set(true);
-    this.containerService.getContainers().subscribe({
+    // When loading a shipment, only list batches/containers matching its transport method
+    const transportFilter = this.selectedShipmentForContainer()?.transport_method ?? null;
+    this.containerService.getContainers(transportFilter).subscribe({
       next: (response) => {
         if (response.success) {
           this.containers.set(response.data.containers);
@@ -1188,20 +1215,23 @@ export class Shipping implements OnInit, OnDestroy {
       return;
     }
     this.creatingContainer.set(true);
-    this.containerService.createContainer(ref).subscribe({
+    this.containerService.createContainer(ref, this.selectedShipmentForContainer()?.transport_method ?? null).subscribe({
       next: (response) => {
         if (response.success) {
-          this.toastService.success('Container created successfully');
+          this.toastService.success(`${this.modalTerm} created successfully`);
           this.newContainerRef.set('');
           this.loadContainers();
         } else {
-          this.toastService.error(response.message || 'Failed to create container');
+          this.toastService.error(response.message || `Failed to create ${this.modalTerm.toLowerCase()}`);
         }
         this.creatingContainer.set(false);
       },
       error: (error: any) => {
         console.error('Failed to create container:', error);
-        this.toastService.error('Failed to create container');
+        // Surface the first server validation error (e.g. duplicate reference number)
+        const errors = error?.error?.errors;
+        const firstError = errors ? Object.values(errors).flat()[0] as string : null;
+        this.toastService.error(firstError || `Failed to create ${this.modalTerm.toLowerCase()}`);
         this.creatingContainer.set(false);
       }
     });
@@ -1435,7 +1465,9 @@ export class Shipping implements OnInit, OnDestroy {
 
   getNextContainerStatusLabel(status: string): string {
     const next = this.getNextContainerStatus(status);
-    return next ? next.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : '';
+    if (!next) return '';
+    const label = next.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return localizeShipmentLabel(label, this.selectedShipmentForContainer()?.transport_method);
   }
 
   // Tracking number methods
@@ -1799,10 +1831,10 @@ export class Shipping implements OnInit, OnDestroy {
       items.push({ label: 'At Warehouse', icon: 'fa-warehouse', colorClass: 'text-indigo-600 dark:text-indigo-400', action: () => this.markAsAtWarehouseAction(shipment), disabled: this.isUpdating(shipment.id) });
     }
     if (this.canLoadToContainer(shipment)) {
-      items.push({ label: 'Load to Container', icon: 'fa-dolly', colorClass: 'text-orange-600 dark:text-orange-400', action: () => this.openContainerModal(shipment), disabled: this.isUpdating(shipment.id) });
+      items.push({ label: `Load to ${this.containerTerm(shipment)}`, icon: 'fa-dolly', colorClass: 'text-orange-600 dark:text-orange-400', action: () => this.openContainerModal(shipment), disabled: this.isUpdating(shipment.id) });
     }
     if (this.canRemoveFromContainer(shipment)) {
-      items.push({ label: 'Remove from Container', icon: 'fa-arrow-left', colorClass: 'text-yellow-600 dark:text-yellow-400', action: () => this.removeShipmentFromContainer(shipment), disabled: this.isUpdating(shipment.id) });
+      items.push({ label: `Remove from ${this.containerTerm(shipment)}`, icon: 'fa-arrow-left', colorClass: 'text-yellow-600 dark:text-yellow-400', action: () => this.removeShipmentFromContainer(shipment), disabled: this.isUpdating(shipment.id) });
     }
     if (this.canMarkInTransit(shipment)) {
       items.push({ label: 'In Transit', icon: 'fa-truck', colorClass: 'text-blue-600 dark:text-blue-400', action: () => this.markAsInTransitAction(shipment), disabled: this.isUpdating(shipment.id) });

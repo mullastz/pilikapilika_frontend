@@ -7,7 +7,7 @@ import { QrCodeService, QrCodeResponse } from '../../core/services/qr-code.servi
 import { AgentService } from '../../core/services/agent.service';
 import { AuthService } from '../../core/services/auth.service';
 import { AddressService, Address } from '../../core/services/address.service';
-import { transportLabel, transportIcon } from '../../core/utils/transport-methods.util';
+import { transportLabel, transportIcon, TRANSPORT_CATALOG } from '../../core/utils/transport-methods.util';
 import { Agent, User } from '../../core/interfaces/auth.interface';
 import { UserService } from '../../core/services/user.service';
 import { environment } from '../../../environments/environment';
@@ -156,13 +156,30 @@ export class QrGenerator implements OnInit {
     this.selectedAgent = agent;
     this.agentSearchQuery = '';
     this.clearAddress();
+    this.selectedTransportMethod = null;
     this.loadAgentAddresses(agent.uuid);
   }
 
   clearAgent(): void {
     this.selectedAgent = null;
     this.selectedAddress = null;
+    this.selectedTransportMethod = null;
     this.agentSearchQuery = '';
+    this.cdr.detectChanges();
+  }
+
+  // ── Transport method selection ──────────────────────────────────
+
+  /** Transport options offered by the selected agent */
+  get agentTransportOptions(): { value: string; label: string; icon: string }[] {
+    const offered: string[] = this.selectedAgent?.transport_methods || [];
+    return offered.map(v =>
+      TRANSPORT_CATALOG.find(o => o.value === v) || { value: v, label: v, icon: 'fa-solid fa-truck-fast' }
+    );
+  }
+
+  selectTransportMethod(value: string): void {
+    this.selectedTransportMethod = value;
     this.cdr.detectChanges();
   }
 
@@ -286,11 +303,19 @@ export class QrGenerator implements OnInit {
     this.selectedAddress = address;
     this.addressSearchQuery = '';
     this.showAddressDropdown = false;
+    // Pre-select the transport method tagged on this address when possible
+    if (!this.selectedTransportMethod && address.transport_method
+        && this.agentTransportOptions.some(o => o.value === address.transport_method)) {
+      this.selectedTransportMethod = address.transport_method;
+    }
     this.cdr.detectChanges();
   }
 
   transportLabel = transportLabel;
   transportIcon = transportIcon;
+
+  // Selected transport method for this shipment (chosen from the agent's offered methods)
+  selectedTransportMethod: string | null = null;
 
   clearAddress(): void {
     this.selectedAddress = null;
@@ -349,6 +374,7 @@ export class QrGenerator implements OnInit {
     if (this.product.totalVolume.trim()) formData.append('total_volume', this.product.totalVolume.trim());
     if (this.selectedAgent)             formData.append('assigned_agent_uuid', this.selectedAgent.uuid);
     if (this.selectedAddress)           formData.append('agent_address_id', String(this.selectedAddress.id));
+    if (this.selectedTransportMethod)   formData.append('transport_method', this.selectedTransportMethod);
 
     this.productPhotos.forEach((photo) => {
       if (photo.file.size > 0) formData.append('photos[]', photo.file);
@@ -400,7 +426,8 @@ export class QrGenerator implements OnInit {
     return (
       this.product.name.trim() !== '' &&
       this.selectedAgent !== null &&
-      this.selectedAddress !== null
+      this.selectedAddress !== null &&
+      (this.agentTransportOptions.length === 0 || this.selectedTransportMethod !== null)
     );
   }
 
@@ -413,6 +440,9 @@ export class QrGenerator implements OnInit {
     }
     if (!this.selectedAddress) {
       return 'Please select an agent address for pickup';
+    }
+    if (this.agentTransportOptions.length > 0 && !this.selectedTransportMethod) {
+      return 'Please choose a transport method for this shipment';
     }
     return '';
   }
@@ -683,6 +713,11 @@ export class QrGenerator implements OnInit {
           this.selectedAddress = data.agent_address;
         }
 
+        // Restore selected transport method
+        if (data.transport_method) {
+          this.selectedTransportMethod = data.transport_method;
+        }
+
         this.qrUuid = data.uuid;
         this.generatedQR = data.qr_data;
         this.isLoading = false;
@@ -700,6 +735,7 @@ export class QrGenerator implements OnInit {
     this.errorMessage = null;
     this.qrUuid = null;
     this.editUuid = null;
+    this.selectedTransportMethod = null;
     this.isEditMode = false;
     this.selectedAgent = null;
     this.selectedAddress = null;

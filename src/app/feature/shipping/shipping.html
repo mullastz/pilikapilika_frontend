@@ -171,7 +171,7 @@
                                 <span
                                   class="status-badge text-[11px] font-semibold px-3 py-1 rounded-full whitespace-nowrap shadow-sm"
                                   [ngClass]="getStatusClass(shipment.status)">
-                                  {{formatStatus(shipment.status)}}
+                                  {{formatStatus(shipment.status, shipment.transport_method)}}
                                 </span>
                                 <span *ngIf="getExpectedQuantity(shipment) > 1"
                                   class="text-[10px] bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-md font-medium">
@@ -220,7 +220,7 @@
                         </div>
                         <!-- Mini stage dots -->
                         <div class="flex items-center justify-between mt-2 px-0.5">
-                            <ng-container *ngFor="let stage of getProgressStages(shipment.status); let last = last">
+                            <ng-container *ngFor="let stage of getProgressStages(shipment.status, shipment.transport_method); let last = last">
                                 <div class="flex flex-col items-center" [class.flex-1]="!last">
                                     <div class="w-2 h-2 rounded-full transition-colors duration-300"
                                          [class.bg-green-500]="stage.completed"
@@ -259,7 +259,7 @@
                         <div *ngIf="shipment.container_id" class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-3 mt-2">
                             <p class="text-xs text-indigo-700 dark:text-indigo-300 flex items-start gap-2">
                                 <i class="fa-solid fa-box-open mt-0.5 shrink-0"></i>
-                                <span>This shipment is part of a container. Status updates are managed via container.</span>
+                                <span>This shipment is part of a {{containerTerm(shipment).toLowerCase()}}. Status updates are managed via {{containerTerm(shipment).toLowerCase()}}.</span>
                             </p>
                         </div>
 
@@ -483,7 +483,7 @@
       <div class="sheet-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sm:rounded-t-2xl">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
           <i class="fa-solid fa-box-open text-indigo-500 mr-2"></i>
-          Container Management
+          {{modalTerm}} Management
         </h3>
         <button (click)="closeContainerModal()" class="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-[#333] flex items-center justify-center transition">
           <i class="fa-solid fa-times text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"></i>
@@ -492,12 +492,12 @@
 
       <!-- Create Container Section -->
       <div class="p-6 border-b border-gray-100 dark:border-gray-700">
-        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Create New Container</h4>
+        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Create New {{modalTerm}}</h4>
         <div class="flex gap-3">
           <input
             type="text"
             [(ngModel)]="newContainerRef"
-            placeholder="Enter container reference number"
+            [placeholder]="'Enter ' + modalTerm.toLowerCase() + ' reference number'"
             class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#222] text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           />
           <button
@@ -513,7 +513,7 @@
 
       <!-- Containers List -->
       <div class="p-6">
-        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Your Containers</h4>
+        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Your {{modalTermPlural}}</h4>
         
         <div *ngIf="containersLoading()" class="text-center py-8">
           <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
@@ -521,7 +521,7 @@
 
         <div *ngIf="!containersLoading() && containers().length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
           <i class="fa-solid fa-box-open text-3xl mb-2"></i>
-          <p class="text-sm">No containers yet</p>
+          <p class="text-sm">No {{modalTermPlural.toLowerCase()}} yet</p>
         </div>
 
         <div *ngIf="selectedShipmentForContainer()" class="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
@@ -529,7 +529,7 @@
             <i class="fa-solid fa-box mr-1"></i>
             Loading shipment: <strong>{{selectedShipmentForContainer()!.title || 'Untitled'}}</strong>
           </p>
-          <p class="text-xs text-orange-600 dark:text-orange-400 mt-1">Select a draft container below to add this shipment.</p>
+          <p class="text-xs text-orange-600 dark:text-orange-400 mt-1">Select a draft {{modalTerm.toLowerCase()}} below to add this shipment.</p>
         </div>
 
         <div *ngIf="!containersLoading() && containers().length > 0" class="space-y-3">
@@ -539,7 +539,7 @@
               <div>
                 <p class="font-medium dark:text-white">{{container.reference_number}}</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  Status: <span class="font-medium" [ngClass]="getStatusClass(container.status)">{{formatStatus(container.status)}}</span>
+                  Status: <span class="font-medium" [ngClass]="getStatusClass(container.status)">{{formatStatus(container.status, container.transport_method)}}</span>
                   <span *ngIf="container.shipments_count"> &middot; {{container.shipments_count}} shipment(s)</span>
                 </p>
               </div>
@@ -649,7 +649,7 @@
                 </p>
                 <p *ngIf="status.containers && status.containers.length > 0" class="text-xs text-gray-600 dark:text-gray-400">
                   <ng-container *ngFor="let c of status.containers; let last = last; let first = first">
-                    <span *ngIf="first">at Container </span>
+                    <span *ngIf="first">at {{modalTerm}} </span>
                     <span class="font-medium">({{c.reference_number}})</span>: <strong>{{c.quantity}}</strong> unit(s)<span *ngIf="!last">, </span>
                   </ng-container>
                 </p>
@@ -663,7 +663,7 @@
           <!-- Loading state for half_loaded -->
           <div *ngIf="selectedShipmentForContainer()?.status === 'half_loaded' && containerStatusLoading()" class="text-xs text-orange-600 dark:text-orange-400 mt-1">
             <div class="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-orange-500 mr-1"></div>
-            Loading container details...
+            Loading {{modalTerm.toLowerCase()}} details...
           </div>
 
           <!-- Error state -->
@@ -699,7 +699,7 @@
             [disabled]="updatingShipment() === selectedShipmentForContainer()?.id"
             class="w-full px-4 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition font-medium text-sm disabled:opacity-50">
             <span *ngIf="updatingShipment() === selectedShipmentForContainer()?.id" class="animate-spin inline-block w-3 h-3 border border-white border-t-transparent rounded-full mr-1"></span>
-            Load to Container
+            Load to {{modalTerm}}
           </button>
           <!-- Show "Load All" for at_warehouse (first load) -->
           <button
@@ -753,19 +753,19 @@
       <div class="sheet-content p-6">
         <div class="mb-4">
           <span class="text-xs px-3 py-1 rounded-full" [ngClass]="getStatusClass(selectedContainer()!.status)">
-            {{formatStatus(selectedContainer()!.status)}}
+            {{formatStatus(selectedContainer()!.status, selectedContainer()!.transport_method)}}
           </span>
         </div>
-        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Shipments in Container</h4>
+        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Shipments in {{modalTerm}}</h4>
         <div *ngIf="!hasContainerShipments()" class="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
-          No shipments in this container
+          No shipments in this {{modalTerm.toLowerCase()}}
         </div>
         <div *ngIf="hasContainerShipments()" class="space-y-2">
           <div *ngFor="let s of getContainerShipments()" class="bg-gray-50 dark:bg-[#222] rounded-lg p-3">
             <p class="text-sm font-medium dark:text-white">{{s.title || 'Untitled'}}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400">
               Status: {{formatStatus(s.status)}}
-              <span *ngIf="s.pivot_quantity" class="ml-2 text-orange-500 font-medium">&middot; Qty in this container: {{s.pivot_quantity}}</span>
+              <span *ngIf="s.pivot_quantity" class="ml-2 text-orange-500 font-medium">&middot; Qty in this {{modalTerm.toLowerCase()}}: {{s.pivot_quantity}}</span>
             </p>
 
             <!-- Distribution info for half_loaded / loading_container shipments -->
@@ -782,13 +782,13 @@
                   Total Quantity: <strong>{{dist.data.expected_quantity}}</strong>
                 </p>
                 <p class="text-xs text-green-600 dark:text-green-400">
-                  Distributed across <strong>{{dist.data.containers.length}}</strong> container(s):
+                  Distributed across <strong>{{dist.data.containers.length}}</strong> {{modalTerm.toLowerCase()}}(s):
                 </p>
                 <div class="space-y-1">
                   <div *ngFor="let c of dist.data.containers" class="flex items-center justify-between text-xs">
                     <span class="text-gray-600 dark:text-gray-400">
                       <i class="fa-solid fa-box mr-1"></i>
-                      Container <span class="font-medium">({{c.reference_number}})</span>:
+                      {{modalTerm}} <span class="font-medium">({{c.reference_number}})</span>:
                     </span>
                     <span class="text-orange-600 dark:text-orange-400 font-medium">{{c.quantity}} unit(s)</span>
                   </div>
@@ -882,8 +882,8 @@
               </div>
               <ng-container *ngIf="s.container_id">
                 <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
-                  <span class="text-sm text-gray-500">Container</span>
-                  <span class="text-sm font-medium text-indigo-600 dark:text-indigo-400">In Container</span>
+                  <span class="text-sm text-gray-500">{{containerTerm(s)}}</span>
+                  <span class="text-sm font-medium text-indigo-600 dark:text-indigo-400">In {{containerTerm(s)}}</span>
                 </div>
               </ng-container>
               <ng-container *ngIf="s.agent_delivered_at">
@@ -914,6 +914,22 @@
                       <i class="{{ s.agent_transport_method ? transportIcon(s.agent_transport_method) : 'fa-solid fa-circle-question' }}"></i>
                       {{ s.agent_transport_method ? transportLabel(s.agent_transport_method) : 'Not Assigned' }}
                     </span>
+                  </span>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="s.agent_address">
+                <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                  <span class="text-sm text-gray-500">Transport Method</span>
+                  <span
+                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    [ngClass]="s.transport_method
+                      ? (s.transport_method === 'air'
+                          ? 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400'
+                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400')
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'"
+                  >
+                    <i class="{{ s.transport_method ? transportIcon(s.transport_method) : 'fa-solid fa-circle-question' }}"></i>
+                    {{ s.transport_method ? transportLabel(s.transport_method) : 'Not Specified' }}
                   </span>
                 </div>
               </ng-container>

@@ -13,6 +13,7 @@ import { Footer } from '../../shared/footer/footer';
 import { Header } from '../../shared/header/header';
 import { ProfileCompletionPopup } from '../../shared/components/profile-completion-popup/profile-completion-popup';
 import {
+  localizeShipmentLabel,
   getShipmentProgress,
   getShipmentProgressColor,
   getShipmentStageLabel,
@@ -285,16 +286,16 @@ export class Home implements OnInit {
     return getStatusBadgeClass(status);
   }
 
-  getStatusLabel(status: string): string {
-    return getShipmentStageLabel(status);
+  getStatusLabel(status: string, transportMethod?: string | null): string {
+    return getShipmentStageLabel(status, transportMethod);
   }
 
   getProgressBarColor(status: string): string {
     return getShipmentProgressColor(status);
   }
 
-  getProgressStagesForShipment(status: string): ProgressStage[] {
-    return getProgressStages(status);
+  getProgressStagesForShipment(status: string, transportMethod?: string | null): ProgressStage[] {
+    return getProgressStages(status, undefined, transportMethod);
   }
 
   trackByAgentId(index: number, agent: Agent): number {
@@ -433,7 +434,7 @@ export class Home implements OnInit {
   }
 
   getEstimatedDelivery(shipment: Shipment): string {
-    return formatShipmentStatus(shipment.status);
+    return localizeShipmentLabel(formatShipmentStatus(shipment.status), shipment.transport_method);
   }
 
   /**
