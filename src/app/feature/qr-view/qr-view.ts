@@ -179,12 +179,8 @@ export class QrView implements OnInit {
 
     const productRows: [string, string][] = [
       ['Product Name', this.qrData.product_name],
-      ['Description', this.qrData.description || ''],
-      ['Category', this.qrData.category || ''],
       ['Package Type', this.qrData.package_type || ''],
       ['Quantity', this.qrData.quantity ? String(this.qrData.quantity) : ''],
-      ['Total Weight', this.qrData.total_weight ? `${this.qrData.total_weight} kg` : ''],
-      ['Total Volume', this.qrData.total_volume ? `${this.qrData.total_volume} m³` : ''],
     ];
 
     const agentRows: [string, string][] = agent ? [

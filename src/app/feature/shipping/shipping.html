@@ -29,10 +29,52 @@
                         class="px-3 py-1.5 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition flex items-center gap-2 shadow-sm"
                     >
                         <i class="fa-solid fa-box-open"></i>
-                        Containers
+                        {{modalTermPlural}}
                     </button>
                 </div>
 
+            </div>
+
+            <!-- TRANSPORT CATEGORY -->
+            <div *ngIf="isAgent()" class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm mb-6 p-4">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mr-1">
+                        <i class="fa-solid fa-truck-fast text-orange-500 mr-1"></i>
+                        Transport
+                    </span>
+                    <ng-container *ngIf="showTransportToggle(); else singleMode">
+                        <button
+                            (click)="setTransportMode('sea')"
+                            class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition flex items-center gap-2"
+                            [class]="transportMode() === 'sea' ?
+                                'bg-orange-500 text-white shadow-sm' :
+                                'bg-gray-100 dark:bg-[#222] text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#333]'"
+                        >
+                            <i class="fa-solid fa-ship"></i>
+                            Sea Freight
+                        </button>
+                        <button
+                            (click)="setTransportMode('air')"
+                            class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition flex items-center gap-2"
+                            [class]="transportMode() === 'air' ?
+                                'bg-orange-500 text-white shadow-sm' :
+                                'bg-gray-100 dark:bg-[#222] text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#333]'"
+                        >
+                            <i class="fa-solid fa-plane"></i>
+                            Air Freight
+                        </button>
+                    </ng-container>
+                    <ng-template #singleMode>
+                        <span class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg bg-orange-500 text-white shadow-sm flex items-center gap-2">
+                            <i class="fa-solid {{transportMode() === 'air' ? 'fa-plane' : 'fa-ship'}}"></i>
+                            {{transportMode() === 'air' ? 'Air Freight' : 'Sea Freight'}}
+                        </span>
+                    </ng-template>
+                    <span *ngIf="transportProfileLoading()" class="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1.5 ml-1">
+                        <span class="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-orange-500"></span>
+                        Loading transport methods...
+                    </span>
+                </div>
             </div>
 
             <!-- AGENT TABS -->
@@ -47,7 +89,7 @@
                             'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#333]'"
                     >
                         <i class="fa-solid {{tab.icon}}"></i>
-                        <span>{{tab.label}}</span>
+                        <span>{{agentTabLabel(tab)}}</span>
                     </button>
                 </div>
             </div>
@@ -95,10 +137,10 @@
                             <ng-container *ngSwitchCase="'confirmed'">No confirmed shipments at the moment.</ng-container>
                             <ng-container *ngSwitchCase="'at_warehouse'">No shipments at the warehouse.</ng-container>
                             <ng-container *ngSwitchCase="'loading_container'">No shipments being loaded.</ng-container>
-                            <ng-container *ngSwitchCase="'loaded_in_container'">No shipments loaded in containers.</ng-container>
-                            <ng-container *ngSwitchCase="'at_port_abroad'">No shipments at port abroad.</ng-container>
+                            <ng-container *ngSwitchCase="'loaded_in_container'">No shipments loaded in {{modalTermPlural.toLowerCase()}}.</ng-container>
+                            <ng-container *ngSwitchCase="'at_port_abroad'">No shipments at {{modePortTerm().toLowerCase()}} abroad.</ng-container>
                             <ng-container *ngSwitchCase="'in_transit'">No shipments currently in transit.</ng-container>
-                            <ng-container *ngSwitchCase="'at_tanzania_port'">No shipments at Tanzania port.</ng-container>
+                            <ng-container *ngSwitchCase="'at_tanzania_port'">No shipments at Tanzania {{modePortTerm().toLowerCase()}}.</ng-container>
                             <ng-container *ngSwitchCase="'at_tanzania_warehouse'">No shipments at Tanzania warehouse.</ng-container>
                             <ng-container *ngSwitchCase="'delivered'">No delivered shipments yet.</ng-container>
                             <ng-container *ngSwitchCase="'my_shippings'">No shipments booked to other agents.</ng-container>
@@ -999,7 +1041,7 @@
                 <ng-container *ngIf="dist.data && dist.data.containers.length > 0">
                   <div class="border-b border-gray-200 dark:border-gray-700 pb-2">
                     <div class="flex justify-between items-start">
-                      <span class="text-sm text-gray-500">Container Distribution</span>
+                      <span class="text-sm text-gray-500">{{containerTerm(s)}} Distribution</span>
                       <div class="text-right">
                         <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
                           {{ dist.data.is_fully_loaded ? 'Fully Loaded' : 'Partially Loaded' }}
@@ -1020,7 +1062,7 @@
                         <span class="font-medium text-orange-500">{{dist.data.remaining_quantity}}</span>
                       </div>
                       <div class="pt-1.5">
-                        <p class="text-xs text-gray-500 mb-1">Distributed across {{dist.data.containers.length}} container(s):</p>
+                        <p class="text-xs text-gray-500 mb-1">Distributed across {{dist.data.containers.length}} {{containerTerm(s, true).toLowerCase()}}:</p>
                         <div class="flex flex-wrap gap-1.5">
                           <span *ngFor="let c of dist.data.containers" class="text-xs px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
                             {{c.reference_number}}: <strong>{{c.quantity}}</strong>
@@ -1032,7 +1074,7 @@
                 </ng-container>
                 <ng-container *ngIf="dist.loading">
                   <div class="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
-                    <span class="text-sm text-gray-500">Container Distribution</span>
+                    <span class="text-sm text-gray-500">{{containerTerm(s)}} Distribution</span>
                     <span class="text-sm text-gray-400"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading...</span>
                   </div>
                 </ng-container>
@@ -1052,7 +1094,7 @@
                       </span>
                     </div>
                     <div *ngIf="!readiness.data.can_deliver && readiness.data.pending_containers.length > 0" class="mt-1.5">
-                      <p class="text-xs text-gray-500 mb-1">Waiting for containers:</p>
+                      <p class="text-xs text-gray-500 mb-1">Waiting for {{containerTerm(s, true).toLowerCase()}}:</p>
                       <div class="flex flex-wrap gap-1.5">
                         <span *ngFor="let c of readiness.data.pending_containers" class="text-xs px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
                           {{c.reference_number}} <span class="text-gray-400">({{formatStatus(c.status)}})</span>
@@ -1491,7 +1533,7 @@
         <i class="fa-solid fa-arrow-left text-white"></i>
       </button>
       <h1 class="text-lg font-bold text-white drop-shadow">
-        <ng-container *ngIf="qrScanPurpose() === 'agent_load_container'">Scan to Load Container</ng-container>
+        <ng-container *ngIf="qrScanPurpose() === 'agent_load_container'">Scan to Load {{modalTerm}}</ng-container>
         <ng-container *ngIf="qrScanPurpose() === 'user_confirm_delivery'">Scan to Confirm Delivery</ng-container>
       </h1>
     </div>
@@ -1505,7 +1547,7 @@
         <h2 class="text-2xl font-bold text-white mb-2">Scan QR Code</h2>
         <p class="text-gray-300 text-sm max-w-xs mb-8">
           <ng-container *ngIf="qrScanPurpose() === 'agent_load_container'">
-            Point your camera at the product QR code to load it into the container.
+            Point your camera at the product QR code to load it into the {{modalTerm.toLowerCase()}}.
           </ng-container>
           <ng-container *ngIf="qrScanPurpose() === 'user_confirm_delivery'">
             Point your camera at the delivery QR code to confirm receipt.

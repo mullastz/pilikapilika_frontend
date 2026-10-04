@@ -30,12 +30,12 @@ export const SHIPMENT_STATUS_ORDER: readonly string[] = [
 export function localizeShipmentLabel(label: string, transportMethod?: string | null): string {
   if (transportMethod !== 'air') return label;
   return label
-    .replace(/Port/g, 'Airport')
-    .replace(/port/g, 'airport')
-    .replace(/Container/g, 'Batch')
-    .replace(/Containers/g, 'Batches')
-    .replace(/container/g, 'batch')
-    .replace(/containers/g, 'batches');
+    .replace(/\bPort\b/g, 'Airport')
+    .replace(/\bport\b/g, 'airport')
+    .replace(/\bContainers\b/g, 'Batches')
+    .replace(/\bContainer\b/g, 'Batch')
+    .replace(/\bcontainers\b/g, 'batches')
+    .replace(/\bcontainer\b/g, 'batch');
 }
 
 /** Mapping of each status to its completion percentage. */

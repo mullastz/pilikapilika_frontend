@@ -74,6 +74,7 @@ export class QrGenerator implements OnInit {
   qrUuid: string | null = null;
   editUuid: string | null = null;
   isEditMode = false;
+  private pendingEditAgentUuid: string | null = null;
 
   // Agent assignment
   agents: Agent[] = [];
@@ -107,9 +108,13 @@ export class QrGenerator implements OnInit {
   // ── Agent search ────────────────────────────────────────────────
 
   get filteredAgents(): Agent[] {
+    if (!this.selectedTransportMethod) return [];
+    const base = this.agents.filter(a =>
+      (a.transport_methods || []).includes(this.selectedTransportMethod!),
+    );
     const q = this.agentSearchQuery.toLowerCase().trim();
-    if (!q) return this.agents;
-    return this.agents.filter(a =>
+    if (!q) return base;
+    return base.filter(a =>
       `${a.firstname} ${a.lastname}`.toLowerCase().includes(q) ||
       (a.region || '').toLowerCase().includes(q) ||
       (a.district || '').toLowerCase().includes(q),
@@ -129,12 +134,30 @@ export class QrGenerator implements OnInit {
   }
 
   get filteredAddresses(): Address[] {
+    const applicable = this.transportFilteredAddresses;
     const q = this.addressSearchQuery.toLowerCase().trim();
-    if (!q) return this.addresses;
-    return this.addresses.filter(a =>
+    if (!q) return applicable;
+    return applicable.filter(a =>
       (a.label || '').toLowerCase().includes(q) ||
       (a.address_line || '').toLowerCase().includes(q),
     );
+  }
+
+  get transportFilteredAddresses(): Address[] {
+    if (!this.selectedTransportMethod) return [];
+    return this.addresses.filter(a => this.addressMatchesTransport(a));
+  }
+
+  private addressMatchesTransport(address: Address): boolean {
+    return !!this.selectedTransportMethod && !!address.transport_method &&
+      address.transport_method.toLowerCase() === this.selectedTransportMethod.toLowerCase();
+  }
+
+  private autoSelectSingleAddress(): void {
+    if (this.selectedAddress && this.addressMatchesTransport(this.selectedAddress)) return;
+    const applicable = this.transportFilteredAddresses;
+    this.selectedAddress = applicable.length === 1 ? applicable[0] : null;
+    this.cdr.detectChanges();
   }
 
   loadAgents(): void {
@@ -143,6 +166,15 @@ export class QrGenerator implements OnInit {
       next: (response) => {
         this.agents = response.agents;
         this.isLoadingAgents = false;
+        if (this.pendingEditAgentUuid) {
+          const found = this.agents.find(a => a.uuid === this.pendingEditAgentUuid);
+          this.pendingEditAgentUuid = null;
+          if (found) {
+            this.selectedAgent = found;
+            this.loadAgentAddresses(found.uuid);
+          }
+          this.reconcileAssignment();
+        }
         this.cdr.detectChanges();
       },
       error: () => {
@@ -156,31 +188,47 @@ export class QrGenerator implements OnInit {
     this.selectedAgent = agent;
     this.agentSearchQuery = '';
     this.clearAddress();
-    this.selectedTransportMethod = null;
     this.loadAgentAddresses(agent.uuid);
   }
 
   clearAgent(): void {
     this.selectedAgent = null;
     this.selectedAddress = null;
-    this.selectedTransportMethod = null;
     this.agentSearchQuery = '';
     this.cdr.detectChanges();
   }
 
   // ── Transport method selection ──────────────────────────────────
 
-  /** Transport options offered by the selected agent */
-  get agentTransportOptions(): { value: string; label: string; icon: string }[] {
-    const offered: string[] = this.selectedAgent?.transport_methods || [];
-    return offered.map(v =>
+  /** Transport options offered by any of the loaded agents */
+  get availableTransportOptions(): { value: string; label: string; icon: string }[] {
+    const values = new Set<string>();
+    this.agents.forEach(a => (a.transport_methods || []).forEach(v => values.add(v)));
+    return [...values].map(v =>
       TRANSPORT_CATALOG.find(o => o.value === v) || { value: v, label: v, icon: 'fa-solid fa-truck-fast' }
     );
   }
 
   selectTransportMethod(value: string): void {
     this.selectedTransportMethod = value;
+    if (this.selectedAgent && !(this.selectedAgent.transport_methods || []).includes(value)) {
+      this.selectedAgent = null;
+      this.selectedAddress = null;
+      this.agentSearchQuery = '';
+    } else {
+      this.autoSelectSingleAddress();
+    }
     this.cdr.detectChanges();
+  }
+
+  private reconcileAssignment(): void {
+    if (this.selectedAgent && this.selectedTransportMethod &&
+        !(this.selectedAgent.transport_methods || []).includes(this.selectedTransportMethod)) {
+      this.selectedAgent = null;
+      this.selectedAddress = null;
+      return;
+    }
+    this.autoSelectSingleAddress();
   }
 
   getAgentLocation(agent: Agent): string {
@@ -195,6 +243,7 @@ export class QrGenerator implements OnInit {
       next: (response) => {
         this.addresses = response.data || [];
         this.isLoadingAddresses = false;
+        this.autoSelectSingleAddress();
         this.cdr.detectChanges();
       },
       error: () => {
@@ -205,6 +254,7 @@ export class QrGenerator implements OnInit {
   }
 
   onAgentSearchFocus(): void {
+    if (!this.selectedTransportMethod) return;
     this.showAgentDropdown = true;
   }
 
@@ -303,18 +353,12 @@ export class QrGenerator implements OnInit {
     this.selectedAddress = address;
     this.addressSearchQuery = '';
     this.showAddressDropdown = false;
-    // Pre-select the transport method tagged on this address when possible
-    if (!this.selectedTransportMethod && address.transport_method
-        && this.agentTransportOptions.some(o => o.value === address.transport_method)) {
-      this.selectedTransportMethod = address.transport_method;
-    }
     this.cdr.detectChanges();
   }
 
   transportLabel = transportLabel;
   transportIcon = transportIcon;
 
-  // Selected transport method for this shipment (chosen from the agent's offered methods)
   selectedTransportMethod: string | null = null;
 
   clearAddress(): void {
@@ -425,9 +469,11 @@ export class QrGenerator implements OnInit {
   isFormValid(): boolean {
     return (
       this.product.name.trim() !== '' &&
+      this.selectedTransportMethod !== null &&
       this.selectedAgent !== null &&
+      (this.selectedAgent.transport_methods || []).includes(this.selectedTransportMethod) &&
       this.selectedAddress !== null &&
-      (this.agentTransportOptions.length === 0 || this.selectedTransportMethod !== null)
+      this.addressMatchesTransport(this.selectedAddress)
     );
   }
 
@@ -435,14 +481,20 @@ export class QrGenerator implements OnInit {
     if (this.product.name.trim() === '') {
       return 'Please enter a product name to continue';
     }
+    if (!this.selectedTransportMethod) {
+      return 'Please choose a transport method for this shipment';
+    }
     if (!this.selectedAgent) {
       return 'Please select an agent to handle this delivery';
+    }
+    if (!(this.selectedAgent.transport_methods || []).includes(this.selectedTransportMethod)) {
+      return 'The selected agent does not offer the chosen transport method';
     }
     if (!this.selectedAddress) {
       return 'Please select an agent address for pickup';
     }
-    if (this.agentTransportOptions.length > 0 && !this.selectedTransportMethod) {
-      return 'Please choose a transport method for this shipment';
+    if (!this.addressMatchesTransport(this.selectedAddress)) {
+      return 'The selected address does not match the chosen transport method';
     }
     return '';
   }
@@ -503,12 +555,8 @@ export class QrGenerator implements OnInit {
 
     const productRows: [string, string][] = [
       ['Product Name', this.product.name],
-      ['Description', this.product.description || ''],
-      ['Category', this.product.category || ''],
       ['Package Type', this.product.packageType || ''],
       ['Quantity', this.product.quantity ? String(this.product.quantity) : ''],
-      ['Total Weight', this.product.totalWeight ? `${this.product.totalWeight} kg` : ''],
-      ['Total Volume', this.product.totalVolume ? `${this.product.totalVolume} m³` : ''],
     ];
 
     const agentRows: [string, string][] = agent ? [
@@ -699,12 +747,19 @@ export class QrGenerator implements OnInit {
           }));
         }
 
+        // Restore selected transport method
+        if (data.transport_method) {
+          this.selectedTransportMethod = data.transport_method;
+        }
+
         // Restore selected agent
         if (data.assigned_agent_uuid) {
           const foundAgent = this.agents.find(a => a.uuid === data.assigned_agent_uuid);
           if (foundAgent) {
             this.selectedAgent = foundAgent;
             this.loadAgentAddresses(data.assigned_agent_uuid);
+          } else {
+            this.pendingEditAgentUuid = data.assigned_agent_uuid;
           }
         }
 
@@ -713,10 +768,7 @@ export class QrGenerator implements OnInit {
           this.selectedAddress = data.agent_address;
         }
 
-        // Restore selected transport method
-        if (data.transport_method) {
-          this.selectedTransportMethod = data.transport_method;
-        }
+        this.reconcileAssignment();
 
         this.qrUuid = data.uuid;
         this.generatedQR = data.qr_data;

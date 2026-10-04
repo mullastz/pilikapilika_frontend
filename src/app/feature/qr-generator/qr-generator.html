@@ -215,6 +215,59 @@
             </p>
           </div>
 
+          <!-- Transport method selection (choose first) -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Transport Method <span class="text-red-500">*</span>
+            </label>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              Choose how this shipment should be transported, then pick an agent that offers it.
+            </p>
+
+            <div *ngIf="availableTransportOptions.length > 0" class="grid grid-cols-2 gap-3">
+              <button
+                *ngFor="let option of availableTransportOptions"
+                type="button"
+                (click)="selectTransportMethod(option.value)"
+                class="flex items-center gap-3 p-3 rounded-xl border-2 transition text-left"
+                [ngClass]="selectedTransportMethod === option.value
+                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] hover:border-orange-300 dark:hover:border-orange-700'"
+              >
+                <div
+                  class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition"
+                  [ngClass]="selectedTransportMethod === option.value
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-gray-100 dark:bg-[#333] text-orange-500'"
+                >
+                  <i class="{{ option.icon }}"></i>
+                </div>
+                <span
+                  class="text-sm font-medium flex-1"
+                  [ngClass]="selectedTransportMethod === option.value
+                    ? 'text-orange-600 dark:text-orange-400'
+                    : 'text-gray-700 dark:text-gray-200'"
+                >
+                  {{ option.label }}
+                </span>
+                <i
+                  *ngIf="selectedTransportMethod === option.value"
+                  class="fa-solid fa-circle-check text-orange-500"
+                ></i>
+              </button>
+            </div>
+
+            <p *ngIf="isLoadingAgents" class="text-xs text-gray-500 dark:text-gray-400">
+              <i class="fa-solid fa-circle-notch fa-spin mr-1"></i>Loading transport options...
+            </p>
+            <p *ngIf="!isLoadingAgents && availableTransportOptions.length === 0" class="text-xs text-gray-500 dark:text-gray-400">
+              No transport options available.
+            </p>
+            <p *ngIf="!selectedTransportMethod && availableTransportOptions.length > 0" class="text-xs text-red-500 mt-2">
+              <i class="fa-solid fa-circle-exclamation mr-1"></i>Please choose a transport method
+            </p>
+          </div>
+
           <!-- Selected agent badge -->
           <div *ngIf="selectedAgent" class="flex items-center gap-3 bg-orange-50 dark:bg-[#111] border border-orange-200 dark:border-orange-800 rounded-xl p-3 mb-3">
             <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white shrink-0">
@@ -341,58 +394,11 @@
               </div>
             </div>
 
-            <p *ngIf="selectedAgent && !selectedAddress && addresses.length > 0" class="text-xs text-red-500 mt-2">
+            <p *ngIf="selectedAgent && !selectedAddress && transportFilteredAddresses.length > 0" class="text-xs text-red-500 mt-2">
               <i class="fa-solid fa-circle-exclamation mr-1"></i>Please select a pickup address for this agent
             </p>
-            <p *ngIf="!isLoadingAddresses && addresses.length === 0 && !selectedAddress" class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              No addresses found. <a href="/manage-account" class="text-orange-500 hover:underline">Add addresses in your account settings</a>.
-            </p>
-          </div>
-
-          <!-- Transport method selection (shown when the selected agent offers transport methods) -->
-          <div *ngIf="selectedAgent && agentTransportOptions.length > 0" class="mt-4">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Transport Method <span class="text-red-500">*</span>
-            </label>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-              Choose how this shipment should be transported
-            </p>
-
-            <div class="grid grid-cols-2 gap-3">
-              <button
-                *ngFor="let option of agentTransportOptions"
-                type="button"
-                (click)="selectTransportMethod(option.value)"
-                class="flex items-center gap-3 p-3 rounded-xl border-2 transition text-left"
-                [ngClass]="selectedTransportMethod === option.value
-                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
-                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] hover:border-orange-300 dark:hover:border-orange-700'"
-              >
-                <div
-                  class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition"
-                  [ngClass]="selectedTransportMethod === option.value
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-100 dark:bg-[#333] text-orange-500'"
-                >
-                  <i class="{{ option.icon }}"></i>
-                </div>
-                <span
-                  class="text-sm font-medium flex-1"
-                  [ngClass]="selectedTransportMethod === option.value
-                    ? 'text-orange-600 dark:text-orange-400'
-                    : 'text-gray-700 dark:text-gray-200'"
-                >
-                  {{ option.label }}
-                </span>
-                <i
-                  *ngIf="selectedTransportMethod === option.value"
-                  class="fa-solid fa-circle-check text-orange-500"
-                ></i>
-              </button>
-            </div>
-
-            <p *ngIf="!selectedTransportMethod" class="text-xs text-red-500 mt-2">
-              <i class="fa-solid fa-circle-exclamation mr-1"></i>Please choose a transport method
+            <p *ngIf="selectedAgent && !isLoadingAddresses && transportFilteredAddresses.length === 0 && !selectedAddress" class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              No {{ selectedTransportMethod ? transportLabel(selectedTransportMethod) : '' }} addresses found for this agent.
             </p>
           </div>
 
@@ -405,11 +411,13 @@
                 [(ngModel)]="agentSearchQuery"
                 (focus)="onAgentSearchFocus()"
                 (blur)="onAgentSearchBlur()"
-                placeholder="Search agents by name or location..."
+                [placeholder]="selectedTransportMethod ? 'Search agents by name or location...' : 'Choose a transport method first...'"
+                [disabled]="!selectedTransportMethod"
                 class="w-full pl-9 pr-3 py-2 rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
                 [ngClass]="{
-                  'bg-gray-100 dark:bg-[#111]': product.name.trim() === '',
-                  'bg-red-50 dark:bg-[#331111] ring-1 ring-red-300': product.name.trim() !== ''
+                  'bg-gray-100 dark:bg-[#111] cursor-not-allowed': !selectedTransportMethod,
+                  'bg-gray-100 dark:bg-[#111]': selectedTransportMethod && product.name.trim() === '',
+                  'bg-red-50 dark:bg-[#331111] ring-1 ring-red-300': selectedTransportMethod && product.name.trim() !== ''
                 }"
               />
               <span *ngIf="isLoadingAgents" class="absolute right-3 top-1/2 -translate-y-1/2">
@@ -419,11 +427,11 @@
 
             <!-- Dropdown -->
             <div
-              *ngIf="showAgentDropdown"
+              *ngIf="showAgentDropdown && selectedTransportMethod"
               class="absolute z-20 w-full mt-1 bg-white dark:bg-[#222] rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 max-h-56 overflow-y-auto"
             >
               <div *ngIf="filteredAgents.length === 0" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-                No verified agents found
+                No verified agents found for {{ transportLabel(selectedTransportMethod!) }}
               </div>
               <button
                 *ngFor="let agent of filteredAgents"
@@ -449,7 +457,10 @@
               </button>
             </div>
 
-            <p *ngIf="!selectedAgent && product.name.trim() !== ''" class="text-xs text-red-500 mt-2">
+            <p *ngIf="!selectedTransportMethod" class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              <i class="fa-solid fa-arrow-up mr-1"></i>Choose a transport method above to see available agents
+            </p>
+            <p *ngIf="selectedTransportMethod && !selectedAgent && product.name.trim() !== ''" class="text-xs text-red-500 mt-2">
               <i class="fa-solid fa-circle-exclamation mr-1"></i>Please select an agent to continue
             </p>
           </div>

@@ -17,6 +17,7 @@ import {
 import { ContainerService, Container } from '../../core/services/container.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
+import { AgentService } from '../../core/services/agent.service';
 import { transportLabel, transportIcon } from '../../core/utils/transport-methods.util';
 import { QrCodeService } from '../../core/services/qr-code.service';
 import { MenuBarService } from '../../core/services/menu-bar.service';
@@ -93,6 +94,12 @@ export class Shipping implements OnInit, OnDestroy {
   public scanningToContainer = signal(false);
   public updatingContainer = signal<string | null>(null);
   public selectedShipmentForContainer = signal<Shipment | null>(null);
+
+  // Transport category state (agent dashboard)
+  public transportMode = signal<'sea' | 'air'>('sea');
+  public supportsSea = signal(true);
+  public supportsAir = signal(false);
+  public transportProfileLoading = signal(false);
 
   // Shipment container distribution data (for container detail view)
   public shipmentDistributions = signal<Record<string, {
@@ -182,6 +189,8 @@ export class Shipping implements OnInit, OnDestroy {
     return role === 'agent' || role === 'seller';
   });
 
+  public showTransportToggle = computed(() => this.supportsSea() && this.supportsAir());
+
   // Tab configuration for agents
   agentTabs = [
     { id: 'all', label: 'All Shipments', icon: 'fa-list' },
@@ -230,6 +239,7 @@ export class Shipping implements OnInit, OnDestroy {
     private containerService: ContainerService,
     private toastService: ToastService,
     private authService: AuthService,
+    private agentService: AgentService,
     private qrCodeService: QrCodeService,
     private menuBarService: MenuBarService
   ) {}
@@ -248,6 +258,48 @@ export class Shipping implements OnInit, OnDestroy {
       });
     }
     this.loadShipments();
+    if (this.isAgent()) {
+      this.loadAgentTransportCapabilities();
+    }
+  }
+
+  private loadAgentTransportCapabilities(): void {
+    const user = this.authService.getUser();
+    if (!user?.id) return;
+    this.transportProfileLoading.set(true);
+    this.agentService.getAgentProfile(user.id).subscribe({
+      next: (agent) => {
+        const methods = Array.isArray(agent?.transport_methods) ? agent.transport_methods : [];
+        const sea = methods.includes('sea');
+        const air = methods.includes('air');
+        this.supportsSea.set(sea || !air);
+        this.supportsAir.set(air);
+        if (air && !sea) {
+          this.transportMode.set('air');
+        } else {
+          this.transportMode.set('sea');
+        }
+        this.transportProfileLoading.set(false);
+      },
+      error: () => {
+        this.supportsSea.set(true);
+        this.supportsAir.set(false);
+        this.transportMode.set('sea');
+        this.transportProfileLoading.set(false);
+      }
+    });
+  }
+
+  setTransportMode(mode: 'sea' | 'air'): void {
+    if (this.transportMode() === mode) return;
+    this.transportMode.set(mode);
+    this.selectedContainer.set(null);
+    this.containerDetailOpen.set(false);
+    this.containerDetailClosing.set(false);
+    this.selectedShipmentForContainer.set(null);
+    if (this.containerModalOpen()) {
+      this.loadContainers();
+    }
   }
 
   ngOnDestroy(): void {
@@ -484,11 +536,23 @@ export class Shipping implements OnInit, OnDestroy {
 
   /** Wording context for the container/batch modal */
   get modalTerm(): string {
-    return this.containerTerm(this.selectedShipmentForContainer());
+    const shipment = this.selectedShipmentForContainer();
+    if (shipment) return this.containerTerm(shipment);
+    return this.transportMode() === 'air' ? 'Batch' : 'Container';
   }
 
   get modalTermPlural(): string {
-    return this.containerTerm(this.selectedShipmentForContainer(), true);
+    const shipment = this.selectedShipmentForContainer();
+    if (shipment) return this.containerTerm(shipment, true);
+    return this.transportMode() === 'air' ? 'Batches' : 'Containers';
+  }
+
+  modePortTerm(): string {
+    return this.transportMode() === 'air' ? 'Airport' : 'Port';
+  }
+
+  agentTabLabel(tab: { id: string; label: string }): string {
+    return localizeShipmentLabel(tab.label, this.transportMode());
   }
 
   // Pagination pages array with smart ellipsis
@@ -1075,7 +1139,7 @@ export class Shipping implements OnInit, OnDestroy {
   loadContainers(): void {
     this.containersLoading.set(true);
     // When loading a shipment, only list batches/containers matching its transport method
-    const transportFilter = this.selectedShipmentForContainer()?.transport_method ?? null;
+    const transportFilter = this.selectedShipmentForContainer()?.transport_method ?? this.transportMode();
     this.containerService.getContainers(transportFilter).subscribe({
       next: (response) => {
         if (response.success) {
@@ -1215,7 +1279,7 @@ export class Shipping implements OnInit, OnDestroy {
       return;
     }
     this.creatingContainer.set(true);
-    this.containerService.createContainer(ref, this.selectedShipmentForContainer()?.transport_method ?? null).subscribe({
+    this.containerService.createContainer(ref, this.selectedShipmentForContainer()?.transport_method ?? this.transportMode()).subscribe({
       next: (response) => {
         if (response.success) {
           this.toastService.success(`${this.modalTerm} created successfully`);
@@ -1467,7 +1531,7 @@ export class Shipping implements OnInit, OnDestroy {
     const next = this.getNextContainerStatus(status);
     if (!next) return '';
     const label = next.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    return localizeShipmentLabel(label, this.selectedShipmentForContainer()?.transport_method);
+    return localizeShipmentLabel(label, this.selectedShipmentForContainer()?.transport_method ?? this.transportMode());
   }
 
   // Tracking number methods
