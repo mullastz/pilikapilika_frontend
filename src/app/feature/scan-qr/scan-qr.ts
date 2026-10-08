@@ -1,23 +1,33 @@
 import { Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { Html5Qrcode } from 'html5-qrcode';
 import { ShipmentService } from '../../core/services/shipment.service';
+import { ContainerService, Container } from '../../core/services/container.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
+import { localizeShipmentLabel } from '../../core/helpers/shipment-progress.helper';
 
-type ScanState = 'idle' | 'scanning' | 'quantity_input' | 'partial_confirm' | 'add_remaining' | 'processing' | 'success' | 'info' | 'error';
+type ScanState = 'idle' | 'scanning' | 'quantity_input' | 'partial_confirm' | 'add_remaining' | 'container_picker' | 'load_quantity_input' | 'container_detail' | 'processing' | 'success' | 'info' | 'error';
+
+interface ShipmentDistributionState {
+  loading: boolean;
+  error: string | null;
+  data: { expected_quantity: number; loaded_quantity: number; remaining_quantity: number; is_fully_loaded: boolean; containers: { reference_number: string; quantity: number }[] } | null;
+}
 
 @Component({
   selector: 'app-scan-qr',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './scan-qr.html',
   styleUrl: './scan-qr.css'
 })
 export class ScanQr implements OnInit, OnDestroy {
   private router = inject(Router);
   private shipmentService = inject(ShipmentService);
+  private containerService = inject(ContainerService);
   private toastService = inject(ToastService);
   private authService = inject(AuthService);
 
@@ -46,6 +56,33 @@ export class ScanQr implements OnInit, OnDestroy {
   } | null>(null);
   addRemainingQuantity = signal<number | null>(null);
   addRemainingError = signal<string>('');
+
+  // Load flow state (at_warehouse / half_loaded → container/batch)
+  loadShipment = signal<any | null>(null);
+  loadableContainers = signal<Container[]>([]);
+  containersLoading = signal<boolean>(false);
+  selectedContainer = signal<Container | null>(null);
+  loadQuantity = signal<number | null>(null);
+  loadQuantityError = signal<string>('');
+  containerStatusData = signal<{ expected_quantity: number; loaded_quantity: number; remaining_quantity: number; is_fully_loaded: boolean; containers: { reference_number: string; quantity: number }[] } | null>(null);
+  containerStatusLoading = signal<boolean>(false);
+  containerStatusError = signal<string | null>(null);
+  loadingShipment = signal<boolean>(false);
+
+  // Container/batch management state (scan-driven, from picker/detail)
+  newContainerRef = signal<string>('');
+  creatingContainer = signal<boolean>(false);
+  updatingContainer = signal<string | null>(null);
+  detailContainer = signal<Container | null>(null);
+  detailLoading = signal<boolean>(false);
+  shipmentDistributions = signal<Record<string, ShipmentDistributionState>>({});
+
+  // Sheet-modal closing flags (for close animations)
+  pickerClosing = signal<boolean>(false);
+  loadQuantityClosing = signal<boolean>(false);
+  detailClosing = signal<boolean>(false);
+  /** True when the detail sheet was opened from the picker — closing returns there */
+  detailFromPicker = signal<boolean>(false);
 
   ngOnInit(): void {
     const user = this.authService.getUser();
@@ -202,7 +239,8 @@ export class ScanQr implements OnInit, OnDestroy {
           const status = shipment?.status;
           if (status === 'pending_confirmation' || status === 'confirmed') {
             // Show quantity input before approving
-            this.showQuantityInput(shipment, uuid);
+            const data = (response as any).data;
+            this.showQuantityInput(shipment, uuid, data?.expected_quantity ?? null);
           } else if (status === 'partially_received') {
             // Re-scanning a partially received shipment — show add remaining modal
             // Use the pre-calculated quantities from the backend response
@@ -213,6 +251,12 @@ export class ScanQr implements OnInit, OnDestroy {
               data?.received_quantity ?? shipment?.received_quantity ?? 0,
               data?.remaining_quantity ?? 0
             );
+          } else if (status === 'at_warehouse' || status === 'half_loaded') {
+            // Load flow — pick a container/batch and load (fully or partially)
+            this.startLoadFlow(shipment);
+          } else if (shipment?.container_id) {
+            // Already inside a container/batch — show that container's detail
+            this.openContainerDetailFromScan(shipment);
           } else {
             // Already processed — show info state
             this.resultShipment.set(shipment);
@@ -279,16 +323,14 @@ export class ScanQr implements OnInit, OnDestroy {
   }
 
   // Quantity input flow
-  showQuantityInput(shipment: any, uuid: string): void {
+  showQuantityInput(shipment: any, uuid: string, expectedFromResponse?: number | null): void {
     this.pendingQrUuid.set(uuid);
-    // Extract expected quantity from products
-    let qty: number | null = null;
-    const products = shipment?.products ?? [];
-    if (Array.isArray(products) && products.length > 0) {
-      const firstProduct = products[0];
-      if (firstProduct && typeof firstProduct.quantity === 'number') {
-        qty = firstProduct.quantity;
-      }
+    const qty = this.deriveExpectedQuantity(shipment) ?? expectedFromResponse ?? null;
+    if (qty === null || qty < 1) {
+      this.toastService.error('Could not determine expected quantity for this shipment.');
+      this.state.set('error');
+      this.errorMessage.set('Could not determine expected quantity for this shipment.');
+      return;
     }
     this.expectedQuantity.set(qty);
     this.receivedQuantity.set(qty); // Default to expected quantity
@@ -301,12 +343,16 @@ export class ScanQr implements OnInit, OnDestroy {
     if (!uuid) return;
 
     const qty = this.receivedQuantity();
-    if (qty === null || qty === undefined || qty < 0 || isNaN(qty)) {
-      this.quantityError.set('Please enter a valid quantity (0 or more)');
+    if (qty === null || qty === undefined || isNaN(qty) || !Number.isInteger(qty) || qty < 1) {
+      this.quantityError.set('Please enter a valid quantity (at least 1).');
       return;
     }
 
     const expected = this.expectedQuantity();
+    if (expected !== null && qty > expected) {
+      this.quantityError.set(`Quantity cannot exceed the expected quantity of ${expected}.`);
+      return;
+    }
     if (expected !== null && qty < expected) {
       // Show partial receipt confirmation before submitting
       this.partialReceiptData.set({
@@ -417,18 +463,44 @@ export class ScanQr implements OnInit, OnDestroy {
     this.state.set('add_remaining');
   }
 
-  private getExpectedQuantityFromShipment(shipment: any): number {
-    const products = shipment?.products ?? [];
-    if (Array.isArray(products) && products.length > 0) {
-      const first = products[0];
-      if (first && typeof first.quantity === 'number') {
-        return first.quantity;
-      }
-      if (Array.isArray(first) && first.length > 0 && typeof first[0]?.quantity === 'number') {
-        return first[0].quantity;
+  getExpectedQuantityFromShipment(shipment: any): number {
+    return this.deriveExpectedQuantity(shipment) ?? 1;
+  }
+
+  /**
+   * Robustly extract the expected quantity from a shipment.
+   * Handles products stored as a JSON string, single- and double-nested
+   * product arrays, string quantities, and a top-level quantity field.
+   * Returns null when no quantity source exists.
+   */
+  deriveExpectedQuantity(shipment: any): number | null {
+    const parseQty = (value: any): number | null => {
+      if (typeof value !== 'number' && typeof value !== 'string') return null;
+      const qty = parseInt(String(value), 10);
+      return isNaN(qty) || qty < 1 ? null : qty;
+    };
+
+    let products = shipment?.products ?? [];
+    // Some rows may still arrive as a JSON string
+    if (typeof products === 'string') {
+      try {
+        products = JSON.parse(products);
+      } catch {
+        products = [];
       }
     }
-    return 1;
+    if (Array.isArray(products) && products.length > 0) {
+      let first = products[0];
+      // Handle nested array: [[{quantity: 12}]]
+      if (Array.isArray(first) && first.length > 0) {
+        first = first[0];
+      }
+      const qty = parseQty(first?.quantity);
+      if (qty !== null) return qty;
+    }
+
+    // Fallback: quantity directly on the shipment
+    return parseQty(shipment?.quantity);
   }
 
   onAddRemainingInput(event: Event): void {
@@ -488,6 +560,500 @@ export class ScanQr implements OnInit, OnDestroy {
     this.resetToIdle();
   }
 
+  // Load flow (at_warehouse / half_loaded → container/batch)
+
+  /**
+   * Transport-aware wording: air freight uses "Batch",
+   * sea freight (and unset) uses "Container".
+   */
+  containerTerm(plural = false): string {
+    const air = this.loadShipment()?.transport_method === 'air' || this.selectedContainer()?.transport_method === 'air';
+    if (plural) return air ? 'Batches' : 'Containers';
+    return air ? 'Batch' : 'Container';
+  }
+
+  startLoadFlow(shipment: any): void {
+    // Duplicate-load guard: check if everything is already loaded
+    this.shipmentService.getContainerStatus(shipment.id).subscribe({
+      next: (statusResponse) => {
+        if (statusResponse.success && statusResponse.data?.is_fully_loaded) {
+          // Fully loaded — show the container it lives in when known
+          if (shipment?.container_id) {
+            this.openContainerDetailFromScan(shipment);
+            return;
+          }
+          this.resultShipment.set(shipment);
+          this.infoMessage.set('All quantity of this shipment is already loaded.');
+          this.state.set('info');
+          this.toastService.info('All quantity of this shipment is already loaded.');
+          return;
+        }
+        this.openContainerPicker(shipment);
+      },
+      error: () => {
+        // If status fetch fails, still offer the picker — backend validates on submit
+        this.openContainerPicker(shipment);
+      }
+    });
+  }
+
+  openContainerPicker(shipment: any): void {
+    this.loadShipment.set(shipment);
+    this.loadQuantity.set(null);
+    this.loadQuantityError.set('');
+    this.containerStatusData.set(null);
+    this.containerStatusError.set(null);
+
+    // If a container was pre-selected (Scan to Load from the manager/detail view),
+    // skip the picker and go straight to the quantity modal
+    const preset = this.selectedContainer();
+    if (preset && preset.status === 'draft' && (!preset.transport_method || !shipment?.transport_method || preset.transport_method === shipment.transport_method)) {
+      this.selectContainer(preset);
+      return;
+    }
+    this.selectedContainer.set(null);
+
+    this.containersLoading.set(true);
+    this.pickerClosing.set(false);
+    this.newContainerRef.set('');
+    this.state.set('container_picker');
+
+    // Only list draft (open) containers/batches matching the shipment's transport method
+    const transportMethod = shipment?.transport_method ?? null;
+    this.containerService.getContainers(transportMethod).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.loadableContainers.set((response.data?.containers ?? []).filter(c =>
+            c.status === 'draft' && (!transportMethod || !c.transport_method || c.transport_method === transportMethod)
+          ));
+        }
+        this.containersLoading.set(false);
+      },
+      error: () => {
+        this.loadableContainers.set([]);
+        this.containersLoading.set(false);
+      }
+    });
+  }
+
+  /** Inline creation from the picker — always uses the scanned shipment's transport method */
+  createContainerForShipment(): void {
+    const shipment = this.loadShipment();
+    const ref = this.newContainerRef().trim();
+    if (!ref) {
+      this.toastService.error('Please enter a reference number');
+      return;
+    }
+    const transportMethod = shipment?.transport_method ?? null;
+    this.creatingContainer.set(true);
+    this.containerService.createContainer(ref, transportMethod).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.success(`${this.containerTerm()} created successfully`);
+          this.newContainerRef.set('');
+          // Refresh the picker list so the new container/batch shows up
+          const created = response.data?.container;
+          if (created && created.status === 'draft') {
+            this.loadableContainers.update(list => [...list, created]);
+          } else if (shipment) {
+            this.containersLoading.set(true);
+            this.containerService.getContainers(shipment?.transport_method ?? null).subscribe({
+              next: (res) => {
+                if (res.success) {
+                  this.loadableContainers.set((res.data?.containers ?? []).filter(c => c.status === 'draft'));
+                }
+                this.containersLoading.set(false);
+              },
+              error: () => this.containersLoading.set(false)
+            });
+          }
+        } else {
+          this.toastService.error(response.message || `Failed to create ${this.containerTerm().toLowerCase()}`);
+        }
+        this.creatingContainer.set(false);
+      },
+      error: (error: any) => {
+        console.error('Failed to create container:', error);
+        // Surface the first server validation error (e.g. duplicate reference number)
+        const errors = error?.error?.errors;
+        const firstError = errors ? Object.values(errors).flat()[0] as string : null;
+        this.toastService.error(firstError || `Failed to create ${this.containerTerm().toLowerCase()}`);
+        this.creatingContainer.set(false);
+      }
+    });
+  }
+
+  selectContainer(container: Container): void {
+    const shipment = this.loadShipment();
+    if (!shipment) return;
+
+    this.selectedContainer.set(container);
+    this.loadQuantity.set(null);
+    this.loadQuantityError.set('');
+    this.containerStatusData.set(null);
+    this.containerStatusError.set(null);
+    this.state.set('load_quantity_input');
+
+    // Only fetch container status for half_loaded shipments
+    // For at_warehouse, max is simply the expected product quantity
+    if (shipment.status === 'half_loaded') {
+      this.containerStatusLoading.set(true);
+      this.shipmentService.getContainerStatus(shipment.id).subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.containerStatusData.set(response.data);
+            this.containerStatusError.set(null);
+          } else {
+            this.containerStatusError.set('Failed to load container status');
+          }
+          this.containerStatusLoading.set(false);
+        },
+        error: () => {
+          this.containerStatusError.set('Failed to load container status. Please try again.');
+          this.containerStatusLoading.set(false);
+        }
+      });
+    }
+  }
+
+  getMaxLoadQuantity(): number {
+    const shipment = this.loadShipment();
+    if (!shipment) return 1;
+
+    const expected = this.getExpectedQuantityFromShipment(shipment);
+
+    // For at_warehouse, max is the total
+    if (shipment.status === 'at_warehouse') {
+      return expected;
+    }
+
+    // For half_loaded, max is the remaining
+    const statusData = this.containerStatusData();
+    return statusData?.remaining_quantity ?? expected;
+  }
+
+  onLoadQuantityInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const val = parseInt(input.value, 10);
+    this.loadQuantity.set(isNaN(val) ? null : val);
+    this.loadQuantityError.set('');
+  }
+
+  submitLoadWithQuantity(): void {
+    const container = this.selectedContainer();
+    const shipment = this.loadShipment();
+    if (!container || !shipment) return;
+
+    const qty = this.loadQuantity();
+    if (qty === null || qty === undefined || qty < 1 || isNaN(qty)) {
+      this.loadQuantityError.set('Please enter a valid quantity (1 or more)');
+      return;
+    }
+
+    const maxQty = this.getMaxLoadQuantity();
+    if (qty > maxQty) {
+      this.loadQuantityError.set(`Cannot load more than ${maxQty} unit(s)`);
+      return;
+    }
+
+    this.doLoadShipment(container.id, shipment.id, qty);
+  }
+
+  loadAllQuantity(): void {
+    const container = this.selectedContainer();
+    const shipment = this.loadShipment();
+    if (!container || !shipment) return;
+
+    const expected = this.getExpectedQuantityFromShipment(shipment);
+    this.doLoadShipment(container.id, shipment.id, expected);
+  }
+
+  loadAllRemainingQuantity(): void {
+    const container = this.selectedContainer();
+    const shipment = this.loadShipment();
+    if (!container || !shipment) return;
+
+    const statusData = this.containerStatusData();
+    const remaining = statusData?.remaining_quantity ?? this.getExpectedQuantityFromShipment(shipment);
+    this.doLoadShipment(container.id, shipment.id, remaining);
+  }
+
+  private doLoadShipment(containerId: string, shipmentId: string, qty: number): void {
+    this.loadQuantityError.set('');
+    this.loadingShipment.set(true);
+    this.containerService.addShipment(containerId, shipmentId, qty).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.resultShipment.set(response.data?.shipment ?? this.loadShipment());
+          this.state.set('success');
+          this.toastService.success(response.message || `Shipment loaded into ${this.containerTerm().toLowerCase()} ${this.selectedContainer()?.reference_number}.`);
+        } else {
+          this.loadQuantityError.set(response.message || 'Failed to add shipment');
+          this.toastService.error(response.message || 'Failed to add shipment');
+        }
+        this.loadingShipment.set(false);
+      },
+      error: (err: any) => {
+        const message = err?.error?.message || 'Failed to add shipment to container';
+        this.loadQuantityError.set(message);
+        this.toastService.error(message);
+        this.loadingShipment.set(false);
+      }
+    });
+  }
+
+  cancelLoadFlow(): void {
+    this.loadShipment.set(null);
+    this.loadableContainers.set([]);
+    this.containersLoading.set(false);
+    this.selectedContainer.set(null);
+    this.loadQuantity.set(null);
+    this.loadQuantityError.set('');
+    this.containerStatusData.set(null);
+    this.containerStatusLoading.set(false);
+    this.containerStatusError.set(null);
+    this.resetToIdle();
+  }
+
+  backToContainerPicker(): void {
+    const shipment = this.loadShipment();
+    this.selectedContainer.set(null);
+    if (shipment) {
+      // Re-run the picker (loads the container list if it was skipped via Scan to Load)
+      this.openContainerPicker(shipment);
+      return;
+    }
+    this.loadQuantity.set(null);
+    this.loadQuantityError.set('');
+    this.containerStatusData.set(null);
+    this.containerStatusLoading.set(false);
+    this.containerStatusError.set(null);
+    this.state.set('container_picker');
+  }
+
+  // Container/batch management (ported from the shipping page)
+
+  /** Wording for a specific container/batch based on its own transport method */
+  containerTermFor(container: Container | null, plural = false): string {
+    const air = container?.transport_method === 'air';
+    if (plural) return air ? 'Batches' : 'Containers';
+    return air ? 'Batch' : 'Container';
+  }
+
+  getStatusClass(status: string): string {
+    switch (status) {
+      case 'delivered':        return 'bg-green-100 text-green-600';
+      case 'in_transit':       return 'bg-blue-100 text-blue-600';
+      case 'at_warehouse':     return 'bg-indigo-100 text-indigo-600';
+      case 'partially_received': return 'bg-yellow-100 text-yellow-600';
+      case 'half_loaded':      return 'bg-amber-100 text-amber-600';
+      case 'loading_container': return 'bg-orange-100 text-orange-600';
+      case 'loaded_in_container': return 'bg-teal-100 text-teal-600';
+      case 'at_tanzania_port': return 'bg-cyan-100 text-cyan-600';
+      case 'at_tanzania_warehouse': return 'bg-sky-100 text-sky-600';
+      case 'confirmed':        return 'bg-purple-100 text-purple-600';
+      case 'pending_confirmation': return 'bg-yellow-100 text-yellow-600';
+      case 'cancelled':        return 'bg-red-100 text-red-600';
+      case 'draft':            return 'bg-gray-100 text-gray-600';
+      case 'closed':           return 'bg-teal-100 text-teal-600';
+      default:                 return 'bg-gray-200 text-gray-600';
+    }
+  }
+
+  formatStatus(status: string, transportMethod?: string | null): string {
+    const label = status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return localizeShipmentLabel(label, transportMethod);
+  }
+
+  closeContainer(containerId: string): void {
+    this.updatingContainer.set(containerId);
+    this.containerService.closeContainer(containerId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.success('Container closed successfully');
+          this.refreshContainerDetail(containerId);
+        } else {
+          this.toastService.error(response.message || 'Failed to close container');
+        }
+        this.updatingContainer.set(null);
+      },
+      error: (error: any) => {
+        console.error('Failed to close container:', error);
+        this.toastService.error('Failed to close container');
+        this.updatingContainer.set(null);
+      }
+    });
+  }
+
+  updateContainerStatus(containerId: string, status: string): void {
+    this.updatingContainer.set(containerId);
+    this.containerService.updateContainerStatus(containerId, status).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.success(`Container updated to ${status.replace(/_/g, ' ')}`);
+          this.refreshContainerDetail(containerId);
+        } else {
+          this.toastService.error(response.message || 'Failed to update container');
+        }
+        this.updatingContainer.set(null);
+      },
+      error: (error: any) => {
+        console.error('Failed to update container status:', error);
+        this.toastService.error('Failed to update container status');
+        this.updatingContainer.set(null);
+      }
+    });
+  }
+
+  getNextContainerStatus(status: string): string | null {
+    const flow: Record<string, string> = {
+      'closed': 'at_port_abroad',
+      'at_port_abroad': 'in_transit',
+      'in_transit': 'at_tanzania_port',
+      'at_tanzania_port': 'at_tanzania_warehouse',
+    };
+    return flow[status] || null;
+  }
+
+  getNextContainerStatusLabel(status: string, transportMethod?: string | null): string {
+    const next = this.getNextContainerStatus(status);
+    if (!next) return '';
+    const label = next.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return localizeShipmentLabel(label, transportMethod);
+  }
+
+  // Container detail view
+  openContainerDetail(container: Container, fromPicker = false): void {
+    this.detailContainer.set(container);
+    this.shipmentDistributions.set({});
+    this.detailLoading.set(true);
+    this.detailClosing.set(false);
+    this.detailFromPicker.set(fromPicker);
+    this.state.set('container_detail');
+    this.refreshContainerDetail(container.id);
+  }
+
+  /** Scan of a shipment already inside a container/batch → show that container's detail */
+  openContainerDetailFromScan(shipment: any): void {
+    this.resultShipment.set(shipment);
+    this.openContainerDetail({ id: shipment.container_id } as Container);
+  }
+
+  refreshContainerDetail(containerId: string): void {
+    this.detailLoading.set(true);
+    this.containerService.getContainer(containerId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.detailContainer.set(response.data.container);
+          // Fetch distribution data for each shipment that is half_loaded
+          const shipments = response.data.container?.shipments || [];
+          shipments.forEach((shipment: any) => {
+            if (shipment.status === 'half_loaded' || shipment.status === 'loading_container') {
+              this.loadShipmentDistribution(shipment.id);
+            }
+          });
+        }
+        this.detailLoading.set(false);
+      },
+      error: (error: any) => {
+        console.error('Failed to load container details:', error);
+        this.detailLoading.set(false);
+      }
+    });
+  }
+
+  closeContainerDetail(): void {
+    this.detailClosing.set(true);
+    setTimeout(() => {
+      this.detailClosing.set(false);
+      this.detailContainer.set(null);
+      this.shipmentDistributions.set({});
+      if (this.detailFromPicker()) {
+        // Opened from the picker — return to it without losing the load context,
+        // refreshing the list in case the container changed (closed/advanced) in detail
+        this.detailFromPicker.set(false);
+        const shipment = this.loadShipment();
+        if (shipment) {
+          this.openContainerPicker(shipment);
+        } else {
+          this.state.set('container_picker');
+        }
+        return;
+      }
+      this.resetToIdle();
+    }, 280);
+  }
+
+  loadShipmentDistribution(shipmentId: string): void {
+    this.shipmentDistributions.update(dists => ({
+      ...dists,
+      [shipmentId]: { loading: true, error: null, data: null }
+    }));
+    this.shipmentService.getContainerStatus(shipmentId).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.shipmentDistributions.update(dists => ({
+            ...dists,
+            [shipmentId]: { loading: false, error: null, data: response.data }
+          }));
+        } else {
+          this.shipmentDistributions.update(dists => ({
+            ...dists,
+            [shipmentId]: { loading: false, error: 'Failed to load', data: null }
+          }));
+        }
+      },
+      error: () => {
+        this.shipmentDistributions.update(dists => ({
+          ...dists,
+          [shipmentId]: { loading: false, error: 'Failed to load', data: null }
+        }));
+      }
+    });
+  }
+
+  getShipmentDistribution(shipmentId: string): ShipmentDistributionState | null {
+    return this.shipmentDistributions()[shipmentId] || null;
+  }
+
+  hasDetailShipments(): boolean {
+    const container = this.detailContainer();
+    return !!(container?.shipments && container.shipments.length > 0);
+  }
+
+  getDetailShipments(): any[] {
+    const container = this.detailContainer();
+    return container?.shipments || [];
+  }
+
+  /** Scan to Load: pre-select this container, then scan the shipment QR */
+  scanToLoadInto(container: Container): void {
+    this.selectedContainer.set(container);
+    this.detailContainer.set(null);
+    this.shipmentDistributions.set({});
+    this.detailClosing.set(false);
+    this.detailFromPicker.set(false);
+    this.beginScanning();
+  }
+
+  /** Picker cancel with sheet close animation */
+  closeContainerPicker(): void {
+    this.pickerClosing.set(true);
+    setTimeout(() => {
+      this.pickerClosing.set(false);
+      this.cancelLoadFlow();
+    }, 280);
+  }
+
+  /** Load-quantity modal cancel with sheet close animation */
+  closeLoadQuantityModal(): void {
+    this.loadQuantityClosing.set(true);
+    setTimeout(() => {
+      this.loadQuantityClosing.set(false);
+      this.cancelLoadFlow();
+    }, 280);
+  }
+
   resetToIdle(): void {
     this.scanHandled = false;
     this.resultShipment.set(null);
@@ -502,6 +1068,26 @@ export class ScanQr implements OnInit, OnDestroy {
     this.partialReceiptData.set(null);
     this.addRemainingQuantity.set(null);
     this.addRemainingError.set('');
+    this.loadShipment.set(null);
+    this.loadableContainers.set([]);
+    this.containersLoading.set(false);
+    this.selectedContainer.set(null);
+    this.loadQuantity.set(null);
+    this.loadQuantityError.set('');
+    this.containerStatusData.set(null);
+    this.containerStatusLoading.set(false);
+    this.containerStatusError.set(null);
+    this.loadingShipment.set(false);
+    this.newContainerRef.set('');
+    this.creatingContainer.set(false);
+    this.updatingContainer.set(null);
+    this.detailContainer.set(null);
+    this.detailLoading.set(false);
+    this.shipmentDistributions.set({});
+    this.pickerClosing.set(false);
+    this.loadQuantityClosing.set(false);
+    this.detailClosing.set(false);
+    this.detailFromPicker.set(false);
     this.state.set('idle');
   }
 

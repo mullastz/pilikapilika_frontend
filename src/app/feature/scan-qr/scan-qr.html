@@ -1,7 +1,7 @@
 <div class="scan-container bg-black min-h-screen relative overflow-hidden">
 
   <!-- Header overlay -->
-  <div class="absolute top-0 left-0 right-0 z-30 flex items-center gap-3 px-4 py-4 bg-gradient-to-b from-black/70 to-transparent">
+  <div class="absolute top-0 left-0 right-0 z-30 flex items-center gap-3 px-4 py-4 bg-linear-to-b from-black/70 to-transparent">
     <button
       (click)="goBack()"
       class="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center hover:bg-white/30 transition"
@@ -224,6 +224,398 @@
     </div>
   }
 
+  <!-- CONTAINER/BATCH PICKER STATE -->
+  @if (state() === 'container_picker') {
+    <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center" (click)="closeContainerPicker()">
+      <!-- Backdrop -->
+      <div class="absolute inset-0 bg-black/50 sheet-backdrop" [class.closing]="pickerClosing()"></div>
+
+      <!-- Modal / Bottom Sheet -->
+      <div class="relative bg-white dark:bg-[#1a1a1a] rounded-2xl sm:rounded-2xl max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto modal-scrollbar sheet-modal-desktop sheet-modal-mobile" [class.closing]="pickerClosing()" (click)="$event.stopPropagation()">
+
+        <!-- Mobile Sheet Handle -->
+        <div class="sheet-handle hidden sticky top-0 z-20 bg-white dark:bg-[#1a1a1a] pt-2 pb-1 rounded-t-2xl">
+          <div class="sheet-handle-bar"></div>
+        </div>
+
+        <!-- Modal Header -->
+        <div class="sheet-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sm:rounded-t-2xl">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <i class="fa-solid fa-box-open text-indigo-500 mr-2"></i>
+            Load into {{ containerTerm() }}
+          </h3>
+          <button (click)="closeContainerPicker()" class="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-[#333] flex items-center justify-center transition">
+            <i class="fa-solid fa-times text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"></i>
+          </button>
+        </div>
+
+        <div class="sheet-content p-6 space-y-4">
+          <div class="p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+            <p class="text-sm text-orange-700 dark:text-orange-300">
+              <i class="fa-solid fa-box mr-1"></i>
+              Loading shipment: <strong>{{ loadShipment()?.title || 'Untitled' }}</strong>
+            </p>
+            <p class="text-xs text-orange-600 dark:text-orange-400 mt-1">Select an open {{ containerTerm().toLowerCase() }} below to add this shipment.</p>
+          </div>
+          <!-- Create Container Section (transport derived from the scanned shipment) -->
+          <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
+            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Create New {{ containerTerm() }}</h4>
+
+            <div class="flex gap-3">
+              <input
+                type="text"
+                [(ngModel)]="newContainerRef"
+                [placeholder]="'Enter ' + containerTerm().toLowerCase() + ' reference number'"
+                class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#222] text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              />
+              <button
+                (click)="createContainerForShipment()"
+                [disabled]="creatingContainer()"
+                class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2">
+                @if (creatingContainer()) {
+                  <div class="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin"></div>
+                }
+                <i class="fa-solid fa-plus"></i>
+                Create
+              </button>
+            </div>
+          </div>
+          @if (containersLoading()) {
+            <div class="text-center py-8">
+              <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
+            </div>
+          } @else if (loadableContainers().length === 0) {
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+              <i class="fa-solid fa-box-open text-3xl mb-2"></i>
+              <p class="text-sm">No open {{ containerTerm().toLowerCase() }} available. Create one below.</p>
+            </div>
+          } @else {
+            <div class="space-y-3">
+              @for (container of loadableContainers(); track container.id) {
+                <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-[#222] transition">
+                  <div class="flex justify-between items-center">
+                    <div>
+                      <p class="font-medium dark:text-white">{{ container.reference_number }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">
+                        <span class="text-xs px-2 py-0.5 rounded-full mr-1" [ngClass]="getStatusClass(container.status)">{{ formatStatus(container.status, container.transport_method) }}</span>
+                        @if (container.shipments_count) {
+                          &middot; {{ container.shipments_count }} shipment(s)
+                        }
+                      </p>
+                    </div>
+                    <button
+                      (click)="selectContainer(container)"
+                      class="px-3 py-1.5 text-xs bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition"
+                    >
+                      Load into this {{ containerTerm() }}
+                    </button>
+                  </div>
+                  <button
+                    (click)="openContainerDetail(container, true)"
+                    class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline mt-2">
+                    View Details <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+
+
+          <button (click)="closeContainerPicker()" class="w-full px-4 py-2.5 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-[#444] transition font-medium text-sm">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- LOAD QUANTITY INPUT STATE -->
+  @if (state() === 'load_quantity_input') {
+    <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center" (click)="closeLoadQuantityModal()">
+      <!-- Backdrop -->
+      <div class="absolute inset-0 bg-black/50 sheet-backdrop" [class.closing]="loadQuantityClosing()"></div>
+
+      <!-- Modal / Bottom Sheet -->
+      <div class="relative bg-white dark:bg-[#1a1a1a] rounded-2xl sm:rounded-2xl max-w-sm w-full shadow-2xl max-h-[90vh] overflow-y-auto modal-scrollbar sheet-modal-desktop sheet-modal-mobile" [class.closing]="loadQuantityClosing()" (click)="$event.stopPropagation()">
+
+        <!-- Mobile Sheet Handle -->
+        <div class="sheet-handle hidden sticky top-0 z-20 bg-white dark:bg-[#1a1a1a] pt-2 pb-1 rounded-t-2xl">
+          <div class="sheet-handle-bar"></div>
+        </div>
+
+        <!-- Modal Header -->
+        <div class="sheet-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sm:rounded-t-2xl">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <i class="fa-solid fa-boxes-stacked text-orange-500 mr-2"></i>
+            Load Quantity
+          </h3>
+          <button (click)="closeLoadQuantityModal()" class="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-[#333] flex items-center justify-center transition">
+            <i class="fa-solid fa-times text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"></i>
+          </button>
+        </div>
+
+        <div class="sheet-content p-6 space-y-4">
+        <p class="text-sm text-gray-500 dark:text-gray-400">into {{ containerTerm() }} {{ selectedContainer()?.reference_number }}</p>
+
+        <!-- Shipment info -->
+        <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
+          <p class="text-sm text-orange-700 dark:text-orange-300">
+            <i class="fa-solid fa-box mr-1"></i>
+            <strong>{{ loadShipment()?.title || 'Untitled' }}</strong>
+          </p>
+
+          <!-- Simple view for first load (at_warehouse) -->
+          @if (loadShipment()?.status === 'at_warehouse') {
+            <div class="mt-2 space-y-1">
+              <p class="text-xs text-orange-600 dark:text-orange-400">
+                Total Quantity: <strong>{{ getExpectedQuantityFromShipment(loadShipment()) }}</strong> unit(s)
+              </p>
+            </div>
+          }
+
+          <!-- Loading state for half_loaded -->
+          @if (loadShipment()?.status === 'half_loaded' && containerStatusLoading()) {
+            <div class="text-xs text-orange-600 dark:text-orange-400 mt-1">
+              <div class="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-orange-500 mr-1"></div>
+              Loading {{ containerTerm().toLowerCase() }} details...
+            </div>
+          }
+
+          <!-- Detailed view for half_loaded -->
+          @if (loadShipment()?.status === 'half_loaded' && !containerStatusLoading() && containerStatusData(); as status) {
+            <div class="mt-2 space-y-1">
+              <p class="text-xs text-orange-600 dark:text-orange-400">
+                Total Quantity: <strong>{{ status.expected_quantity }}</strong> unit(s)
+              </p>
+              @if (status.loaded_quantity > 0) {
+                <p class="text-xs text-green-600 dark:text-green-400">
+                  Already loaded: <strong>{{ status.loaded_quantity }}</strong> unit(s)
+                </p>
+                @if (status.containers && status.containers.length > 0) {
+                  <p class="text-xs text-gray-600 dark:text-gray-400">
+                    @for (c of status.containers; track c.reference_number; let first = $first, last = $last) {
+                      @if (first) { <span>at {{ containerTerm() }} </span> }
+                      <span class="font-medium">({{ c.reference_number }})</span>: <strong>{{ c.quantity }}</strong> unit(s)@if (!last) {, }
+                    }
+                  </p>
+                }
+              }
+              <p class="text-xs text-orange-600 dark:text-orange-400">
+                Remaining Quantity (Not loaded): <strong>{{ status.remaining_quantity }}</strong> unit(s)
+              </p>
+            </div>
+          }
+
+          <!-- Error state -->
+          @if (containerStatusError()) {
+            <div class="text-xs text-red-600 dark:text-red-400 mt-1">
+              <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+              {{ containerStatusError() }}
+            </div>
+          }
+        </div>
+
+        <!-- Quantity input -->
+        <div>
+          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Quantity to Load</label>
+          <input
+            type="number"
+            [value]="loadQuantity() ?? ''"
+            (input)="onLoadQuantityInput($event)"
+            min="1"
+            [max]="getMaxLoadQuantity()"
+            [placeholder]="'Enter quantity (max: ' + getMaxLoadQuantity() + ')'"
+            class="w-full px-3 py-2.5 bg-white dark:bg-[#222] border border-gray-200 dark:border-gray-700 rounded-lg text-sm dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+            autofocus
+          />
+          @if (loadQuantityError()) {
+            <p class="text-red-500 text-xs mt-1">{{ loadQuantityError() }}</p>
+          }
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-col gap-2">
+          <button
+            (click)="submitLoadWithQuantity()"
+            [disabled]="loadingShipment()"
+            class="w-full px-4 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition font-medium text-sm disabled:opacity-50"
+          >
+            @if (loadingShipment()) {
+              <span class="animate-spin inline-block w-3 h-3 border border-white border-t-transparent rounded-full mr-1"></span>
+            }
+            Load to {{ containerTerm() }}
+          </button>
+          @if (loadShipment()?.status === 'at_warehouse') {
+            <button
+              (click)="loadAllQuantity()"
+              [disabled]="loadingShipment()"
+              class="w-full px-4 py-2.5 bg-green-500 text-white rounded-xl hover:bg-green-600 transition font-medium text-sm disabled:opacity-50"
+            >
+              <i class="fa-solid fa-boxes-stacked mr-1"></i> Load All
+            </button>
+          }
+          @if (loadShipment()?.status === 'half_loaded') {
+            <button
+              (click)="loadAllRemainingQuantity()"
+              [disabled]="loadingShipment() || (containerStatusData()?.remaining_quantity ?? 0) <= 0"
+              class="w-full px-4 py-2.5 bg-green-500 text-white rounded-xl hover:bg-green-600 transition font-medium text-sm disabled:opacity-50"
+            >
+              <i class="fa-solid fa-boxes-stacked mr-1"></i> Load All Remaining ({{ containerStatusData()?.remaining_quantity ?? 0 }})
+            </button>
+          }
+          <button
+            (click)="backToContainerPicker()"
+            class="w-full px-4 py-2.5 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-[#444] transition font-medium text-sm"
+          >
+            Back
+          </button>
+          <button
+            (click)="closeLoadQuantityModal()"
+            class="w-full px-4 py-2.5 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-[#444] transition font-medium text-sm"
+          >
+            Cancel
+          </button>
+        </div>
+        </div>
+      </div>
+    </div>
+  }
+
+
+  <!-- CONTAINER/BATCH DETAIL STATE -->
+  @if (state() === 'container_detail') {
+    @if (detailContainer(); as container) {
+    <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center" (click)="closeContainerDetail()">
+      <!-- Backdrop -->
+      <div class="absolute inset-0 bg-black/50 sheet-backdrop" [class.closing]="detailClosing()"></div>
+
+      <!-- Modal / Bottom Sheet -->
+      <div class="relative bg-white dark:bg-[#1a1a1a] rounded-2xl sm:rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto modal-scrollbar sheet-modal-desktop sheet-modal-mobile" [class.closing]="detailClosing()" (click)="$event.stopPropagation()">
+
+        <!-- Mobile Sheet Handle -->
+        <div class="sheet-handle hidden sticky top-0 z-20 bg-white dark:bg-[#1a1a1a] pt-2 pb-1 rounded-t-2xl">
+          <div class="sheet-handle-bar"></div>
+        </div>
+
+        <!-- Header -->
+        <div class="sheet-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sm:rounded-t-2xl">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ container.reference_number }}</h3>
+          <button (click)="closeContainerDetail()" class="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-[#333] flex items-center justify-center transition">
+            <i class="fa-solid fa-times text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"></i>
+          </button>
+        </div>
+
+        <div class="p-6">
+          <div class="mb-4 flex items-center gap-2 flex-wrap">
+            <span class="text-xs px-3 py-1 rounded-full" [ngClass]="getStatusClass(container.status)">
+              {{ formatStatus(container.status, container.transport_method) }}
+            </span>
+            @if (container.status === 'draft') {
+              <button
+                (click)="scanToLoadInto(container)"
+                class="px-3 py-1 text-xs bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition">
+                <i class="fa-solid fa-camera mr-1"></i> Scan to Load
+              </button>
+              <button
+                (click)="closeContainer(container.id)"
+                [disabled]="updatingContainer() === container.id"
+                class="px-3 py-1 text-xs bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:bg-gray-300 transition">
+                Close
+              </button>
+            }
+            @if (getNextContainerStatus(container.status); as nextStatus) {
+              <button
+                (click)="updateContainerStatus(container.id, nextStatus)"
+                [disabled]="updatingContainer() === container.id"
+                class="px-3 py-1 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 transition">
+                {{ getNextContainerStatusLabel(container.status, container.transport_method) }}
+              </button>
+            }
+          </div>
+
+          @if (detailLoading()) {
+            <div class="text-center py-8">
+              <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
+            </div>
+          } @else {
+            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Shipments in {{ containerTermFor(container) }}</h4>
+            @if (!hasDetailShipments()) {
+              <div class="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
+                No shipments in this {{ containerTermFor(container).toLowerCase() }}
+              </div>
+            }
+            @if (hasDetailShipments()) {
+              <div class="space-y-2">
+                @for (s of getDetailShipments(); track s.id) {
+                  <div class="bg-gray-50 dark:bg-[#222] rounded-lg p-3">
+                    <p class="text-sm font-medium dark:text-white">{{ s.title || 'Untitled' }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                      Status: {{ formatStatus(s.status, container.transport_method) }}
+                      @if (s.pivot_quantity) {
+                        <span class="ml-2 text-orange-500 font-medium">&middot; Qty in this {{ containerTermFor(container).toLowerCase() }}: {{ s.pivot_quantity }}</span>
+                      }
+                    </p>
+
+                    <!-- Distribution info for half_loaded / loading_container shipments -->
+                    @if (getShipmentDistribution(s.id); as dist) {
+                      @if (dist.loading) {
+                        <div class="text-xs text-gray-400 mt-1">
+                          <div class="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-gray-400 mr-1"></div>
+                          Loading distribution info...
+                        </div>
+                      }
+                      @if (dist.error) {
+                        <div class="text-xs text-red-400 mt-1">
+                          {{ dist.error }}
+                        </div>
+                      }
+                      @if (dist.data) {
+                        <div class="mt-2 space-y-1 border-t border-gray-200 dark:border-gray-700 pt-2">
+                          <p class="text-xs text-orange-600 dark:text-orange-400">
+                            Total Quantity: <strong>{{ dist.data.expected_quantity }}</strong>
+                          </p>
+                          <p class="text-xs text-green-600 dark:text-green-400">
+                            Distributed across <strong>{{ dist.data.containers.length }}</strong> {{ containerTermFor(container).toLowerCase() }}(s):
+                          </p>
+                          <div class="space-y-1">
+                            @for (c of dist.data.containers; track c.reference_number) {
+                              <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-600 dark:text-gray-400">
+                                  <i class="fa-solid fa-box mr-1"></i>
+                                  {{ containerTermFor(container) }} <span class="font-medium">({{ c.reference_number }})</span>:
+                                </span>
+                                <span class="text-orange-600 dark:text-orange-400 font-medium">{{ c.quantity }} unit(s)</span>
+                              </div>
+                            }
+                          </div>
+                          <p class="text-xs text-orange-600 dark:text-orange-400 pt-1 border-t border-gray-200 dark:border-gray-700">
+                            Remaining (not loaded): <strong>{{ dist.data.remaining_quantity }}</strong> unit(s)
+                          </p>
+                        </div>
+                      }
+                    }
+                  </div>
+                }
+              </div>
+            }
+          }
+        </div>
+
+        <div class="p-6 pt-0">
+          <button (click)="closeContainerDetail()" class="w-full px-4 py-2.5 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-[#444] transition font-medium text-sm">
+            @if (detailFromPicker()) {
+              <i class="fa-solid fa-arrow-left mr-1"></i> Back
+            } @else {
+              Back to Scanner
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+    }
+  }
+
   <!-- SUCCESS STATE -->
   @if (state() === 'success' && resultShipment()) {
     <div class="absolute inset-0 z-40 bg-black/80 flex items-center justify-center p-4">
@@ -232,9 +624,11 @@
           <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
             <i class="fa-solid fa-check text-green-500 text-2xl"></i>
           </div>
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">Shipment Approved</h2>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">{{ selectedContainer() ? 'Shipment Loaded' : 'Shipment Approved' }}</h2>
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            @if (resultShipment().status === 'partially_received') {
+            @if (selectedContainer()) {
+              Loaded into <span class="font-medium text-indigo-600 dark:text-indigo-400">{{ selectedContainer()!.reference_number }}</span>
+            } @else if (resultShipment().status === 'partially_received') {
               Partially received — awaiting client confirmation
             } @else {
               Moved to <span class="font-medium text-indigo-600 dark:text-indigo-400">At Warehouse</span>
