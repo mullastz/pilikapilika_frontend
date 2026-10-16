@@ -62,7 +62,7 @@ export class SignUp {
     const formValue = this.signupForm.value;
     const signupData: SignupRequest = {
       username: formValue.username,
-      email: formValue.email,
+      email: formValue.email?.trim().toLowerCase(),
       password: formValue.password,
       password_confirmation: formValue.confirmPassword,
       role: formValue.userType === 'agent' ? 'Seller' : 'Buyer'
@@ -84,13 +84,18 @@ export class SignUp {
         this.isLoading.set(false);
         const errorMsg = this.extractErrorMessage(err);
         this.toastService.error(errorMsg);
-        console.error('Signup error:', err);
       }
     });
   }
 
   goBack() {
-    this.location.back();
+    if (window.history.length > 1) {
+      this.location.back();
+    } else {
+      // No history (e.g. opened the page directly) — landing page redirects
+      // logged-in users to /home automatically
+      this.router.navigate(['/']);
+    }
   }
 
   togglePasswordVisibility(field: 'password' | 'confirm') {

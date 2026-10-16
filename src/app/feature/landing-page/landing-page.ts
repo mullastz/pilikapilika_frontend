@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, ElementRef, ViewChild, OnInit, ChangeDetectorRef, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Footer } from '../../shared/footer/footer';
 import { Header } from '../../shared/header/header';
@@ -9,6 +9,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { Agent } from '../../core/interfaces/auth.interface';
 import { resolveImageUrl } from '../../core/utils/image-url.util';
 import { ToastService } from '../../core/services/toast.service';
+import { ContentService } from '../../core/services/content.service';
 
 @Component({
   selector: 'app-landing-page',
@@ -30,11 +31,17 @@ export class LandingPage implements OnInit {
   isLoadingAgents = true;
   showProfilePopup = false;
 
+  heroTitle = signal('Discover best deal');
+  heroSubtitle = signal('Ship with confidence every time.');
+  heroImage = signal('assets/landingpage_images/logistics.webp');
+  isLoadingHero = signal(true);
+
   constructor(
     private router: Router,
     private agentService: AgentService,
     private authService: AuthService,
     private toastService: ToastService,
+    private contentService: ContentService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -45,7 +52,20 @@ export class LandingPage implements OnInit {
       return;
     }
     this.loadAgents();
+    this.loadHeroContent();
     this.checkProfileCompletion();
+  }
+
+  loadHeroContent(): void {
+    this.contentService.getContent().subscribe((content) => {
+      if (content['hero_title']) this.heroTitle.set(content['hero_title']);
+      if (content['hero_subtitle']) this.heroSubtitle.set(content['hero_subtitle']);
+      if (content['hero_image']) {
+        this.heroImage.set(resolveImageUrl(content['hero_image'], 'assets/landingpage_images/logistics.webp'));
+      }
+      this.isLoadingHero.set(false);
+      this.cdr.detectChanges();
+    });
   }
 
   checkProfileCompletion(): void {
@@ -65,10 +85,8 @@ export class LandingPage implements OnInit {
 
   loadAgents(): void {
     this.isLoadingAgents = true;
-    console.log('Loading agents...');
     this.agentService.getAvailableAgents(1, 10).subscribe({
       next: (response) => {
-        console.log('Agents loaded:', response);
         this.agents = response.agents;
         // Sort by rating for top agents
         this.topAgents = [...response.agents].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 6);
@@ -76,7 +94,6 @@ export class LandingPage implements OnInit {
         this.cdr.detectChanges(); // Trigger change detection
       },
       error: (err: any) => {
-        console.error('Error loading agents:', err);
         this.toastService.error('Failed to load agents. Please try again.');
         this.isLoadingAgents = false;
         this.agents = [];
@@ -91,10 +108,9 @@ export class LandingPage implements OnInit {
   }
 
   viewAgentProfile(agentId: number): void {
-    console.log('Navigating to agent profile:', agentId);
     this.router.navigate(['/agent', agentId]).then(
-      (success) => console.log('Navigation result:', success),
-      (error) => console.error('Navigation error:', error)
+      (success) => { },
+      (error) => { }
     );
   }
 

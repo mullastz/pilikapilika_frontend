@@ -40,7 +40,7 @@ export class ForgotPassword {
 
     this.isLoading.set(true);
 
-    this.authService.forgotPassword(this.email?.value).subscribe({
+    this.authService.forgotPassword(this.email?.value?.trim().toLowerCase()).subscribe({
       next: (response) => {
         this.isLoading.set(false);
         this.emailSent.set(true);

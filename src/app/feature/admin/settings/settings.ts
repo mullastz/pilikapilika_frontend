@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../core/services/admin.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { RouterModule } from '@angular/router';
+import { resolveImageUrl } from '../../../core/utils/image-url.util';
 
 interface AppSettings {
   platform: {
@@ -31,6 +32,19 @@ interface AppSettings {
   };
   payments: {
     platform_commission_percent: number;
+  };
+  content: {
+    about_us_title: string;
+    about_us_subtitle: string;
+    about_us_body: string;
+    about_us_image: string;
+    about_us_mission_title: string;
+    about_us_mission_body: string;
+    about_us_vision_title: string;
+    about_us_vision_body: string;
+    hero_title: string;
+    hero_subtitle: string;
+    hero_image: string;
   };
 }
 
@@ -74,6 +88,19 @@ export class AdminSettings implements OnInit {
     payments: {
       platform_commission_percent: 5,
     },
+    content: {
+      about_us_title: '',
+      about_us_subtitle: '',
+      about_us_body: '',
+      about_us_image: '',
+      about_us_mission_title: '',
+      about_us_mission_body: '',
+      about_us_vision_title: '',
+      about_us_vision_body: '',
+      hero_title: '',
+      hero_subtitle: '',
+      hero_image: '',
+    },
   });
 
   loading = signal(true);
@@ -86,6 +113,7 @@ export class AdminSettings implements OnInit {
     { key: 'notifications', label: 'Notifications', icon: 'fa-solid fa-bell' },
     { key: 'security', label: 'Security', icon: 'fa-solid fa-shield-halved' },
     { key: 'payments', label: 'Payments', icon: 'fa-solid fa-credit-card' },
+    { key: 'content', label: 'Content', icon: 'fa-solid fa-pen-to-square' },
   ];
 
   constructor(
@@ -101,7 +129,15 @@ export class AdminSettings implements OnInit {
     this.loading.set(true);
     this.adminService.getSettings().subscribe({
       next: (res) => {
-        this.settings.set(res.data);
+        // Merge with defaults so newly added groups (e.g. content) always exist
+        const current = this.settings();
+        const merged: AppSettings = { ...current };
+        for (const group of Object.keys(current) as (keyof AppSettings)[]) {
+          if (res.data?.[group]) {
+            (merged as any)[group] = { ...(current[group] as any), ...res.data[group] };
+          }
+        }
+        this.settings.set(merged);
         this.loading.set(false);
       },
       error: () => {
@@ -109,6 +145,37 @@ export class AdminSettings implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  uploadingImage = signal<string | null>(null);
+
+  uploadContentImage(event: Event, key: 'about_us_image' | 'hero_image'): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.uploadingImage.set(key);
+    this.adminService.uploadContentImage(key, file).subscribe({
+      next: (res) => {
+        this.settings.update((s) => ({
+          ...s,
+          content: { ...s.content, [key]: res.data.url },
+        }));
+        this.toastService.success('Image uploaded successfully');
+        this.uploadingImage.set(null);
+        input.value = '';
+      },
+      error: () => {
+        this.toastService.error('Failed to upload image');
+        this.uploadingImage.set(null);
+        input.value = '';
+      },
+    });
+  }
+
+  contentImageUrl(key: 'about_us_image' | 'hero_image'): string {
+    const url = this.settings().content[key];
+    return url ? resolveImageUrl(url, '') : '';
   }
 
   save(): void {

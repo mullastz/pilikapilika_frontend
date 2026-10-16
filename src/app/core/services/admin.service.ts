@@ -323,4 +323,11 @@ export class AdminService {
   updateSettings(payload: { settings: any }): Observable<{ success: boolean; message: string; data: any }> {
     return this.api.put<{ success: boolean; message: string; data: any }>('admin/settings', payload);
   }
+
+  uploadContentImage(key: string, file: File): Observable<{ success: boolean; data: { key: string; url: string } }> {
+    const formData = new FormData();
+    formData.append('key', key);
+    formData.append('image', file);
+    return this.api.postFormData<{ success: boolean; data: { key: string; url: string } }>('admin/settings/content-image', formData);
+  }
 }

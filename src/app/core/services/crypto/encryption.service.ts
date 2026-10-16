@@ -84,16 +84,11 @@ export class EncryptionService {
     aesKey: CryptoKey,
     encrypted: EncryptedMessage
   ): Promise<string> {
-    console.log('[ENCRYPTION] Decrypting message...');
-    console.log('[ENCRYPTION] Ciphertext length:', encrypted.ciphertext.length);
-    console.log('[ENCRYPTION] IV length:', encrypted.iv.length);
     
     const ciphertext = this.base64ToArrayBuffer(encrypted.ciphertext);
     const ivBuffer = this.base64ToArrayBuffer(encrypted.iv);
     const iv = new Uint8Array(ivBuffer);
     
-    console.log('[ENCRYPTION] Ciphertext ArrayBuffer length:', ciphertext.byteLength);
-    console.log('[ENCRYPTION] IV ArrayBuffer length:', iv.length);
 
     try {
       const decrypted = await crypto.subtle.decrypt(
@@ -105,12 +100,8 @@ export class EncryptionService {
         ciphertext
       );
       
-      console.log('[ENCRYPTION] Decryption successful');
       return new TextDecoder().decode(decrypted);
     } catch (decryptError) {
-      console.error('[ENCRYPTION] Decryption failed:', decryptError);
-      console.error('[ENCRYPTION] Ciphertext:', encrypted.ciphertext.substring(0, 50) + '...');
-      console.error('[ENCRYPTION] IV:', encrypted.iv);
       throw decryptError;
     }
   }

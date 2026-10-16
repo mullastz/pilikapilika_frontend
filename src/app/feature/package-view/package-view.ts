@@ -83,14 +83,12 @@ export class PackageView implements OnInit {
 
     this.packageService.getByUuid(this.packageUuid).subscribe({
       next: (res: any) => {
-        console.log('[PackageView] Package response:', res);
         const pkg = res?.data?.package ?? null;
         this.packageData = pkg ? { ...pkg, products: res?.data?.products ?? null } : null;
         this.isLoading = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('[PackageView] Package API error:', err);
         this.isLoading = false;
         this.cdr.detectChanges();
         this.errorMessage =
@@ -170,7 +168,6 @@ export class PackageView implements OnInit {
           }
         },
         error: (err) => {
-          console.warn('[PackageView] Failed to fetch product details for', uuid, err);
         },
       });
     }

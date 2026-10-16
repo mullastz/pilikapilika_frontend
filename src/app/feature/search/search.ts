@@ -104,14 +104,12 @@ export class Search implements OnInit, OnDestroy {
 
     this.agentService.searchAgents(params).subscribe({
       next: (agents: Agent[]) => {
-        console.log('Search: Agents loaded:', agents);
         this.agents = agents;
         this.isLoading = false;
         this.isLoadingResults = false;
         this.cdr.markForCheck();
       },
       error: (err: any) => {
-        console.error('Search: Error loading agents:', err);
         this.error = err.error?.message || 'Failed to load agents';
         this.isLoading = false;
         this.isLoadingResults = false;

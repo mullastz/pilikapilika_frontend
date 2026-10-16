@@ -119,7 +119,6 @@ export class MessagingService {
       // Update status to sent on successful backend response
       this.updatePendingMessageStatus(tempId, 'sent');
     } catch (err: any) {
-      console.error('[MESSAGING] Message processing failed:', err);
       
       // Update status to failed with error message
       const errorMessage = this.getErrorMessage(err);
@@ -146,16 +145,13 @@ export class MessagingService {
   private updatePendingMessageStatus(tempId: string, status: PendingMessage['status'], error?: string): void {
     // This will be used by the component to update the UI
     // The component will need to track pending messages and update their status
-    console.log('[MESSAGING] Updating message status:', { tempId, status, error });
   }
 
   private async fetchPublicKey(userId: string): Promise<JsonWebKey> {
-    console.log('[MESSAGING] Fetching public key for user:', userId);
     try {
       const response = await firstValueFrom(
         this.api.get<{ data: { public_key: JsonWebKey } }>(`keys/${userId}`)
       );
-      console.log('[MESSAGING] Successfully fetched public key for:', userId);
       
       // Validate the public key structure
       if (!response.data?.public_key) {
@@ -164,7 +160,6 @@ export class MessagingService {
       
       return response.data.public_key;
     } catch (error: any) {
-      console.error('[MESSAGING] Failed to fetch public key for user:', userId, error);
       
       if (error?.status === 404) {
         throw new Error(`User ${userId} not found or has no encryption key`);
@@ -181,12 +176,6 @@ export class MessagingService {
     encrypted: EncryptedMessage,
     tempId: string
   ): Promise<void> {
-    console.log('[MESSAGING] Sending to backend:', {
-      recipient_id: recipientId,
-      ciphertext: encrypted.ciphertext,
-      iv: encrypted.iv,
-      temp_id: tempId
-    });
     
     try {
       const response = await firstValueFrom(
@@ -197,7 +186,6 @@ export class MessagingService {
           temp_id: tempId
         })
       ) as any;
-      console.log('[MESSAGING] Backend response:', response);
       
       // Validate response
       if (!response?.data?.id) {
@@ -205,9 +193,6 @@ export class MessagingService {
       }
       
     } catch (error: any) {
-      console.error('[MESSAGING] Backend error:', error);
-      console.error('[MESSAGING] Error status:', error?.status);
-      console.error('[MESSAGING] Error details:', error?.error);
       
       // Provide better error messages
       if (error?.status === 422) {
@@ -235,7 +220,6 @@ export class MessagingService {
     retryCount: number = 0
   ): Promise<PaginatedMessages> {
     try {
-      console.log('[MESSAGING] Fetching messages:', { userId, page, perPage });
       
       const response = await firstValueFrom(
         this.api.get<{
@@ -244,11 +228,6 @@ export class MessagingService {
         }>(`messages/${userId}?page=${page}&per_page=${perPage}`)
       );
 
-      console.log('[MESSAGING] Successfully fetched messages:', {
-        userId,
-        messageCount: response.data?.length || 0,
-        currentPage: response.pagination?.current_page
-      });
 
       return {
         messages: response.data || [],
@@ -260,11 +239,9 @@ export class MessagingService {
         },
       };
     } catch (error: any) {
-      console.error('[MESSAGING] Error fetching messages:', error);
       
       // Retry logic for network errors
       if (retryCount < 2 && (error?.status === 0 || error?.status >= 500)) {
-        console.log(`[MESSAGING] Retrying fetch messages (attempt ${retryCount + 1}/3)`);
         await this.delay(1000 * (retryCount + 1)); // Exponential backoff
         return this.fetchMessages(userId, page, perPage, retryCount + 1);
       }
@@ -310,11 +287,6 @@ export class MessagingService {
       
       return decrypted;
     } catch (decryptError: any) {
-      console.error('[MESSAGING] Decryption failed:', {
-        messageId: storedMessage.id,
-        error: decryptError,
-        isOutgoing: storedMessage.is_outgoing
-      });
       
       // Provide better error messages
       if (decryptError?.name === 'OperationError') {
@@ -332,19 +304,16 @@ export class MessagingService {
   private async getCachedPublicKey(userId: string): Promise<JsonWebKey> {
     // Check cache first
     if (this.publicKeyCache.has(userId)) {
-      console.log('[MESSAGING] Using cached public key for user:', userId);
       return this.publicKeyCache.get(userId)!;
     }
 
     // Fetch from API if not in cache
-    console.log('[MESSAGING] Fetching and caching public key for user:', userId);
     const response = await firstValueFrom(
       this.api.get<{ data: { public_key: JsonWebKey } }>(`keys/${userId}`)
     );
     
     const publicKey = response.data.public_key;
     this.publicKeyCache.set(userId, publicKey);
-    console.log('[MESSAGING] Cached public key for user:', userId);
     
     return publicKey;
   }
@@ -355,14 +324,10 @@ export class MessagingService {
   }
 
   async fetchConversations(retryCount: number = 0): Promise<ApiConversation[]> {
-    console.log('[MESSAGING] fetchConversations started');
     try {
       const response = await firstValueFrom(
         this.api.get<{ data: ApiConversation[] }>('messages')
       );
-      console.log('[MESSAGING] Successfully fetched conversations:', {
-        count: response.data?.length || 0
-      });
       
       // Validate response data
       if (!Array.isArray(response.data)) {
@@ -371,19 +336,14 @@ export class MessagingService {
       
       return response.data;
     } catch (err: any) {
-      console.error('[MESSAGING] Error fetching conversations:', err);
-      console.error('[MESSAGING] Error status:', err?.status);
-      console.error('[MESSAGING] Error details:', err?.error);
       
       // Retry logic for network errors
       if (retryCount < 2 && (err?.status === 0 || err?.status >= 500)) {
-        console.log(`[MESSAGING] Retrying fetch conversations (attempt ${retryCount + 1}/3)`);
         await this.delay(1000 * (retryCount + 1)); // Exponential backoff
         return this.fetchConversations(retryCount + 1);
       }
       
       // Return empty array to prevent UI from breaking
-      console.warn('[MESSAGING] Returning empty conversations array due to error');
       return [];
     }
   }

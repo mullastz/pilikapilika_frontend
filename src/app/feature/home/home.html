@@ -110,24 +110,6 @@
               <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div [class]="getProgressBarColor(shipment.status)" class="h-full rounded-full transition-all duration-700 ease-out" [style.width.%]="getShipmentProgress(shipment)"></div>
               </div>
-              <!-- Mini stage dots -->
-              <div class="flex items-center justify-between mt-2 px-0.5">
-                @for (stage of getProgressStagesForShipment(shipment.status, shipment.transport_method); let last = $last; track stage.key) {
-                  <div class="flex flex-col items-center" [class.flex-1]="!last">
-                    <div class="w-1.5 h-1.5 rounded-full transition-colors duration-300"
-                         [class.bg-green-500]="stage.completed"
-                         [class.bg-orange-500]="stage.current"
-                         [class.bg-gray-300]="!stage.completed && !stage.current"
-                         [class.dark:bg-gray-600]="!stage.completed && !stage.current"></div>
-                  </div>
-                  @if (!last) {
-                    <div class="flex-1 h-px mx-1 transition-colors duration-300"
-                         [class.bg-green-500]="stage.completed"
-                         [class.bg-gray-300]="!stage.completed"
-                         [class.dark:bg-gray-600]="!stage.completed"></div>
-                  }
-                }
-              </div>
             </div>
           </div>
         </div>
@@ -193,14 +175,10 @@
 
     <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth -mx-4 px-4">
       @for (agent of nearbyAgents; track trackByAgentId($index, agent)) {
-      <div (click)="viewAgentProfile(agent.id)" class="min-w-35 sm:min-w-40 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-3 cursor-pointer hover:shadow-lg hover:scale-105 transition-all">
-        <img [src]="agentPhoto(agent)" class="w-16 h-16 rounded-full mx-auto mb-2 object-cover" onerror="this.src='assets/landingpage_images/profile4.jpg'" />
-        <h4 class="text-center font-medium text-sm dark:text-white truncate">{{ capitalize(agent.firstname) }} {{ capitalize(agent.lastname) }}</h4>
-        <div class="flex justify-center items-center gap-1 text-yellow-500 text-xs mt-1">
-          <i class="fa-solid fa-star"></i>
-          <span class="text-gray-700 dark:text-gray-300">{{ agent.rating || '0.0' }}</span>
-        </div>
-        <p class="text-xs text-gray-400 text-center mt-1 truncate">{{ capitalize(agent.region) || 'Unknown' }}</p>
+      <div (click)="viewAgentProfile(agent.id)" class="min-w-48 sm:min-w-56 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-4 cursor-pointer hover:shadow-lg hover:scale-105 transition-all">
+        <img [src]="agentPhoto(agent)" class="w-20 h-20 rounded-full mx-auto mb-3 object-cover" onerror="this.src='assets/landingpage_images/profile4.jpg'" />
+        <h4 class="text-center font-semibold text-base dark:text-white truncate">{{ capitalize(agent.firstname) }} {{ capitalize(agent.lastname) }}</h4>
+        <p class="text-sm text-gray-400 text-center mt-1 truncate">{{ capitalize(agent.region) || 'Unknown' }}</p>
       </div>
       }
 
@@ -241,14 +219,9 @@
 
     <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth -mx-4 px-4">
       @for (agent of topRatedAgents; track trackByAgentId($index, agent)) {
-      <div (click)="viewAgentProfile(agent.id)" class="min-w-35 sm:min-w-40 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-3 cursor-pointer hover:shadow-lg hover:scale-105 transition-all">
-        <img [src]="agentPhoto(agent)" class="w-16 h-16 rounded-full mx-auto mb-2 object-cover" onerror="this.src='assets/landingpage_images/profile4.jpg'" />
-        <div class="flex justify-center items-center gap-1 text-yellow-500 text-sm mb-1">
-          <i class="fa-solid fa-star"></i>
-          <span class="font-bold text-gray-900 dark:text-white">{{ agent.rating || '0.0' }}</span>
-        </div>
-        <h4 class="text-center font-medium text-sm dark:text-white truncate">{{ agent.firstname }} {{ agent.lastname }}</h4>
-        <p class="text-xs text-gray-400 text-center mt-1">{{ agent.total_reviews }} reviews</p>
+      <div (click)="viewAgentProfile(agent.id)" class="min-w-48 sm:min-w-56 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-4 cursor-pointer hover:shadow-lg hover:scale-105 transition-all">
+        <img [src]="agentPhoto(agent)" class="w-20 h-20 rounded-full mx-auto mb-3 object-cover" onerror="this.src='assets/landingpage_images/profile4.jpg'" />
+        <h4 class="text-center font-semibold text-base dark:text-white truncate">{{ agent.firstname }} {{ agent.lastname }}</h4>
       </div>
       }
     </div>
@@ -269,14 +242,10 @@
 
     <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth -mx-4 px-4">
       @for (agent of expressAgents; track trackByAgentId($index, agent)) {
-      <div (click)="viewAgentProfile(agent.id)" class="min-w-35 sm:min-w-40 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-3 cursor-pointer hover:shadow-lg hover:scale-105 transition-all">
-        <img [src]="agentPhoto(agent)" class="w-16 h-16 rounded-full mx-auto mb-2 object-cover" onerror="this.src='assets/landingpage_images/profile4.jpg'" />
+      <div (click)="viewAgentProfile(agent.id)" class="min-w-48 sm:min-w-56 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-4 cursor-pointer hover:shadow-lg hover:scale-105 transition-all">
+        <img [src]="agentPhoto(agent)" class="w-20 h-20 rounded-full mx-auto mb-3 object-cover" onerror="this.src='assets/landingpage_images/profile4.jpg'" />
         <span class="inline-block bg-orange-100 dark:bg-orange-900/30 text-[#FF7800] text-xs px-2 py-0.5 rounded-full mb-1">Express</span>
-        <h4 class="text-center font-medium text-sm dark:text-white truncate">{{ capitalize(agent.firstname) }} {{ capitalize(agent.lastname) }}</h4>
-        <div class="flex justify-center items-center gap-1 text-yellow-500 text-xs mt-1">
-          <i class="fa-solid fa-star"></i>
-          <span class="text-gray-700 dark:text-gray-300">{{ agent.rating || 'New' }}</span>
-        </div>
+        <h4 class="text-center font-semibold text-base dark:text-white truncate">{{ capitalize(agent.firstname) }} {{ capitalize(agent.lastname) }}</h4>
       </div>
       }
     </div>
@@ -297,12 +266,12 @@
 
     <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth -mx-4 px-4">
       @for (agent of bestValueAgents; track trackByAgentId($index, agent)) {
-      <div (click)="viewAgentProfile(agent.id)" class="min-w-35 sm:min-w-40 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-3 cursor-pointer hover:shadow-lg hover:scale-105 transition-all">
-        <img [src]="agentPhoto(agent)" class="w-16 h-16 rounded-full mx-auto mb-2 object-cover" onerror="this.src='assets/landingpage_images/profile4.jpg'" />
+      <div (click)="viewAgentProfile(agent.id)" class="min-w-48 sm:min-w-56 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-4 cursor-pointer hover:shadow-lg hover:scale-105 transition-all">
+        <img [src]="agentPhoto(agent)" class="w-20 h-20 rounded-full mx-auto mb-3 object-cover" onerror="this.src='assets/landingpage_images/profile4.jpg'" />
         <div class="text-center">
           <span class="inline-block bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs px-2 py-0.5 rounded-full mb-1">Best Price</span>
         </div>
-        <h4 class="text-center font-medium text-sm dark:text-white truncate">{{ agent.firstname }} {{ agent.lastname }}</h4>
+        <h4 class="text-center font-semibold text-base dark:text-white truncate">{{ agent.firstname }} {{ agent.lastname }}</h4>
         <p class="text-center mt-2 font-bold text-lg text-[#FF7800]">{{ agent.base_price ? '$' + agent.base_price : 'Contact' }}</p>
       </div>
       }
@@ -324,12 +293,12 @@
 
     <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth -mx-4 px-4">
       @for (agent of newAgents; track trackByAgentId($index, agent)) {
-      <div (click)="viewAgentProfile(agent.id)" class="min-w-35 sm:min-w-40 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-3 cursor-pointer hover:shadow-lg hover:scale-105 transition-all">
-        <img [src]="agentPhoto(agent)" class="w-16 h-16 rounded-full mx-auto mb-2 object-cover" onerror="this.src='assets/landingpage_images/profile4.jpg'" />
+      <div (click)="viewAgentProfile(agent.id)" class="min-w-48 sm:min-w-56 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-4 cursor-pointer hover:shadow-lg hover:scale-105 transition-all">
+        <img [src]="agentPhoto(agent)" class="w-20 h-20 rounded-full mx-auto mb-3 object-cover" onerror="this.src='assets/landingpage_images/profile4.jpg'" />
         <span class="inline-block bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs px-2 py-0.5 rounded-full mb-1">New!</span>
-        <h4 class="text-center font-medium text-sm dark:text-white truncate">{{ capitalize(agent.firstname) }} {{ capitalize(agent.lastname) }}</h4>
-        <p class="text-xs text-gray-400 text-center mt-1">Just joined</p>
-        <p class="text-center mt-2 font-medium text-sm text-[#FF7800]">{{ agent.base_price ? '$' + agent.base_price : 'Contact' }}</p>
+        <h4 class="text-center font-semibold text-base dark:text-white truncate">{{ capitalize(agent.firstname) }} {{ capitalize(agent.lastname) }}</h4>
+        <p class="text-sm text-gray-400 text-center mt-1">Just joined</p>
+        <p class="text-center mt-2 font-medium text-base text-[#FF7800]">{{ agent.base_price ? '$' + agent.base_price : 'Contact' }}</p>
       </div>
       }
     </div>
@@ -350,17 +319,13 @@
 
     <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth -mx-4 px-4">
       @for (agent of verifiedAgents; track trackByAgentId($index, agent)) {
-      <div (click)="viewAgentProfile(agent.id)" class="min-w-35 sm:min-w-40 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-3 cursor-pointer hover:shadow-lg hover:scale-105 transition-all relative">
+      <div (click)="viewAgentProfile(agent.id)" class="min-w-48 sm:min-w-56 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-4 cursor-pointer hover:shadow-lg hover:scale-105 transition-all relative">
         <div class="absolute top-2 right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center z-10">
           <i class="fa-solid fa-check text-white text-xs"></i>
         </div>
-        <img [src]="agentPhoto(agent)" class="w-16 h-16 rounded-full mx-auto mb-2 object-cover" onerror="this.src='assets/landingpage_images/profile4.jpg'" />
-        <h4 class="text-center font-medium text-sm dark:text-white truncate">{{ agent.firstname }} {{ agent.lastname }}</h4>
-        <div class="flex justify-center items-center gap-1 text-yellow-500 text-xs mt-1">
-          <i class="fa-solid fa-star"></i>
-          <span class="text-gray-700 dark:text-gray-300">{{ agent.rating || 'New' }}</span>
-        </div>
-        <p class="text-center mt-2 font-medium text-sm text-[#FF7800]">{{ agent.base_price ? '$' + agent.base_price : 'Contact' }}</p>
+        <img [src]="agentPhoto(agent)" class="w-20 h-20 rounded-full mx-auto mb-3 object-cover" onerror="this.src='assets/landingpage_images/profile4.jpg'" />
+        <h4 class="text-center font-semibold text-base dark:text-white truncate">{{ agent.firstname }} {{ agent.lastname }}</h4>
+        <p class="text-center mt-2 font-medium text-base text-[#FF7800]">{{ agent.base_price ? '$' + agent.base_price : 'Contact' }}</p>
       </div>
       }
     </div>

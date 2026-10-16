@@ -118,7 +118,6 @@ export class AgentDetails implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error loading agent profile:', err);
         this.isLoading = false;
         this.cdr.detectChanges();
       },
@@ -245,7 +244,6 @@ export class AgentDetails implements OnInit {
         }
       },
       error: (err) => {
-        console.error('Error refreshing profile completion:', err);
       }
     });
   }

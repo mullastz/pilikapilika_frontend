@@ -249,13 +249,13 @@ export class Shipping implements OnInit, OnDestroy {
     const highlightId = this.route.snapshot.queryParamMap.get('highlight');
     if (highlightId) {
       this.highlightedShipmentId.set(highlightId);
-      // Clear the query param from URL without reloading
-      this.router.navigate([], {
+      // Clear the query param from the URL without triggering a router navigation
+      const url = this.router.createUrlTree([], {
         relativeTo: this.route,
         queryParams: { highlight: null },
         queryParamsHandling: 'merge',
-        replaceUrl: true,
-      });
+      }).toString();
+      this.location.replaceState(url);
     }
     this.loadShipments();
     if (this.isAgent()) {
@@ -371,7 +371,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.loading.set(false);
       },
       error: (error: any) => {
-        console.error('Failed to load shipments:', error);
         this.error.set('Failed to load shipments');
         this.toastService.error('Failed to load shipments');
         this.loading.set(false);
@@ -392,7 +391,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.loading.set(false);
       },
       error: (error: any) => {
-        console.error('Failed to load user shipments by status:', error);
         this.error.set('Failed to load shipments');
         this.loading.set(false);
       }
@@ -412,7 +410,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.loading.set(false);
       },
       error: (error: any) => {
-        console.error('Failed to load shipments:', error);
         this.error.set('Failed to load shipments');
         this.toastService.error('Failed to load shipments');
         this.loading.set(false);
@@ -436,7 +433,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.loading.set(false);
       },
       error: (error: any) => {
-        console.error('Failed to load agent shipments by status:', error);
         this.error.set('Failed to load shipments');
         this.loading.set(false);
       }
@@ -459,7 +455,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.loading.set(false);
       },
       error: (error: any) => {
-        console.error('Failed to load cancelled shipments:', error);
         this.error.set('Failed to load shipments');
         this.loading.set(false);
       }
@@ -656,7 +651,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.viewModalLoading.set(false);
       },
       error: (error: any) => {
-        console.error('Failed to load shipment details:', error);
         this.viewModalError.set('Failed to load shipment details');
         this.viewModalLoading.set(false);
       }
@@ -725,7 +719,6 @@ export class Shipping implements OnInit, OnDestroy {
           }
         },
         error: (err) => {
-          console.warn('[Shipping] Failed to fetch product details for', productId, err);
         }
       });
     }
@@ -761,7 +754,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.updatingShipment.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to confirm shipment:', error);
         this.toastService.error('Failed to confirm shipment');
         this.updatingShipment.set(null);
       }
@@ -781,7 +773,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.updatingShipment.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to update shipment:', error);
         this.toastService.error('Failed to update shipment');
         this.updatingShipment.set(null);
       }
@@ -801,7 +792,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.updatingShipment.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to update shipment:', error);
         this.toastService.error('Failed to update shipment');
         this.updatingShipment.set(null);
       }
@@ -821,7 +811,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.updatingShipment.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to update shipment:', error);
         this.toastService.error('Failed to update shipment');
         this.updatingShipment.set(null);
       }
@@ -841,7 +830,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.updatingShipment.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to update shipment:', error);
         this.toastService.error('Failed to update shipment');
         this.updatingShipment.set(null);
       }
@@ -965,7 +953,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.updatingShipment.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to reject shipment:', error);
         this.toastService.error('Failed to reject shipment');
         this.updatingShipment.set(null);
       }
@@ -986,7 +973,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.updatingShipment.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to cancel shipment:', error);
         this.toastService.error('Failed to cancel shipment');
         this.updatingShipment.set(null);
       }
@@ -1008,7 +994,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.updatingShipment.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to return shipment to warehouse:', error);
         this.toastService.error('Failed to return shipment to warehouse');
         this.updatingShipment.set(null);
       }
@@ -1128,7 +1113,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.updatingShipment.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to confirm delivery:', error);
         this.toastService.error('Failed to confirm delivery');
         this.updatingShipment.set(null);
       }
@@ -1148,7 +1132,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.containersLoading.set(false);
       },
       error: (error: any) => {
-        console.error('Failed to load containers:', error);
         this.containersLoading.set(false);
       }
     });
@@ -1192,7 +1175,6 @@ export class Shipping implements OnInit, OnDestroy {
         }
       },
       error: (error: any) => {
-        console.error('Failed to load container details:', error);
       }
     });
   }
@@ -1291,7 +1273,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.creatingContainer.set(false);
       },
       error: (error: any) => {
-        console.error('Failed to create container:', error);
         // Surface the first server validation error (e.g. duplicate reference number)
         const errors = error?.error?.errors;
         const firstError = errors ? Object.values(errors).flat()[0] as string : null;
@@ -1317,18 +1298,15 @@ export class Shipping implements OnInit, OnDestroy {
       this.containerStatusLoading.set(true);
       this.shipmentService.getContainerStatus(shipment.id).subscribe({
         next: (response) => {
-          console.log('Container status API response:', response);
           if (response.success && response.data) {
             this.containerStatusData.set(response.data);
             this.containerStatusError.set(null);
           } else {
-            console.warn('Container status API returned success=false or no data:', response);
             this.containerStatusError.set('Failed to load container status');
           }
           this.containerStatusLoading.set(false);
         },
         error: (error) => {
-          console.error('Failed to fetch container status:', error);
           this.containerStatusError.set('Failed to load container status. Please try again.');
           this.containerStatusLoading.set(false);
         }
@@ -1412,7 +1390,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.updatingShipment.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to add shipment to container:', error);
         this.toastService.error('Failed to add shipment to container');
         this.updatingShipment.set(null);
       }
@@ -1443,7 +1420,6 @@ export class Shipping implements OnInit, OnDestroy {
           this.updatingShipment.set(null);
         },
         error: (error: any) => {
-          console.error('Failed to add shipment to container:', error);
           this.toastService.error('Failed to add shipment to container');
           this.updatingShipment.set(null);
         }
@@ -1468,7 +1444,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.updatingShipment.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to remove shipment from container:', error);
         this.toastService.error('Failed to remove shipment from container');
         this.updatingShipment.set(null);
       }
@@ -1489,7 +1464,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.updatingContainer.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to close container:', error);
         this.toastService.error('Failed to close container');
         this.updatingContainer.set(null);
       }
@@ -1510,7 +1484,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.updatingContainer.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to update container status:', error);
         this.toastService.error('Failed to update container status');
         this.updatingContainer.set(null);
       }
@@ -1570,7 +1543,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.trackingModalLoading.set(false);
       },
       error: (error: any) => {
-        console.error('Failed to add tracking number:', error);
         this.toastService.error('Failed to add tracking number');
         this.trackingModalLoading.set(false);
       }
@@ -1659,7 +1631,6 @@ export class Shipping implements OnInit, OnDestroy {
       // Stop all tracks so html5-qrcode can take over the camera cleanly
       stream.getTracks().forEach(track => track.stop());
     } catch (err: any) {
-      console.error('Camera permission error:', err);
       const name = err?.name || '';
       const msg = err?.message || '';
       if (name === 'NotAllowedError' || msg.includes('Permission denied') || msg.includes('permission')) {
@@ -1691,7 +1662,6 @@ export class Shipping implements OnInit, OnDestroy {
         () => {}
       );
     } catch (err: any) {
-      console.error('Camera error:', err);
       const name = err?.name || '';
       const msg = err?.message || '';
       if (name === 'NotAllowedError' || msg.includes('Permission denied') || msg.includes('permission')) {
@@ -1759,7 +1729,6 @@ export class Shipping implements OnInit, OnDestroy {
             // Check if already fully loaded by fetching container status
             this.shipmentService.getContainerStatus(shipment.id).subscribe({
               next: (statusResponse) => {
-                console.log('QR scan - container status:', statusResponse);
                 if (statusResponse.success && statusResponse.data.is_fully_loaded) {
                   this.qrScanState.set('info');
                   this.qrScanMessage.set('All quantity for this shipment is already loaded in containers');
@@ -1854,7 +1823,6 @@ export class Shipping implements OnInit, OnDestroy {
         this.deliveryScanLoading.set(false);
       },
       error: (error: any) => {
-        console.error('Failed to confirm delivery:', error);
         this.toastService.error('Failed to confirm delivery');
         this.deliveryScanLoading.set(false);
       }
@@ -1956,7 +1924,6 @@ export class Shipping implements OnInit, OnDestroy {
         }
       },
       error: (error: any) => {
-        console.error('Failed to confirm partial quantity:', error);
         this.toastService.error('Failed to confirm partial quantity');
         this.partialConfirmLoading.set(false);
       }
@@ -2027,7 +1994,6 @@ export class Shipping implements OnInit, OnDestroy {
         }
       },
       error: (error: any) => {
-        console.error('Failed to add received quantity:', error);
         this.toastService.error('Failed to add received quantity');
         this.addRemainingLoading.set(false);
       }

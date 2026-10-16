@@ -77,11 +77,9 @@ export class MyProducts implements OnInit {
     this.isLoading = true;
     this.errorMessage = null;
 
-    console.log('[MyProducts] Loading data... page:', this.page);
 
     this.qrCodeService.getAll(this.page, this.perPage).subscribe({
       next: (res: any) => {
-        console.log('[MyProducts] QR codes response:', res);
         const qrCodes = res?.data?.qr_codes ?? res?.data ?? [];
         this.qrCodes = Array.isArray(qrCodes) ? qrCodes : [];
         this.pagination = res?.data?.pagination ?? null;
@@ -97,7 +95,6 @@ export class MyProducts implements OnInit {
         }
       },
       error: (err) => {
-        console.error('[MyProducts] QR codes API error:', err);
         this.isLoading = false;
         this.cdr.detectChanges();
         this.errorMessage =
@@ -188,7 +185,6 @@ export class MyProducts implements OnInit {
         }, 2000);
       },
       error: (err) => {
-        console.error('Delete failed:', err);
         this.deleteStatus = 'error';
         this.deleteMessage = 'Failed to delete product. Please try again.';
         this.isDeleting = false; // Also reset deleting state

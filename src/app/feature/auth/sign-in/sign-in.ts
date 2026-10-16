@@ -46,7 +46,7 @@ export class SignIn {
     this.isLoading.set(true);
 
     const loginData = {
-      login: this.signInForm.value.login,
+      login: this.signInForm.value.login?.trim().toLowerCase(),
       password: this.signInForm.value.password
     };
 
@@ -70,7 +70,13 @@ export class SignIn {
   }
 
   goBack() {
-    window.history.back();
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      // No history (e.g. opened the page directly) — landing page redirects
+      // logged-in users to /home automatically
+      this.router.navigate(['/']);
+    }
   }
 
   private extractErrorMessage(err: HttpErrorResponse): string {

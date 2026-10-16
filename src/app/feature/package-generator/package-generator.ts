@@ -105,7 +105,6 @@ export class PackageGenerator implements OnInit {
 
   checkEditMode() {
     const editUuid = this.route.snapshot.queryParamMap.get('edit');
-    console.log('[PackageGenerator] Edit mode check:', { editUuid });
     if (editUuid) {
       this.isEditMode = true;
       this.isLoading = true;
@@ -158,7 +157,6 @@ export class PackageGenerator implements OnInit {
         }
       },
       error: (err) => {
-        console.error('Failed to load package for edit:', err);
         this.isLoading = false;
         this.isEditMode = false;
       }
@@ -184,7 +182,6 @@ export class PackageGenerator implements OnInit {
         }
       },
       error: (err) => {
-        console.error('Failed to load available products:', err);
       }
     });
   }
@@ -259,9 +256,6 @@ export class PackageGenerator implements OnInit {
     this.errorMessage = null;
 
     // Log package data before sending
-    console.log('Package Data:', this.package);
-    console.log('Selected Products:', this.selectedProducts);
-    console.log('Package Photos:', this.packagePhotos);
 
     const formData = new FormData();
     formData.append('name', this.package.name.trim());
@@ -285,16 +279,13 @@ export class PackageGenerator implements OnInit {
     });
 
     // Log FormData contents for debugging
-    console.log('FormData contents:');
     for (let [key, value] of formData.entries()) {
-      console.log(`${key}:`, value);
     }
 
     if (this.editUuid) {
       // Update existing package
       this.packageService.update(this.editUuid, formData).subscribe({
         next: (response: any) => {
-          console.log('Package update successful:', response);
           this.isLoading = false;
           const qrData = response.data?.qr_code || response.data;
           this.packageUuid = qrData.uuid;
@@ -313,9 +304,6 @@ export class PackageGenerator implements OnInit {
           }, 300);
         },
         error: (error) => {
-          console.error('Package update error:', error);
-          console.error('Error status:', error.status);
-          console.error('Error response:', error.error);
           this.isLoading = false;
           const errorMsg = error.error?.message || 
                          error.error?.errors?.photos?.[0] ||

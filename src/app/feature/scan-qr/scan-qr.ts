@@ -145,7 +145,6 @@ export class ScanQr implements OnInit, OnDestroy {
       // Stop all tracks so html5-qrcode can take over the camera cleanly
       stream.getTracks().forEach(track => track.stop());
     } catch (err: any) {
-      console.error('Camera permission error:', err);
       const name = err?.name || '';
       const msg = err?.message || '';
 
@@ -186,7 +185,6 @@ export class ScanQr implements OnInit, OnDestroy {
         }
       );
     } catch (err: any) {
-      console.error('Camera error:', err);
       const name = err?.name || '';
       const msg = err?.message || '';
 
@@ -673,7 +671,6 @@ export class ScanQr implements OnInit, OnDestroy {
         this.creatingContainer.set(false);
       },
       error: (error: any) => {
-        console.error('Failed to create container:', error);
         // Surface the first server validation error (e.g. duplicate reference number)
         const errors = error?.error?.errors;
         const firstError = errors ? Object.values(errors).flat()[0] as string : null;
@@ -878,7 +875,6 @@ export class ScanQr implements OnInit, OnDestroy {
         this.updatingContainer.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to close container:', error);
         this.toastService.error('Failed to close container');
         this.updatingContainer.set(null);
       }
@@ -898,7 +894,6 @@ export class ScanQr implements OnInit, OnDestroy {
         this.updatingContainer.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to update container status:', error);
         this.toastService.error('Failed to update container status');
         this.updatingContainer.set(null);
       }
@@ -956,7 +951,6 @@ export class ScanQr implements OnInit, OnDestroy {
         this.detailLoading.set(false);
       },
       error: (error: any) => {
-        console.error('Failed to load container details:', error);
         this.detailLoading.set(false);
       }
     });

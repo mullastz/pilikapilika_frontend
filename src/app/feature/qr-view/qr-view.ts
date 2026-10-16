@@ -267,7 +267,6 @@ export class QrView implements OnInit {
       doc.save(filename);
       cleanup();
     } catch (err) {
-      console.error('PDF generation error:', err);
       alert('Failed to generate PDF. Please try again.');
     } finally {
       this.isDownloading = false;
@@ -303,7 +302,6 @@ export class QrView implements OnInit {
     } catch (err) {
       // User cancelled share or error occurred
       if ((err as Error)?.name !== 'AbortError') {
-        console.error('PDF share error:', err);
         alert('Failed to share PDF. Please try again.');
       }
     } finally {

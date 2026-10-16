@@ -38,9 +38,7 @@ export class AgentPage implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    console.log('AgentPage ngOnInit');
     const id = this.route.snapshot.paramMap.get('id');
-    console.log('Agent ID from route:', id);
     if (id) {
       this.loadAgent(id);
     } else {
@@ -54,7 +52,6 @@ export class AgentPage implements OnInit {
   }
 
   loadAgent(id: string): void {
-    console.log('Loading agent:', id);
     this.isLoading = true;
 
     // UUID contains hyphens; numeric IDs do not
@@ -64,13 +61,11 @@ export class AgentPage implements OnInit {
       // Use the public endpoint which already supports UUID lookup
       this.agentService.getPublicAgentProfile(id as any).subscribe({
         next: (agent: Agent) => {
-          console.log('Agent loaded successfully:', agent);
           this.agent = agent;
           this.isLoading = false;
           this.cdr.detectChanges();
         },
         error: (err: any) => {
-          console.error('Error loading agent:', err);
           this.error = err.error?.message || 'Failed to load agent profile';
           this.toastService.error(this.error || 'Failed to load agent profile');
           this.isLoading = false;
@@ -86,13 +81,11 @@ export class AgentPage implements OnInit {
       }
       this.agentService.getPublicAgentProfile(numericId).subscribe({
         next: (agent: Agent) => {
-          console.log('Agent loaded successfully:', agent);
           this.agent = agent;
           this.isLoading = false;
           this.cdr.detectChanges();
         },
         error: (err: any) => {
-          console.error('Error loading agent:', err);
           this.error = err.error?.message || 'Failed to load agent profile';
           this.toastService.error(this.error || 'Failed to load agent profile');
           this.isLoading = false;
@@ -136,7 +129,6 @@ export class AgentPage implements OnInit {
       return;
     }
 
-    console.log('Starting conversation with agent:', this.agent);
     
     // Navigate to messages page with agent information as query parameters
     this.router.navigate(['/messages'], {

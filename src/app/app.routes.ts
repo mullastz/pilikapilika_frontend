@@ -45,6 +45,7 @@ import { AdminResetTokens } from './feature/admin/reset-tokens/reset-tokens';
 import { AdminUserKeys } from './feature/admin/user-keys/user-keys';
 import { AgentShipping } from './feature/agent-shipping/agent-shipping';
 import { AgentGuard } from './core/guards/agent.guard';
+import { AboutUs } from './feature/about-us/about-us';
 
 
 export const routes: Routes = [
@@ -54,6 +55,7 @@ export const routes: Routes = [
   { path: 'forgot-password', component: ForgotPassword },
   { path: 'reset-password/:uuid', component: ResetPassword },
   { path: '', component: LandingPage },
+  { path: 'about-us', component: AboutUs },
   { path: 'home', component: Home, canActivate: [ProfileCompletionGuard] },
   { path: 'profile-management', component: ProfileManagement, canActivate: [ProfileCompletionGuard] },
   { path: 'account/details', component: ManageAccount },

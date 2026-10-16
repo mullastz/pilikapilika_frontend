@@ -83,44 +83,31 @@ export class BookShipment implements OnInit {
     // Extract agent ID from the route parameter
     const agentIdParam = this.agentId();
     
-    console.log('🔍 [DEBUG] Loading agent data...');
-    console.log('🔍 [DEBUG] Agent ID from route:', agentIdParam);
-    console.log('🔍 [DEBUG] Agent ID type:', typeof agentIdParam);
-    console.log('🔍 [DEBUG] Agent ID length:', agentIdParam?.length);
     
     // Check if it's a UUID format (contains hyphens and longer than typical ID)
     const isUuid = agentIdParam.includes('-') && agentIdParam.length > 10;
     
-    console.log('🔍 [DEBUG] Is UUID format:', isUuid);
     
     if (isUuid) {
       // For UUID strings, get all agents and find the matching one
-      console.log('🔍 [DEBUG] Using UUID lookup method...');
       
       this.agentService.getAvailableAgents(1, 100).subscribe({
         next: (response) => {
           const agents = response.agents;
-          console.log('🔍 [DEBUG] Available agents loaded:', agents?.length);
-          console.log('🔍 [DEBUG] Agents list:', agents.map(a => ({ id: a.id, uuid: a.uuid, name: `${a.firstname} ${a.lastname}` })));
           
           const foundAgent = agents.find(agent => {
-            console.log('🔍 [DEBUG] Comparing with agent:', agent.uuid, '===', agentIdParam);
             return agent.uuid === agentIdParam;
           });
           
-          console.log('🔍 [DEBUG] Found agent:', foundAgent ? 'YES' : 'NO');
           
           if (foundAgent) {
-            console.log('✅ [DEBUG] Agent found successfully:', foundAgent);
             this.agent.set(foundAgent);
           } else {
-            console.log('❌ [DEBUG] Agent NOT FOUND in list');
             this.toastService.error('Agent not found');
           }
           this.loading.set(false);
         },
         error: (error: any) => {
-          console.log('❌ [DEBUG] Failed to load agents:', error);
           this.toastService.error('Failed to load agent information');
           this.loading.set(false);
           this.router.navigate(['/']);
@@ -129,28 +116,21 @@ export class BookShipment implements OnInit {
     } else {
       // For numeric IDs, parse and use direct method
       const agentId = parseInt(agentIdParam);
-      console.log('🔍 [DEBUG] Parsed numeric ID:', agentId);
       
       if (!isNaN(agentId)) {
-        console.log('🔍 [DEBUG] Using numeric ID lookup method...');
         
         this.agentService.getPublicAgentProfile(agentId).subscribe({
           next: (agent: any) => {
-            console.log('✅ [DEBUG] Agent loaded successfully:', agent);
             this.agent.set(agent);
             this.loading.set(false);
           },
           error: (error: any) => {
-            console.log('❌ [DEBUG] Failed to load agent:', error);
-            console.log('❌ [DEBUG] Error status:', error?.status);
-            console.log('❌ [DEBUG] Error message:', error?.error?.message);
             this.toastService.error('Failed to load agent information');
             this.loading.set(false);
             this.router.navigate(['/']);
           }
         });
       } else {
-        console.log('❌ [DEBUG] Invalid agent ID format');
         this.toastService.error('Invalid agent ID format');
         this.loading.set(false);
         this.router.navigate(['/']);
@@ -231,15 +211,11 @@ export class BookShipment implements OnInit {
   }
 
   onSubmit(): void {
-    console.log('📦 [BOOKING] Starting shipment booking process...');
-    console.log('📦 [BOOKING] Form validation result:', this.validateForm());
     
     if (!this.validateForm()) {
-      console.log('❌ [BOOKING] Form validation failed');
       return;
     }
 
-    console.log('📦 [BOOKING] Form is valid, preparing request...');
     this.submitting.set(true);
 
     const request: BookShipmentRequest = {
@@ -255,30 +231,20 @@ export class BookShipment implements OnInit {
       notes: this.notes()
     };
 
-    console.log('📦 [BOOKING] Request payload:', request);
-    console.log('📦 [BOOKING] Selected products count:', this.selectedProducts().length);
-    console.log('📦 [BOOKING] Selected packages count:', this.selectedPackages().filter(Boolean).length);
 
     this.shipmentService.bookShipment(request).subscribe({
       next: (response) => {
-        console.log('📦 [BOOKING] API response received:', response);
         
         if (response.success) {
-          console.log('✅ [BOOKING] Shipment booked successfully');
-          console.log('📦 [BOOKING] Shipment details:', response.data.shipment);
           this.bookedShipment.set(response.data.shipment);
           this.showConfirmationModal.set(true);
           this.toastService.success('Shipment booked successfully!');
         } else {
-          console.log('❌ [BOOKING] Booking failed:', response.message);
           this.toastService.error(response.message || 'Failed to book shipment');
         }
         this.submitting.set(false);
       },
       error: (error: any) => {
-        console.log('❌ [BOOKING] API error:', error);
-        console.log('❌ [BOOKING] Error status:', error?.status);
-        console.log('❌ [BOOKING] Error message:', error?.error?.message);
         this.toastService.error('Failed to book shipment. Please try again.');
         this.submitting.set(false);
       }

@@ -192,7 +192,6 @@ export class ManageAccount implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err: any) => {
-        console.error('Error loading profile:', err);
         this.toastService.error('Failed to load profile. Please try again.');
         this.isLoading = false;
       }
@@ -332,7 +331,6 @@ export class ManageAccount implements OnInit {
         const msg = err.error?.message || 'Failed to upload photo. Please try again.';
         this.toastService.error(msg);
         this.cdr.detectChanges();
-        console.error('Photo upload error:', err);
       }
     });
   }
@@ -390,7 +388,6 @@ export class ManageAccount implements OnInit {
         const errorMsg = err.error?.message || 'Failed to update profile. Please try again.';
         this.toastService.error(errorMsg);
         this.cdr.detectChanges();
-        console.error('Error updating profile:', err);
       }
     });
   }
@@ -420,7 +417,6 @@ export class ManageAccount implements OnInit {
         const errorMsg = err.error?.message || 'Failed to send password reset email. Please try again.';
         this.toastService.error(errorMsg);
         this.cdr.detectChanges();
-        console.error('Error requesting password change:', err);
       }
     });
   }
@@ -436,7 +432,6 @@ export class ManageAccount implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err: any) => {
-        console.error('Error loading addresses:', err);
         this.toastService.error('Failed to load addresses. Please try again.');
         this.isLoadingAddresses = false;
       }

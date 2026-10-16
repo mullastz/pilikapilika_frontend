@@ -1,0 +1,70 @@
+<!-- Header is absolutely positioned (floating pill), so it needs a positioned wrapper with reserved height -->
+<div class="relative bg-white dark:bg-[#0a0a0a] h-16 sm:h-20 transition-colors">
+  <app-header />
+</div>
+
+<main class="bg-white dark:bg-[#0a0a0a] min-h-screen transition-colors">
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-32">
+      <i class="fa-solid fa-circle-notch fa-spin text-3xl text-orange-500"></i>
+    </div>
+  } @else {
+
+    <!-- HERO -->
+    <section class="px-4 sm:px-6 py-12 sm:py-20 text-center max-w-4xl mx-auto">
+      <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white transition-colors">
+        {{ get('about_us_title', 'About Pilikapilika') }}
+      </h1>
+      <p class="mt-4 text-base sm:text-lg text-gray-500 dark:text-gray-400 transition-colors">
+        {{ get('about_us_subtitle', '') }}
+      </p>
+    </section>
+
+    <!-- IMAGE + BODY -->
+    <section class="px-4 sm:px-6 pb-12 sm:pb-20 max-w-5xl mx-auto">
+      @if (imageUrl()) {
+        <img [src]="imageUrl()" alt="About us" class="w-full rounded-2xl shadow-lg object-cover max-h-105 mb-8 sm:mb-12" />
+      }
+      <div class="prose max-w-none">
+        @for (paragraph of get('about_us_body', '').split('\n'); track $index) {
+          @if (paragraph.trim()) {
+            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed mb-4 transition-colors">{{ paragraph }}</p>
+          }
+        }
+      </div>
+    </section>
+
+    <!-- MISSION & VISION -->
+    <section class="px-4 sm:px-6 py-12 sm:py-16 bg-[#f5f5f5] dark:bg-[#111] transition-colors">
+      <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-6 sm:p-8 transition-colors">
+          <div class="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-xl shadow mb-4">
+            <i class="fa-solid fa-bullseye"></i>
+          </div>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-3 transition-colors">
+            {{ get('about_us_mission_title', 'Our Mission') }}
+          </h2>
+          <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed transition-colors">
+            {{ get('about_us_mission_body', '') }}
+          </p>
+        </div>
+
+        <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow p-6 sm:p-8 transition-colors">
+          <div class="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-xl shadow mb-4">
+            <i class="fa-solid fa-eye"></i>
+          </div>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-3 transition-colors">
+            {{ get('about_us_vision_title', 'Our Vision') }}
+          </h2>
+          <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed transition-colors">
+            {{ get('about_us_vision_body', '') }}
+          </p>
+        </div>
+      </div>
+    </section>
+  }
+
+</main>
+
+<app-footer />

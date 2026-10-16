@@ -171,7 +171,6 @@ export class Home implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err: any) => {
-        console.error('Error loading agents:', err);
         this.toastService.error('Failed to load agents. Please try again.');
         this.isLoadingAgents = false;
         this.isLoadingMoreAgents = false;
@@ -322,7 +321,6 @@ export class Home implements OnInit {
           this.cdr.detectChanges();
         },
         error: (err: any) => {
-          console.error('Error loading agent shipments:', err);
           this.isLoadingShipments = false;
           this.isLoadingMoreShipments = false;
           this.cdr.detectChanges();
@@ -341,7 +339,6 @@ export class Home implements OnInit {
           this.cdr.detectChanges();
         },
         error: (err: any) => {
-          console.error('Error loading shipments:', err);
           this.isLoadingShipments = false;
           this.cdr.detectChanges();
         }
@@ -360,7 +357,6 @@ export class Home implements OnInit {
     this.isLoadingProducts = true;
     this.qrCodeService.getAll(this.productsPage, this.productsPerPage).subscribe({
       next: (res: any) => {
-        console.log('[Home] Products response:', res);
         // Handle both old flat format and new paginated format
         const qrCodes = res?.data?.qr_codes ?? res?.data ?? [];
         const newProducts = Array.isArray(qrCodes) ? qrCodes : [];
@@ -375,7 +371,6 @@ export class Home implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err: any) => {
-        console.error('[Home] Error loading products:', err);
         this.isLoadingProducts = false;
         this.isLoadingMoreProducts = false;
         this.cdr.detectChanges();

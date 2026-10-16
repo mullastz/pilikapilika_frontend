@@ -58,7 +58,6 @@ export class RealtimeService {
     this.connectionState.set(newState);
     this.connectionState$.next(newState);
     
-    console.log('[WEBSOCKET] Connection state updated:', newState);
   }
 
   private startPingInterval(): void {
@@ -70,25 +69,21 @@ export class RealtimeService {
     // Start new ping interval (every 30 seconds)
     this.pingInterval = setInterval(() => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        console.log('[WEBSOCKET] Sending ping');
         this.ws.send(JSON.stringify({event: 'pusher:ping', data: {}}));
       }
     }, 30000);
   }
 
   connect(): void {
-    console.log('[WEBSOCKET] connect() called');
     
     const user = this.auth.getUser();
     if (!user) {
-      console.log('[WEBSOCKET] No user, skipping connection');
       this.updateConnectionState('disconnected', 'No authenticated user');
       return;
     }
 
     const token = this.auth.getToken();
     if (!token) {
-      console.log('[WEBSOCKET] No token, skipping connection');
       this.updateConnectionState('disconnected', 'No authentication token');
       return;
     }
@@ -105,20 +100,17 @@ export class RealtimeService {
 
     try {
       const wsUrl = this.buildWsUrl(user.uuid, token);
-      console.log('[WEBSOCKET] Creating WebSocket with URL:', wsUrl);
       this.ws = new WebSocket(wsUrl);
 
       // Set connection timeout
       this.connectionTimeout = setTimeout(() => {
         if (!this.isConnected) {
-          console.warn('[WEBSOCKET] Connection timeout after 5 seconds');
           this.ws?.close();
         }
       }, 5000);
 
       this.ws.onopen = (event) => {
         this.isConnected = true;
-        console.log('[WEBSOCKET] Connected successfully!');
         
         // Clear connection timeout
         if (this.connectionTimeout) {
@@ -140,7 +132,6 @@ export class RealtimeService {
         if (user) {
           const channelName = `user.${user.uuid}`;
           const token = this.auth.getToken();
-          console.log('[WEBSOCKET] Attempting to subscribe to channel:', channelName);
           
           const subscribeMessage = {
             event: 'pusher:subscribe',
@@ -150,41 +141,29 @@ export class RealtimeService {
             }
           };
           
-          console.log('[WEBSOCKET] Sending subscription message:', subscribeMessage);
           this.ws?.send(JSON.stringify(subscribeMessage));
-          console.log('[WEBSOCKET] Subscription message sent to channel:', channelName);
         } else {
-          console.log('[WEBSOCKET] No user found for channel subscription');
           this.updateConnectionState('error', 'No user found for channel subscription');
         }
       };
 
       this.ws.onmessage = async (event) => {
         try {
-          console.log('[WEBSOCKET] Raw message received:', event.data);
           const payload = JSON.parse(event.data);
-          console.log('[WEBSOCKET] Parsed payload:', payload);
           if (payload.event === 'message.sent') {
-            console.log('[WEBSOCKET] Handling incoming message:', payload.data);
             await this.handleIncomingMessage(payload.data);
           } else if (payload.event === 'pusher_internal:subscription_succeeded') {
-            console.log('[WEBSOCKET] Channel subscription successful:', payload.channel);
           } else if (payload.event === 'pusher_internal:subscription_error') {
-            console.log('[WEBSOCKET] Channel subscription failed:', payload);
           } else if (payload.event === 'pusher:ping') {
-            console.log('[WEBSOCKET] Ping received, sending pong');
             this.ws?.send(JSON.stringify({event: 'pusher:pong', data: {}}));
           } else {
-            console.log('[WEBSOCKET] Unknown event type:', payload.event);
           }
         } catch (err) {
-          console.warn('[WEBSOCKET] Error processing message:', err);
         }
       };
 
       this.ws.onclose = (event) => {
         this.isConnected = false;
-        console.log('[WEBSOCKET] Connection closed:', event.code, event.reason);
         
         // Clear ping interval
         if (this.pingInterval) {
@@ -194,7 +173,6 @@ export class RealtimeService {
         
         // Don't reconnect if clean close or max attempts reached
         if (event.code === 1000 || this.reconnectAttempts >= this.maxReconnectAttempts) {
-          console.log('[WEBSOCKET] Not reconnecting - clean close or max attempts reached');
           this.updateConnectionState('disconnected', event.reason || 'Connection closed');
           return;
         }
@@ -205,11 +183,9 @@ export class RealtimeService {
       };
 
       this.ws.onerror = (err) => {
-        console.error('[WEBSOCKET] Error:', err);
         this.ws?.close();
       };
     } catch (err) {
-      console.error('[WEBSOCKET] Exception during connect():', err);
     }
   }
 
@@ -279,7 +255,6 @@ export class RealtimeService {
     const baseUrl = apiUrl.replace(/^https?:/, wsProtocol).replace(/:\d+/, ':6001').replace(/\/api\/v1\/?$/, '');
     const appKey = environment.reverbAppKey;
     const finalUrl = `${baseUrl}/app/${appKey}?protocol=7&client=js&version=7.0.3&flash=false&user=${userId}&token=${token}`;
-    console.log('[WEBSOCKET] Building URL:', finalUrl);
     return finalUrl;
   }
 

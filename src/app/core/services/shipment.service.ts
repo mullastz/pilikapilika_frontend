@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { ApiService } from './api.service';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 
 export interface Shipment {
   id: string;
@@ -92,22 +92,20 @@ export class ShipmentService {
     this.loading.set(true);
     this.error.set(null);
 
-    const observable = this.apiService.get<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }>(`${this.endpoint}?page=${page}&per_page=${perPage}`, {});
-    
-    observable.subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.shipments.set(response.data.shipments);
+    return this.apiService.get<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }>(`${this.endpoint}?page=${page}&per_page=${perPage}`, {}).pipe(
+      tap({
+        next: (response) => {
+          if (response.success) {
+            this.shipments.set(response.data.shipments);
+          }
+          this.loading.set(false);
+        },
+        error: (error) => {
+          this.error.set(error.message || 'Failed to fetch shipments');
+          this.loading.set(false);
         }
-        this.loading.set(false);
-      },
-      error: (error) => {
-        this.error.set(error.message || 'Failed to fetch shipments');
-        this.loading.set(false);
-      }
-    });
-
-    return observable;
+      })
+    );
   }
 
   /**

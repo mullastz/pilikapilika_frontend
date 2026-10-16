@@ -75,7 +75,6 @@ export class AgentShipping implements OnInit {
         this.loading.set(false);
       },
       error: (error: any) => {
-        console.error('Failed to load shipments:', error);
         this.error.set('Failed to load shipments');
         this.toastService.error('Failed to load shipments');
         this.loading.set(false);
@@ -94,7 +93,6 @@ export class AgentShipping implements OnInit {
         this.loading.set(false);
       },
       error: (error: any) => {
-        console.error('Failed to load shipments:', error);
         this.error.set('Failed to load shipments');
         this.toastService.error('Failed to load shipments');
         this.loading.set(false);
@@ -116,7 +114,6 @@ export class AgentShipping implements OnInit {
         this.updatingShipment.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to confirm shipment:', error);
         this.toastService.error('Failed to confirm shipment');
         this.updatingShipment.set(null);
       }
@@ -137,7 +134,6 @@ export class AgentShipping implements OnInit {
         this.updatingShipment.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to update shipment:', error);
         this.toastService.error('Failed to update shipment');
         this.updatingShipment.set(null);
       }
@@ -158,7 +154,6 @@ export class AgentShipping implements OnInit {
         this.updatingShipment.set(null);
       },
       error: (error: any) => {
-        console.error('Failed to update shipment:', error);
         this.toastService.error('Failed to update shipment');
         this.updatingShipment.set(null);
       }
