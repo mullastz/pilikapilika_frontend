@@ -167,7 +167,7 @@ export class QrGenerator implements OnInit {
         this.agents = response.agents;
         this.isLoadingAgents = false;
         if (this.pendingEditAgentUuid) {
-          const found = this.agents.find(a => a.uuid === this.pendingEditAgentUuid);
+          const found = this.agents.find((a) => a.uuid === this.pendingEditAgentUuid);
           this.pendingEditAgentUuid = null;
           if (found) {
             this.selectedAgent = found;
@@ -393,11 +393,20 @@ export class QrGenerator implements OnInit {
 
   removePhoto(index: number) {
     const photo = this.productPhotos[index];
-    if (photo.isExisting && photo.preview) this.removedExistingPhotos.push(photo.preview);
+    this.queueExistingPhotoRemoval(photo);
     this.productPhotos.splice(index, 1);
   }
 
-  clearAllPhotos() { this.productPhotos = []; }
+  clearAllPhotos() {
+    this.productPhotos.forEach((photo) => this.queueExistingPhotoRemoval(photo));
+    this.productPhotos = [];
+  }
+
+  private queueExistingPhotoRemoval(photo: { preview: string; isExisting?: boolean }): void {
+    if (!photo.isExisting || !photo.preview || photo.preview.startsWith('data:') ||
+        photo.preview.startsWith('blob:') || this.removedExistingPhotos.includes(photo.preview)) return;
+    this.removedExistingPhotos.push(photo.preview);
+  }
 
   // ── QR generation ───────────────────────────────────────────────
 
@@ -559,19 +568,26 @@ export class QrGenerator implements OnInit {
       ['Quantity', this.product.quantity ? String(this.product.quantity) : ''],
     ];
 
-    const agentRows: [string, string][] = agent ? [
-      ['Name', `${agent.firstname || ''} ${agent.lastname || ''}`.trim()],
-      ['Phone', agent.phone || ''],
-      ['Address', this.selectedAddress ? (this.selectedAddress.address_line || '') : (agent.address || '')],
-    ] : [];
+    const agentRows: [string, string][] = agent
+      ? [
+          ['Name', `${agent.firstname || ''} ${agent.lastname || ''}`.trim()],
+          ['Phone', agent.phone || ''],
+          [
+            'Address',
+            this.selectedAddress ? this.selectedAddress.address_line || '' : agent.address || '',
+          ],
+        ]
+      : [];
 
     const addressRows: [string, string][] = [];
 
-    const customerRows: [string, string][] = currentUser ? [
-      ['Name', `${currentUser.firstname || ''} ${currentUser.lastname || ''}`.trim()],
-      ['Phone', currentUser.phone || ''],
-      ['Country', currentUser.country || ''],
-    ] : [];
+    const customerRows: [string, string][] = currentUser
+      ? [
+          ['Name', `${currentUser.firstname || ''} ${currentUser.lastname || ''}`.trim()],
+          ['Phone', currentUser.phone || ''],
+          ['Country', currentUser.country || ''],
+        ]
+      : [];
 
     const htmlContent = `
       <div id="pdf-render-target" style="width:794px;font-family:'DejaVu Sans','Helvetica Neue',Helvetica,Arial,sans-serif;background:#fff;color:#111;">
@@ -605,7 +621,7 @@ export class QrGenerator implements OnInit {
       scale: 1.5,
       useCORS: true,
       allowTaint: true,
-      logging: false
+      logging: false,
     });
     const imgData = hCanvas.toDataURL('image/jpeg', 0.85);
 
@@ -691,7 +707,8 @@ export class QrGenerator implements OnInit {
     const shareUrl = this.generatedQR || '';
     const shareText = `Product: ${this.product.name}\nView details: ${shareUrl}`;
     if (navigator.share) {
-      navigator.share({ title: 'Product QR Code', text: shareText, url: shareUrl })
+      navigator
+        .share({ title: 'Product QR Code', text: shareText, url: shareUrl })
         .catch(() => this.copyToClipboard());
     } else {
       this.copyToClipboard();
@@ -699,14 +716,20 @@ export class QrGenerator implements OnInit {
   }
 
   private copyToClipboard() {
-    navigator.clipboard.writeText(this.generatedQR || '').then(() => alert('QR code link copied to clipboard!'));
+    navigator.clipboard
+      .writeText(this.generatedQR || '')
+      .then(() => alert('QR code link copied to clipboard!'));
   }
 
-  goBack() { this.location.back(); }
+  goBack() {
+    this.location.back();
+  }
 
   sendToAgent() {
     this.router.navigate(['/messages'], {
-      state: { productInfo: { product: this.product, qrData: this.generatedQR, qrUuid: this.qrUuid } },
+      state: {
+        productInfo: { product: this.product, qrData: this.generatedQR, qrUuid: this.qrUuid },
+      },
     });
   }
 
@@ -725,14 +748,18 @@ export class QrGenerator implements OnInit {
     this.qrCodeService.getByUuid(uuid).subscribe({
       next: (response: any) => {
         const data = response?.data;
-        if (!data) { this.isLoading = false; this.isEditMode = false; return; }
+        if (!data) {
+          this.isLoading = false;
+          this.isEditMode = false;
+          return;
+        }
 
         this.product = {
-          name:        data.product_name || '',
-          description: data.description  || '',
-          category:    data.category     || '',
+          name: data.product_name || '',
+          description: data.description || '',
+          category: data.category || '',
           packageType: data.package_type || '',
-          quantity:    data.quantity,
+          quantity: data.quantity,
           totalWeight: data.total_weight || '',
           totalVolume: data.total_volume || '',
         };
@@ -752,7 +779,7 @@ export class QrGenerator implements OnInit {
 
         // Restore selected agent
         if (data.assigned_agent_uuid) {
-          const foundAgent = this.agents.find(a => a.uuid === data.assigned_agent_uuid);
+          const foundAgent = this.agents.find((a) => a.uuid === data.assigned_agent_uuid);
           if (foundAgent) {
             this.selectedAgent = foundAgent;
             this.loadAgentAddresses(data.assigned_agent_uuid);
@@ -773,12 +800,24 @@ export class QrGenerator implements OnInit {
         this.isLoading = false;
         this.cdr.detectChanges();
       },
-      error: () => { this.isLoading = false; this.isEditMode = false; },
+      error: () => {
+        this.isLoading = false;
+        this.isEditMode = false;
+      },
     });
   }
 
   resetForm() {
-    this.product = { name: '', description: '', category: '', packageType: '', quantity: null, totalWeight: '', totalVolume: '' };
+    this.removedExistingPhotos = [];
+    this.product = {
+      name: '',
+      description: '',
+      category: '',
+      packageType: '',
+      quantity: null,
+      totalWeight: '',
+      totalVolume: '',
+    };
     this.productPhotos = [];
     this.generatedQR = null;
     this.showActions = false;
@@ -807,7 +846,10 @@ export class QrGenerator implements OnInit {
         return;
       }
       const el = document.getElementById('qrCodeSection');
-      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }, 100);
   }

@@ -67,7 +67,8 @@ export class PackageGenerator implements OnInit {
 
   availableProducts: QrCodeItem[] = [];
   selectedProducts: SelectedProduct[] = [];
-  packagePhotos: { file: File; preview: string }[] = [];
+  packagePhotos: { file: File; preview: string; isExisting?: boolean }[] = [];
+  removedExistingPhotos: string[] = [];
   generatedQR: string | null = null;
   showActions = false;
   isLoading = false;
@@ -114,13 +115,14 @@ export class PackageGenerator implements OnInit {
   }
 
   loadPackageForEdit(uuid: string) {
+    this.removedExistingPhotos = [];
     this.packageService.getByUuid(uuid).subscribe({
       next: (res: any) => {
         const data = res?.data?.package;
         if (data) {
           this.editUuid = uuid;
           this.packageUuid = uuid;
-          
+
           // Populate form with existing data
           this.package = {
             name: data.name || '',
@@ -146,7 +148,8 @@ export class PackageGenerator implements OnInit {
           if (data.photos && data.photos.length > 0) {
             this.packagePhotos = data.photos.map((url: string) => ({
               file: new File([], 'placeholder'),
-              preview: url
+              preview: url,
+              isExisting: true
             }));
           }
 
@@ -210,11 +213,20 @@ export class PackageGenerator implements OnInit {
   }
 
   removePhoto(index: number) {
+    const photo = this.packagePhotos[index];
+    this.queueExistingPhotoRemoval(photo);
     this.packagePhotos.splice(index, 1);
   }
 
   clearAllPhotos() {
+    this.packagePhotos.forEach((photo) => this.queueExistingPhotoRemoval(photo));
     this.packagePhotos = [];
+  }
+
+  private queueExistingPhotoRemoval(photo: { preview: string; isExisting?: boolean }): void {
+    if (!photo.isExisting || !photo.preview || photo.preview.startsWith('data:') ||
+        photo.preview.startsWith('blob:') || this.removedExistingPhotos.includes(photo.preview)) return;
+    this.removedExistingPhotos.push(photo.preview);
   }
 
   addProduct(product: QrCodeItem) {
@@ -251,7 +263,7 @@ export class PackageGenerator implements OnInit {
 
   generatePackage() {
     if (!this.isFormValid()) return;
-    
+
     this.isLoading = true;
     this.errorMessage = null;
 
@@ -259,7 +271,7 @@ export class PackageGenerator implements OnInit {
 
     const formData = new FormData();
     formData.append('name', this.package.name.trim());
-    
+
     // Always include optional fields, even if empty
     formData.append('description', this.package.description?.trim() || '');
     formData.append('pickup_address', this.package.pickupAddress?.trim() || '');
@@ -277,6 +289,7 @@ export class PackageGenerator implements OnInit {
         formData.append('photos[]', photo.file);
       }
     });
+    this.removedExistingPhotos.forEach((url) => formData.append('removed_photos[]', url));
 
     // Log FormData contents for debugging
     for (let [key, value] of formData.entries()) {
@@ -352,10 +365,10 @@ export class PackageGenerator implements OnInit {
 
   downloadQR() {
     if (!this.generatedQR || this.isDownloading) return;
-    
+
     this.isDownloading = true;
     this.cdr.detectChanges();
-    
+
     const qrElement = document.querySelector('qrcode canvas') as HTMLCanvasElement;
     if (!qrElement) {
       this.isDownloading = false;
@@ -369,7 +382,7 @@ export class PackageGenerator implements OnInit {
       link.download = `Package-${this.packageUuid || 'package'}.png`;
       link.href = qrElement.toDataURL('image/png');
       link.click();
-      
+
       // Reset download state after a short delay
       setTimeout(() => {
         this.isDownloading = false;
@@ -430,6 +443,7 @@ export class PackageGenerator implements OnInit {
     };
     this.selectedProducts = [];
     this.packagePhotos = [];
+    this.removedExistingPhotos = [];
     this.generatedQR = null;
     this.showActions = false;
     this.errorMessage = null;
@@ -445,35 +459,37 @@ export class PackageGenerator implements OnInit {
       if (this.qrCodeSection && this.qrCodeSection.nativeElement) {
         this.qrCodeSection.nativeElement.scrollIntoView({
           behavior: 'smooth',
-          block: 'start'
+          block: 'start',
         });
         return;
       }
-      
+
       // Method 2: Fallback to getElementById
       const qrElement = document.getElementById('qrCodeSection');
       if (qrElement) {
         qrElement.scrollIntoView({
           behavior: 'smooth',
-          block: 'start'
+          block: 'start',
         });
         return;
       }
-      
+
       // Method 3: Look for any QR code section
-      const qrSection = document.querySelector('div[class*="bg-white"][class*="dark:bg-[#1a1a1a]"][class*="rounded-2xl"]:has(qrcode)');
+      const qrSection = document.querySelector(
+        'div[class*="bg-white"][class*="dark:bg-[#1a1a1a]"][class*="rounded-2xl"]:has(qrcode)',
+      );
       if (qrSection) {
         qrSection.scrollIntoView({
           behavior: 'smooth',
-          block: 'start'
+          block: 'start',
         });
         return;
       }
-      
+
       // Method 4: Last resort - scroll to bottom of page
       window.scrollTo({
         top: document.body.scrollHeight,
-        behavior: 'smooth'
+        behavior: 'smooth',
       });
     }, 100);
   }

@@ -1,9 +1,8 @@
 import { environment } from '../../../environments/environment';
 
 /**
- * Resolve an image URL coming from the API so it always points at the
- * same origin the frontend uses for API calls. The backend stores full
- * URLs built from APP_URL, which may not match the served API origin.
+ * Resolve legacy API image paths against the configured API origin while
+ * preserving external URLs and local preview URLs.
  */
 export function resolveImageUrl(url: string | null | undefined, fallback: string): string {
   if (!url) return fallback;
@@ -12,7 +11,8 @@ export function resolveImageUrl(url: string | null | undefined, fallback: string
   const apiOrigin = environment.apiUrl.replace(/\/api\/v1\/?$/, '');
 
   if (/^https?:\/\//.test(url)) {
-    return url.replace(/^https?:\/\/[^/]+/, apiOrigin);
+    const path = url.replace(/^https?:\/\/[^/]+/, '').split(/[?#]/, 1)[0];
+    return path.includes('/storage/') ? url.replace(/^https?:\/\/[^/]+/, apiOrigin) : url;
   }
 
   const path = url.startsWith('/') ? url : `/storage/${url}`;
