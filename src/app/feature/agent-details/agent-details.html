@@ -54,7 +54,7 @@
         <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
           <p class="text-sm text-blue-700 dark:text-blue-300">
             <i class="fa-solid fa-info-circle mr-2"></i>
-            Personal details (name, phone, address) can be updated in <a routerLink="/account/details" class="underline font-medium">Manage Account</a>
+            Personal details (name, phone, location) can be updated in <a routerLink="/account/details" class="underline font-medium">Manage Account</a>. Manage your warehouses and parcel receiving addresses below.
           </p>
         </div>
 
@@ -269,6 +269,11 @@
         </div>
 
       </form>
+
+      <app-agent-addresses
+        *ngIf="!isLoading && agent && agent.id === user?.id"
+        [transportMethods]="agent.transport_methods || []"
+      ></app-agent-addresses>
 
     </div>
 

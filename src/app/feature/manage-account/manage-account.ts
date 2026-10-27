@@ -6,13 +6,10 @@ import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { ToastService } from '../../core/services/toast.service';
-import { AddressService, Address, CreateAddressRequest, UpdateAddressRequest } from '../../core/services/address.service';
-import { AgentService } from '../../core/services/agent.service';
 import { ProfileCompletionService, ProfileAnalysis } from '../../core/services/profile-completion.service';
 import { User, UpdateProfileRequest, UpdateProfileResponse } from '../../core/interfaces/auth.interface';
 import { ProfileOnboardingWizard } from '../../shared/components/profile-onboarding-wizard/profile-onboarding-wizard';
 import { resolveImageUrl } from '../../core/utils/image-url.util';
-import { TRANSPORT_CATALOG, transportLabel, transportIcon } from '../../core/utils/transport-methods.util';
 
 @Component({
   selector: 'app-manage-account',
@@ -41,24 +38,6 @@ export class ManageAccount implements OnInit {
   selectedPhotoFile: File | null = null;
   isUploadingPhoto = false;
 
-  // Addresses state
-  addresses: Address[] = [];
-  isLoadingAddresses = false;
-  isSavingAddress = false;
-  isEditingAddress = false;
-  editingAddressId: number | null = null;
-  showAddressForm = false;
-
-  // Transport method selection (agents only)
-  isAgent = false;
-  agentTransportOptions: { value: string; label: string; icon: string }[] = [];
-  isTransportDropdownOpen = false;
-
-  readonly transportCatalog = TRANSPORT_CATALOG;
-
-  // Address form
-  addressForm: FormGroup;
-
   readonly FALLBACK_PHOTO = 'assets/landingpage_images/profile1.webp';
 
   genderOptions = ['Male', 'Female', 'Other'];
@@ -81,8 +60,6 @@ export class ManageAccount implements OnInit {
     private fb: FormBuilder,
     private authService: AuthService,
     private userService: UserService,
-    private addressService: AddressService,
-    private agentService: AgentService,
     private profileCompletionService: ProfileCompletionService,
     private cdr: ChangeDetectorRef,
     private toastService: ToastService,
@@ -100,66 +77,11 @@ export class ManageAccount implements OnInit {
       ward: ['', Validators.maxLength(255)],
       address: ['', Validators.maxLength(500)],
     });
-
-    this.addressForm = this.fb.group({
-      label: [''],
-      address_line: ['', [Validators.required, Validators.maxLength(500)]],
-      transport_method: [''],
-      is_default: [false],
-    });
   }
 
   ngOnInit(): void {
     this.loadUserProfile();
-    this.loadAddresses();
     this.checkForOnboarding();
-    this.loadAgentTransportMethods();
-  }
-
-  /**
-   * Agents tag each physical address with one of the transport methods
-   * they offer on their agent profile.
-   */
-  loadAgentTransportMethods(): void {
-    const user = this.authService.getUser();
-    this.isAgent = user?.role === 'Seller' || user?.role === 'seller';
-    if (!this.isAgent || !user?.id) return;
-
-    this.agentService.getAgentProfile(user.id).subscribe({
-      next: (agent) => {
-        const offered = agent.transport_methods || [];
-        this.agentTransportOptions = this.transportCatalog.filter(o => offered.includes(o.value));
-        // Gracefully include values not present in the catalog
-        offered.filter(v => !this.transportCatalog.some(o => o.value === v))
-          .forEach(v => this.agentTransportOptions.push({ value: v, label: v, icon: 'fa-solid fa-truck-fast' }));
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        // Not critical — dropdown just stays hidden
-      }
-    });
-  }
-
-  get selectedTransportOption(): { value: string; label: string; icon: string } | null {
-    const value = this.addressForm.get('transport_method')?.value;
-    return this.agentTransportOptions.find(o => o.value === value) || null;
-  }
-
-  toggleTransportDropdown(): void {
-    this.isTransportDropdownOpen = !this.isTransportDropdownOpen;
-  }
-
-  selectTransportMethod(value: string): void {
-    this.addressForm.patchValue({ transport_method: value });
-    this.isTransportDropdownOpen = false;
-  }
-
-  transportLabel(value: string | null | undefined): string {
-    return transportLabel(value);
-  }
-
-  transportIcon(value: string | null | undefined): string {
-    return transportIcon(value);
   }
 
   loadUserProfile(): void {
@@ -421,152 +343,6 @@ export class ManageAccount implements OnInit {
     });
   }
 
-  // ── Address Management ───────────────────────────────────────────
-
-  loadAddresses(): void {
-    this.isLoadingAddresses = true;
-    this.addressService.getAddresses().subscribe({
-      next: (response) => {
-        this.addresses = response.data || [];
-        this.isLoadingAddresses = false;
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => {
-        this.toastService.error('Failed to load addresses. Please try again.');
-        this.isLoadingAddresses = false;
-      }
-    });
-  }
-
-  showAddAddressForm(): void {
-    this.isEditingAddress = false;
-    this.editingAddressId = null;
-    this.isTransportDropdownOpen = false;
-    this.addressForm.reset({
-      label: '',
-      address_line: '',
-      transport_method: '',
-      is_default: false,
-    });
-    this.showAddressForm = true;
-  }
-
-  editAddress(address: Address): void {
-    this.isEditingAddress = true;
-    this.editingAddressId = address.id;
-    this.isTransportDropdownOpen = false;
-    this.addressForm.patchValue({
-      label: address.label || '',
-      address_line: address.address_line,
-      transport_method: address.transport_method || '',
-      is_default: address.is_default,
-    });
-    this.showAddressForm = true;
-  }
-
-  cancelAddressForm(): void {
-    this.showAddressForm = false;
-    this.isEditingAddress = false;
-    this.editingAddressId = null;
-    this.isTransportDropdownOpen = false;
-    this.addressForm.reset();
-  }
-
-  saveAddress(): void {
-    if (this.addressForm.invalid) {
-      this.addressForm.markAllAsTouched();
-      return;
-    }
-
-    this.isSavingAddress = true;
-    const formValue = this.addressForm.getRawValue();
-
-    // Only agents tag addresses with a transport method
-    const transportMethod = this.isAgent ? (formValue.transport_method || null) : null;
-
-    if (this.isAgent && !transportMethod) {
-      this.addressForm.get('transport_method')?.markAsTouched();
-      this.toastService.error('Please select the transport method for this address.');
-      return;
-    }
-
-    if (this.isEditingAddress && this.editingAddressId) {
-      // Update existing address
-      const updateData: UpdateAddressRequest = {
-        label: formValue.label || undefined,
-        address_line: formValue.address_line,
-        transport_method: transportMethod,
-        is_default: formValue.is_default,
-      };
-
-      this.addressService.updateAddress(this.editingAddressId, updateData).subscribe({
-        next: (response) => {
-          this.isSavingAddress = false;
-          this.toastService.success('Address updated successfully!');
-          this.loadAddresses();
-          this.cancelAddressForm();
-        },
-        error: (err: any) => {
-          this.isSavingAddress = false;
-          const errorMsg = err.error?.message || 'Failed to update address. Please try again.';
-          this.toastService.error(errorMsg);
-        }
-      });
-    } else {
-      // Create new address
-      const createData: CreateAddressRequest = {
-        label: formValue.label || undefined,
-        address_line: formValue.address_line,
-        transport_method: transportMethod,
-        is_default: formValue.is_default,
-      };
-
-      this.addressService.createAddress(createData).subscribe({
-        next: (response) => {
-          this.isSavingAddress = false;
-          this.toastService.success('Address added successfully!');
-          this.loadAddresses();
-          this.cancelAddressForm();
-        },
-        error: (err: any) => {
-          this.isSavingAddress = false;
-          const errorMsg = err.error?.message || 'Failed to add address. Please try again.';
-          this.toastService.error(errorMsg);
-        }
-      });
-    }
-  }
-
-  deleteAddress(id: number): void {
-    if (!confirm('Are you sure you want to delete this address?')) {
-      return;
-    }
-
-    this.addressService.deleteAddress(id).subscribe({
-      next: (response) => {
-        this.toastService.success('Address deleted successfully!');
-        this.loadAddresses();
-      },
-      error: (err: any) => {
-        const errorMsg = err.error?.message || 'Failed to delete address. Please try again.';
-        this.toastService.error(errorMsg);
-      }
-    });
-  }
-
-  setDefaultAddress(id: number): void {
-    this.addressService.setDefaultAddress(id).subscribe({
-      next: (response) => {
-        this.toastService.success('Default address updated successfully!');
-        this.loadAddresses();
-      },
-      error: (err: any) => {
-        const errorMsg = err.error?.message || 'Failed to set default address. Please try again.';
-        this.toastService.error(errorMsg);
-      }
-    });
-  }
-
   // ── Form Getters ─────────────────────────────────────────────────────
 
   get firstname() { return this.profileForm.get('firstname'); }
@@ -576,7 +352,6 @@ export class ManageAccount implements OnInit {
   get ward() { return this.profileForm.get('ward'); }
   get address() { return this.profileForm.get('address'); }
 
-  get addressLine() { return this.addressForm.get('address_line'); }
 
   // ── Profile Completion Helpers ───────────────────────────────────
 

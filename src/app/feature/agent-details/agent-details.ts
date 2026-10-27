@@ -7,10 +7,11 @@ import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { Agent, AgentProfileResponse, User, UpdateAgentProfileRequest } from '../../core/interfaces/auth.interface';
 import { ToastService } from '../../core/services/toast.service';
+import { AgentAddresses } from './agent-addresses/agent-addresses';
 
 @Component({
   selector: 'app-agent-details',
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, AgentAddresses],
   templateUrl: './agent-details.html',
   styleUrl: './agent-details.css',
 })
@@ -176,7 +177,7 @@ export class AgentDetails implements OnInit {
     });
 
     this.selectedSpecializations = agent.specializations   || [];
-    this.selectedTransport       = agent.transport_methods || [];
+    this.selectedTransport       = [...(agent.transport_methods || [])];
   }
 
   onSubmit(): void {

@@ -6,7 +6,6 @@ import { ProfileCompletionService, ProfileAnalysis } from '../../../core/service
 import { AuthService } from '../../../core/services/auth.service';
 import { UserService } from '../../../core/services/user.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { AddressService, CreateAddressRequest } from '../../../core/services/address.service';
 import { User, UpdateProfileRequest } from '../../../core/interfaces/auth.interface';
 
 /**
@@ -62,7 +61,6 @@ export class ProfileOnboardingWizard implements OnInit {
   private profileService = inject(ProfileCompletionService);
   private authService = inject(AuthService);
   private userService = inject(UserService);
-  private addressService = inject(AddressService);
   private toastService = inject(ToastService);
 
   // Wizard state
@@ -88,11 +86,6 @@ export class ProfileOnboardingWizard implements OnInit {
       this.userName = user.firstname || user.username || 'there';
       this.userRole = this.profileService.getRole(user);
       this.prefillFromUser(user);
-    }
-
-    // Default the agent physical address checkbox to true
-    if (this.userRole === 'agent') {
-      this.fieldValues['address_is_default'] = 'true';
     }
   }
 
@@ -233,46 +226,6 @@ export class ProfileOnboardingWizard implements OnInit {
         subtitle: 'Your location helps us find the best agents near you.',
         icon: 'fa-solid fa-map-location-dot',
         fields: step3Fields
-      });
-    }
-
-    // Final step for agents: Physical Address (replicates Manage Profile section)
-    if (this.userRole === 'agent') {
-      const lastStepNumber = steps.length > 0 ? steps[steps.length - 1].stepNumber + 1 : 1;
-      steps.push({
-        stepNumber: lastStepNumber,
-        title: 'Physical Address',
-        subtitle: 'Add your business or pickup address so customers can find you.',
-        icon: 'fa-solid fa-location-dot',
-        fields: [
-          {
-            name: 'address_label',
-            label: 'Label (Optional)',
-            placeholder: 'e.g., Office, Warehouse, Home',
-            inputType: 'text',
-            required: false,
-            tip: 'A friendly name to identify this address later.',
-            example: 'e.g., Main Office'
-          },
-          {
-            name: 'address_line',
-            label: 'Address Line',
-            placeholder: 'Enter full physical address',
-            inputType: 'textarea',
-            required: true,
-            tip: 'Your full street address where customers can reach you.',
-            example: 'e.g., Plot 123, Samora Avenue, Near Clock Tower'
-          },
-          {
-            name: 'address_is_default',
-            label: 'Default Address',
-            placeholder: 'Set as my default address',
-            inputType: 'checkbox',
-            required: false,
-            tip: 'Use this address as your primary location.',
-            example: ''
-          }
-        ]
       });
     }
 
@@ -440,9 +393,8 @@ export class ProfileOnboardingWizard implements OnInit {
     }
 
     const hasData = Object.keys(updateData).length > 0;
-    const hasPhysicalAddress = this.userRole === 'agent' && this.fieldValues['address_line']?.trim().length > 0;
 
-    if (!hasData && !hasPhysicalAddress) {
+    if (!hasData) {
       this.toastService.error('Please fill in at least one field before continuing.');
       return;
     }
@@ -470,12 +422,7 @@ export class ProfileOnboardingWizard implements OnInit {
           this.authService.setProfileComplete();
           this.profileUpdated.emit();
 
-          // For agents, also save the physical address before redirecting
-          if (this.userRole === 'agent' && hasPhysicalAddress) {
-            this.savePhysicalAddress(() => this.completeAndRedirectHome());
-          } else {
-            this.completeAndRedirectHome();
-          }
+          this.completeAndRedirectHome();
         } else {
           // Still missing basic fields
           const remainingLabels = missingBasic.map(f => {
@@ -489,29 +436,6 @@ export class ProfileOnboardingWizard implements OnInit {
         this.isSaving = false;
         const errorMsg = err.error?.message || 'Failed to save. Please try again.';
         this.toastService.error(errorMsg);
-      }
-    });
-  }
-
-  /**
-   * Save the agent's physical address via the AddressService
-   */
-  private savePhysicalAddress(onComplete: () => void): void {
-    const createData: CreateAddressRequest = {
-      label: this.fieldValues['address_label']?.trim() || undefined,
-      address_line: this.fieldValues['address_line'].trim(),
-      is_default: this.fieldValues['address_is_default'] === 'true',
-    };
-
-    this.addressService.createAddress(createData).subscribe({
-      next: () => {
-        this.toastService.success('Physical address saved successfully!');
-        onComplete();
-      },
-      error: (err: any) => {
-        const errorMsg = err.error?.message || 'Failed to save physical address. You can add it later in your profile.';
-        this.toastService.warning(errorMsg);
-        onComplete();
       }
     });
   }
