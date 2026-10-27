@@ -137,25 +137,34 @@
             <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
               <i class="fa-solid fa-tag mr-2 text-green-500"></i>
               By Price
-              <span *ngIf="selectedPriceRange && selectedPriceRange !== 'All'" class="ml-1 text-green-500">
-                ({{selectedPriceRange}})
+              <span *ngIf="selectedPriceCurrency" class="ml-1 text-green-500">
+                ({{selectedPriceLabel}})
               </span>
             </span>
             <i class="fa-solid fa-chevron-down text-gray-400 transition-transform duration-200"
                [class.rotate-180]="!isPriceCollapsed"></i>
           </button>
           <div *ngIf="!isPriceCollapsed" class="p-3 bg-white dark:bg-[#0a0a0a]">
-            <div class="flex flex-wrap gap-2">
+            <label for="agent-price-currency" class="block text-sm text-gray-600 dark:text-gray-300 mb-2">Currency</label>
+            <select id="agent-price-currency"
+              [ngModel]="selectedPriceCurrency || ''"
+              (ngModelChange)="selectPriceCurrency($event)"
+              class="w-full p-2 mb-3 rounded-lg bg-gray-100 dark:bg-[#333] dark:text-white">
+              <option value="">All currencies</option>
+              <option *ngFor="let currency of currencyOptions" [value]="currency">{{currency}}</option>
+            </select>
+            <p *ngIf="!selectedPriceCurrency" class="text-xs text-gray-500 dark:text-gray-400">Choose a currency to filter by price.</p>
+            <div *ngIf="selectedPriceCurrency" class="flex flex-wrap gap-2">
               <button
                 *ngFor="let price of priceRanges"
-                (click)="selectPriceRange(price)"
+                (click)="selectPriceRange(price.value)"
                 class="px-3 py-1.5 rounded-full text-xs font-medium transition"
                 [ngClass]="{
-                  'bg-green-500 text-white': selectedPriceRange === price || (price === 'All' && !selectedPriceRange),
-                  'bg-green-100 dark:bg-[#333] text-gray-700 dark:text-gray-300 hover:bg-green-200 dark:hover:bg-[#222]': selectedPriceRange !== price && !(price === 'All' && !selectedPriceRange)
+                  'bg-green-500 text-white': selectedPriceRange === price.value || (price.value === 'all' && !selectedPriceRange),
+                  'bg-green-100 dark:bg-[#333] text-gray-700 dark:text-gray-300 hover:bg-green-200 dark:hover:bg-[#222]': selectedPriceRange !== price.value && !(price.value === 'all' && !selectedPriceRange)
                 }"
               >
-                {{price}}
+                {{price.label}}
               </button>
             </div>
           </div>

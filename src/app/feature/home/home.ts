@@ -9,6 +9,7 @@ import { QrCodeService } from '../../core/services/qr-code.service';
 import { ProfileCompletionService, ProfileAnalysis } from '../../core/services/profile-completion.service';
 import { Agent, User } from '../../core/interfaces/auth.interface';
 import { resolveImageUrl } from '../../core/utils/image-url.util';
+import { formatAgentPrice } from '../../core/utils/agent-price.util';
 import { Footer } from '../../shared/footer/footer';
 import { Header } from '../../shared/header/header';
 import { ProfileCompletionPopup } from '../../shared/components/profile-completion-popup/profile-completion-popup';
@@ -32,6 +33,7 @@ import {
   styleUrl: './home.css'
 })
 export class Home implements OnInit {
+  readonly getAgentPrice = formatAgentPrice;
   currentUser: User | null = null;
 
   agentPhoto(agent: Agent): string {
