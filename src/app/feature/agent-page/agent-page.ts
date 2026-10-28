@@ -1,11 +1,14 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectorRef, inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { timeout } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Footer } from '../../shared/footer/footer';
 import { AgentService } from '../../core/services/agent.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Agent } from '../../core/interfaces/auth.interface';
 import { ToastService } from '../../core/services/toast.service';
+import { SeoService } from '../../core/services/seo.service';
+import { resolveImageUrl } from '../../core/utils/image-url.util';
 
 @Component({
   selector: 'app-agent-page',
@@ -15,9 +18,12 @@ import { ToastService } from '../../core/services/toast.service';
   styleUrl: './agent-page.css',
 })
 export class AgentPage implements OnInit {
+  private readonly seo = inject(SeoService);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   agent: Agent | null = null;
   isLoading = true;
   error: string | null = null;
+  profileImageFailed = false;
 
   // Transport method icons mapping
   transportIcons: { [key: string]: string } = {
@@ -38,6 +44,7 @@ export class AgentPage implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.seo.privatePage();
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.loadAgent(id);
@@ -53,21 +60,24 @@ export class AgentPage implements OnInit {
 
   loadAgent(id: string): void {
     this.isLoading = true;
+    this.profileImageFailed = false;
 
     // UUID contains hyphens; numeric IDs do not
     const isUuid = id.includes('-');
 
     if (isUuid) {
       // Use the public endpoint which already supports UUID lookup
-      this.agentService.getPublicAgentProfile(id as any).subscribe({
+      this.agentService.getPublicAgentProfile(id).pipe(timeout(8000)).subscribe({
         next: (agent: Agent) => {
           this.agent = agent;
+          this.updateSeo(agent);
           this.isLoading = false;
           this.cdr.detectChanges();
         },
         error: (err: any) => {
           this.error = err.error?.message || 'Failed to load agent profile';
-          this.toastService.error(this.error || 'Failed to load agent profile');
+          this.seo.privatePage();
+          if (this.isBrowser) this.toastService.error(this.error || 'Failed to load agent profile');
           this.isLoading = false;
           this.cdr.detectChanges();
         }
@@ -79,15 +89,17 @@ export class AgentPage implements OnInit {
         this.isLoading = false;
         return;
       }
-      this.agentService.getPublicAgentProfile(numericId).subscribe({
+      this.agentService.getPublicAgentProfile(numericId).pipe(timeout(8000)).subscribe({
         next: (agent: Agent) => {
           this.agent = agent;
+          this.updateSeo(agent);
           this.isLoading = false;
           this.cdr.detectChanges();
         },
         error: (err: any) => {
           this.error = err.error?.message || 'Failed to load agent profile';
-          this.toastService.error(this.error || 'Failed to load agent profile');
+          this.seo.privatePage();
+          if (this.isBrowser) this.toastService.error(this.error || 'Failed to load agent profile');
           this.isLoading = false;
           this.cdr.detectChanges();
         }
@@ -97,6 +109,13 @@ export class AgentPage implements OnInit {
 
   getTransportIcon(method: string): string {
     return this.transportIcons[method] || 'fa-solid fa-truck';
+  }
+
+  getProfileImage(): string {
+    const fallback = 'assets/landingpage_images/profile4.jpg';
+    return this.profileImageFailed
+      ? fallback
+      : resolveImageUrl(this.agent?.profile_photo || this.agent?.image, fallback);
   }
 
   formatWithCommas(value: number | null | undefined): string {
@@ -110,6 +129,17 @@ export class AgentPage implements OnInit {
     return `${cur} ${this.formatWithCommas(value)}`;
   }
 
+  private updateSeo(agent: Agent): void {
+    const name = this.getFullName();
+    const location = [agent.district, agent.region].filter(Boolean).join(', ') || 'Tanzania';
+    this.seo.update({
+      title: `${name} | Logistics Agent in ${location} | Pilikapilika`,
+      description: `View ${name}'s logistics services in ${location}. Check available services and delivery information on Pilikapilika.`,
+      path: `/agent/${encodeURIComponent(agent.uuid || String(agent.id))}`,
+      index: true,
+    });
+  }
+
   getFullName(): string {
     if (!this.agent) return '';
     return `${this.agent.firstname || ''} ${this.agent.lastname || ''}`.trim() || 'Unknown Agent';
@@ -121,22 +151,6 @@ export class AgentPage implements OnInit {
     const district = this.agent.district || '';
     if (region && district) return `${region}, ${district}`;
     return region || district || 'Unknown Location';
-  }
-
-  startConversation(): void {
-    if (!this.agent) {
-      this.toastService.error('Agent information not available');
-      return;
-    }
-
-    
-    // Navigate to messages page with agent information as query parameters
-    this.router.navigate(['/messages'], {
-      queryParams: {
-        userId: this.agent.uuid || this.agent.id.toString(),
-        name: this.getFullName()
-      }
-    });
   }
 
   bookShipment(): void {
@@ -154,8 +168,6 @@ export class AgentPage implements OnInit {
       return;
     }
 
-    // Navigate to book shipment page with agent ID
-    const agentId = this.agent.uuid || this.agent.id.toString();
-    this.router.navigate(['/book-shipment', agentId]);
+    this.router.navigate(['/qr-generator']);
   }
 }

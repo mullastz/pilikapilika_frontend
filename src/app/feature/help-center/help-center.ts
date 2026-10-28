@@ -1,13 +1,21 @@
 import { Component } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-help-center',
-  imports: [ CommonModule ],
+  imports: [ CommonModule, RouterLink ],
   templateUrl: './help-center.html',
   styleUrl: './help-center.css',
 })
 export class HelpCenter {
+
+  readonly publicLinks = [
+    { path: '/search', label: 'Search Agents', icon: 'fa-magnifying-glass', description: 'Find an agent for your shipment.' },
+    { path: '/how-it-works', label: 'How It Works', icon: 'fa-circle-question', description: 'Learn how to book and follow a shipment.' },
+    { path: '/about-us', label: 'About Us', icon: 'fa-circle-info', description: 'Get to know Pilikapilika.' },
+    { path: '/contact-us', label: 'Contact Us', icon: 'fa-envelope', description: 'Find our support contact details.' },
+  ];
 
   constructor(private location: Location) {}
 

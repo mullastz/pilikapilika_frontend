@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { Observable, tap, map } from 'rxjs';
 import { ApiService } from './api.service';
 import {
@@ -17,6 +18,7 @@ import {
   providedIn: 'root'
 })
 export class AuthService {
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   constructor(private api: ApiService) {}
 
   /**
@@ -70,6 +72,7 @@ export class AuthService {
   }
 
   getToken(): string | null {
+    if (!this.isBrowser) return null;
     return localStorage.getItem('auth_token');
   }
 
@@ -78,6 +81,7 @@ export class AuthService {
   }
 
   getUser(): User | null {
+    if (!this.isBrowser) return null;
     const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
   }

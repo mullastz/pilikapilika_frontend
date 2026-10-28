@@ -1,105 +1,63 @@
 import { Routes } from '@angular/router';
 import { ProfileCompletionGuard } from './core/guards/profile-completion.guard';
-import { SignUp } from './feature/auth/sign-up/sign-up';
-import { SignIn } from './feature/auth/sign-in/sign-in';
-import { VerifyEmail } from './feature/auth/verify-email/verify-email';
-import { ForgotPassword } from './feature/auth/forgot-password/forgot-password';
-import { ResetPassword } from './feature/auth/reset-password/reset-password';
-import { LandingPage } from './feature/landing-page/landing-page';
-import { ProfileManagement } from './feature/profile-management/profile-management';
-import { ManageAccount } from './feature/manage-account/manage-account';
-import { Shipping } from './feature/shipping/shipping';
-import { HelpCenter } from './feature/help-center/help-center';
-import { AgentPage } from './feature/agent-page/agent-page';
-import { TrackShipping } from './feature/track-shipping/track-shipping';
-import { AgentDetails } from './feature/agent-details/agent-details';
-import { Messages } from './feature/messages/messages';
-import { Search } from './feature/search/search';
-import { QrGenerator } from './feature/qr-generator/qr-generator';
-import { QrView } from './feature/qr-view/qr-view';
-import { MyProducts } from './feature/my-products/my-products';
-import { ScanQr } from './feature/scan-qr/scan-qr';
-import { PackageGenerator } from './feature/package-generator/package-generator';
-import { PackageView } from './feature/package-view/package-view';
-import { BookShipment } from './feature/book-shipment/book-shipment';
-import { Home } from './feature/home/home';
 import { AdminGuard } from './core/guards/admin.guard';
-import { AdminLayout } from './feature/admin/layout/layout';
-import { AdminDashboard } from './feature/admin/dashboard/dashboard';
-import { AdminUsers } from './feature/admin/users/users';
-import { AdminAgents } from './feature/admin/agents/agents';
-import { AdminShipments } from './feature/admin/shipments/shipments';
-import { AdminQrCodes } from './feature/admin/qr-codes/qr-codes';
-import { AdminRegions } from './feature/admin/regions/regions';
-import { AdminMessages } from './feature/admin/messages/messages';
-import { AdminLogs } from './feature/admin/logs/logs';
-import { AdminSettings } from './feature/admin/settings/settings';
-import { AdminAccount } from './feature/admin/account/account';
-import { AdminContainers } from './feature/admin/containers/containers';
-import { AdminPackages } from './feature/admin/packages/packages';
-import { AdminAddresses } from './feature/admin/addresses/addresses';
-import { AdminReviews } from './feature/admin/reviews/reviews';
-import { AdminPayments } from './feature/admin/payments/payments';
-import { AdminVerifications } from './feature/admin/verifications/verifications';
-import { AdminResetTokens } from './feature/admin/reset-tokens/reset-tokens';
-import { AdminUserKeys } from './feature/admin/user-keys/user-keys';
-import { AgentShipping } from './feature/agent-shipping/agent-shipping';
 import { AgentGuard } from './core/guards/agent.guard';
-import { AboutUs } from './feature/about-us/about-us';
 
 
 export const routes: Routes = [
-  { path: 'sign-up', component: SignUp },
-  { path: 'sign-in', component: SignIn },
-  { path: 'verify-email/:uuid', component: VerifyEmail },
-  { path: 'forgot-password', component: ForgotPassword },
-  { path: 'reset-password/:uuid', component: ResetPassword },
-  { path: '', component: LandingPage },
-  { path: 'about-us', component: AboutUs },
-  { path: 'home', component: Home, canActivate: [ProfileCompletionGuard] },
-  { path: 'profile-management', component: ProfileManagement, canActivate: [ProfileCompletionGuard] },
-  { path: 'account/details', component: ManageAccount },
-  { path: 'account/agent', component: AgentDetails, canActivate: [AgentGuard] },
-  { path: 'account/shipping', component: Shipping, canActivate: [ProfileCompletionGuard] },
-  { path: 'account/help', component: HelpCenter, canActivate: [ProfileCompletionGuard] },
-  { path: 'agent/:id', component: AgentPage, canActivate: [ProfileCompletionGuard] },
-  { path: 'track-shipping/:id', component: TrackShipping, canActivate: [ProfileCompletionGuard] },
-  { path: 'messages', component: Messages, canActivate: [ProfileCompletionGuard] },
-  { path: 'search', component: Search, canActivate: [ProfileCompletionGuard] },
-  { path: 'qr-generator', component: QrGenerator, canActivate: [ProfileCompletionGuard] },
-  { path: 'qr/:uuid', component: QrView, canActivate: [ProfileCompletionGuard] },
-  { path: 'package-generator', component: PackageGenerator, canActivate: [ProfileCompletionGuard] },
-  { path: 'package/:uuid', component: PackageView, canActivate: [ProfileCompletionGuard] },
-  { path: 'book-shipment/:agentId', component: BookShipment, canActivate: [ProfileCompletionGuard] },
-  { path: 'account/my-products', component: MyProducts, canActivate: [ProfileCompletionGuard] },
-  { path: 'scan-qr', component: ScanQr, canActivate: [AgentGuard] },
-  { path: 'account/scan-qr', component: ScanQr, canActivate: [AgentGuard] },
+  { path: 'sign-up', loadComponent: () => import('./feature/auth/sign-up/sign-up').then(m => m.SignUp) },
+  { path: 'sign-in', loadComponent: () => import('./feature/auth/sign-in/sign-in').then(m => m.SignIn) },
+  { path: 'verify-email/:uuid', loadComponent: () => import('./feature/auth/verify-email/verify-email').then(m => m.VerifyEmail) },
+  { path: 'forgot-password', loadComponent: () => import('./feature/auth/forgot-password/forgot-password').then(m => m.ForgotPassword) },
+  { path: 'reset-password/:uuid', loadComponent: () => import('./feature/auth/reset-password/reset-password').then(m => m.ResetPassword) },
+  { path: '', loadComponent: () => import('./feature/landing-page/landing-page').then(m => m.LandingPage) },
+  { path: 'about-us', loadComponent: () => import('./feature/about-us/about-us').then(m => m.AboutUs) },
+  { path: 'how-it-works', loadComponent: () => import('./feature/how-it-works/how-it-works').then(m => m.HowItWorks) },
+  { path: 'contact-us', loadComponent: () => import('./feature/contact-us/contact-us').then(m => m.ContactUs) },
+  { path: 'home', loadComponent: () => import('./feature/home/home').then(m => m.Home), canActivate: [ProfileCompletionGuard] },
+  { path: 'profile-management', loadComponent: () => import('./feature/profile-management/profile-management').then(m => m.ProfileManagement), canActivate: [ProfileCompletionGuard] },
+  { path: 'account/details', loadComponent: () => import('./feature/manage-account/manage-account').then(m => m.ManageAccount) },
+  { path: 'account/agent', loadComponent: () => import('./feature/agent-details/agent-details').then(m => m.AgentDetails), canActivate: [AgentGuard] },
+  { path: 'account/shipping', loadComponent: () => import('./feature/shipping/shipping').then(m => m.Shipping), canActivate: [ProfileCompletionGuard] },
+  { path: 'account/help', loadComponent: () => import('./feature/help-center/help-center').then(m => m.HelpCenter), canActivate: [ProfileCompletionGuard] },
+  { path: 'agent/:id', loadComponent: () => import('./feature/agent-page/agent-page').then(m => m.AgentPage), canActivate: [ProfileCompletionGuard] },
+  { path: 'track-shipping/:id', loadComponent: () => import('./feature/track-shipping/track-shipping').then(m => m.TrackShipping), canActivate: [ProfileCompletionGuard] },
+  { path: 'messages', loadComponent: () => import('./feature/messages/messages').then(m => m.Messages), canActivate: [ProfileCompletionGuard] },
+  { path: 'search', loadComponent: () => import('./feature/search/search').then(m => m.Search) },
+  { path: 'qr-generator', loadComponent: () => import('./feature/qr-generator/qr-generator').then(m => m.QrGenerator), canActivate: [ProfileCompletionGuard] },
+  { path: 'qr/:uuid', loadComponent: () => import('./feature/qr-view/qr-view').then(m => m.QrView), canActivate: [ProfileCompletionGuard] },
+  { path: 'package-generator', loadComponent: () => import('./feature/package-generator/package-generator').then(m => m.PackageGenerator), canActivate: [ProfileCompletionGuard] },
+  { path: 'package/:uuid', loadComponent: () => import('./feature/package-view/package-view').then(m => m.PackageView), canActivate: [ProfileCompletionGuard] },
+  { path: 'book-shipment/:agentId', loadComponent: () => import('./feature/book-shipment/book-shipment').then(m => m.BookShipment), canActivate: [ProfileCompletionGuard] },
+  { path: 'account/my-products', loadComponent: () => import('./feature/my-products/my-products').then(m => m.MyProducts), canActivate: [ProfileCompletionGuard] },
+  { path: 'scan-qr', loadComponent: () => import('./feature/scan-qr/scan-qr').then(m => m.ScanQr), canActivate: [AgentGuard] },
+  { path: 'account/scan-qr', loadComponent: () => import('./feature/scan-qr/scan-qr').then(m => m.ScanQr), canActivate: [AgentGuard] },
 
   // Admin Routes
   {
     path: 'admin',
-    component: AdminLayout,
+    loadComponent: () => import('./feature/admin/layout/layout').then(m => m.AdminLayout),
     canActivate: [AdminGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'dashboard', component: AdminDashboard },
-      { path: 'users', component: AdminUsers },
-      { path: 'agents', component: AdminAgents },
-      { path: 'shipments', component: AdminShipments },
-      { path: 'containers', component: AdminContainers },
-      { path: 'packages', component: AdminPackages },
-      { path: 'addresses', component: AdminAddresses },
-      { path: 'qr-codes', component: AdminQrCodes },
-      { path: 'reviews', component: AdminReviews },
-      { path: 'payments', component: AdminPayments },
-      { path: 'verifications', component: AdminVerifications },
-      { path: 'reset-tokens', component: AdminResetTokens },
-      { path: 'user-keys', component: AdminUserKeys },
-      { path: 'regions', component: AdminRegions },
-      { path: 'settings', component: AdminSettings },
-      { path: 'account', component: AdminAccount },
-      { path: 'messages', component: AdminMessages },
-      { path: 'logs', component: AdminLogs },
+      { path: 'dashboard', loadComponent: () => import('./feature/admin/dashboard/dashboard').then(m => m.AdminDashboard) },
+      { path: 'users', loadComponent: () => import('./feature/admin/users/users').then(m => m.AdminUsers) },
+      { path: 'agents', loadComponent: () => import('./feature/admin/agents/agents').then(m => m.AdminAgents) },
+      { path: 'shipments', loadComponent: () => import('./feature/admin/shipments/shipments').then(m => m.AdminShipments) },
+      { path: 'containers', loadComponent: () => import('./feature/admin/containers/containers').then(m => m.AdminContainers) },
+      { path: 'packages', loadComponent: () => import('./feature/admin/packages/packages').then(m => m.AdminPackages) },
+      { path: 'addresses', loadComponent: () => import('./feature/admin/addresses/addresses').then(m => m.AdminAddresses) },
+      { path: 'qr-codes', loadComponent: () => import('./feature/admin/qr-codes/qr-codes').then(m => m.AdminQrCodes) },
+      { path: 'reviews', loadComponent: () => import('./feature/admin/reviews/reviews').then(m => m.AdminReviews) },
+      { path: 'payments', loadComponent: () => import('./feature/admin/payments/payments').then(m => m.AdminPayments) },
+      { path: 'verifications', loadComponent: () => import('./feature/admin/verifications/verifications').then(m => m.AdminVerifications) },
+      { path: 'reset-tokens', loadComponent: () => import('./feature/admin/reset-tokens/reset-tokens').then(m => m.AdminResetTokens) },
+      { path: 'user-keys', loadComponent: () => import('./feature/admin/user-keys/user-keys').then(m => m.AdminUserKeys) },
+      { path: 'regions', loadComponent: () => import('./feature/admin/regions/regions').then(m => m.AdminRegions) },
+      { path: 'settings', loadComponent: () => import('./feature/admin/settings/settings').then(m => m.AdminSettings) },
+      { path: 'account', loadComponent: () => import('./feature/admin/account/account').then(m => m.AdminAccount) },
+      { path: 'messages', loadComponent: () => import('./feature/admin/messages/messages').then(m => m.AdminMessages) },
+      { path: 'logs', loadComponent: () => import('./feature/admin/logs/logs').then(m => m.AdminLogs) },
     ]
   },
 

@@ -1,5 +1,6 @@
-import { Component, ElementRef, ViewChild, OnInit, ChangeDetectorRef, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, ElementRef, ViewChild, OnInit, ChangeDetectorRef, signal, inject, PLATFORM_ID, afterNextRender } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { timeout } from 'rxjs';
 import { Footer } from '../../shared/footer/footer';
 import { Header } from '../../shared/header/header';
 import { Router } from '@angular/router';
@@ -19,6 +20,7 @@ import { ContentService } from '../../core/services/content.service';
 })
 
 export class LandingPage implements OnInit {
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   agentPhoto(agent: Agent): string {
     return resolveImageUrl(agent.profile_photo || agent.image, 'assets/landingpage_images/profile4.jpg');
   }
@@ -31,8 +33,8 @@ export class LandingPage implements OnInit {
   isLoadingAgents = true;
   showProfilePopup = false;
 
-  heroTitle = signal('Discover best deal');
-  heroSubtitle = signal('Ship with confidence every time.');
+  heroTitle = signal('Find logistics and delivery agents in Tanzania');
+  heroSubtitle = signal('Compare logistics services, book shipments, and follow your delivery updates with Pilikapilika.');
   heroImage = signal('assets/landingpage_images/logistics.webp');
   isLoadingHero = signal(true);
 
@@ -43,17 +45,16 @@ export class LandingPage implements OnInit {
     private toastService: ToastService,
     private contentService: ContentService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) {
+    afterNextRender(() => {
+      if (this.authService.isAuthenticated()) this.router.navigate(['/home']);
+      else this.checkProfileCompletion();
+    });
+  }
 
   ngOnInit(): void {
-    // Redirect logged-in users to home page
-    if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/home']);
-      return;
-    }
     this.loadAgents();
     this.loadHeroContent();
-    this.checkProfileCompletion();
   }
 
   loadHeroContent(): void {
@@ -85,7 +86,7 @@ export class LandingPage implements OnInit {
 
   loadAgents(): void {
     this.isLoadingAgents = true;
-    this.agentService.getAvailableAgents(1, 10).subscribe({
+    this.agentService.getAvailableAgents(1, 10).pipe(timeout(8000)).subscribe({
       next: (response) => {
         this.agents = response.agents;
         // Sort by rating for top agents
@@ -94,7 +95,7 @@ export class LandingPage implements OnInit {
         this.cdr.detectChanges(); // Trigger change detection
       },
       error: (err: any) => {
-        this.toastService.error('Failed to load agents. Please try again.');
+        if (this.isBrowser) this.toastService.error('Failed to load agents. Please try again.');
         this.isLoadingAgents = false;
         this.agents = [];
         this.topAgents = [];

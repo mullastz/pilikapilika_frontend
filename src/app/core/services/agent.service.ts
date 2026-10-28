@@ -137,7 +137,7 @@ export class AgentService {
     );
   }
 
-  getPublicAgentProfile(userId: number): Observable<Agent> {
+  getPublicAgentProfile(userId: number | string): Observable<Agent> {
     return this.api.get<{ data: Agent }>(`agents/${userId}/public`).pipe(
       map(response => response.data)
     );

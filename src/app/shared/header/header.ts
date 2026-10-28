@@ -1,4 +1,4 @@
-import { Component, signal, inject, HostListener } from '@angular/core';
+import { Component, signal, inject, HostListener, afterNextRender, ChangeDetectorRef } from '@angular/core';
 import { RouterLink, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
@@ -19,11 +19,14 @@ export class Header {
   private authService = inject(AuthService);
   private toastService = inject(ToastService);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
-  ngOnInit() {
-    const saved = localStorage.getItem('theme');
-    this.isDark = saved === 'dark';
-    this.checkAuthStatus();
+  constructor() {
+    afterNextRender(() => {
+      this.isDark = localStorage.getItem('theme') === 'dark';
+      this.checkAuthStatus();
+      this.cdr.markForCheck();
+    });
   }
 
   checkAuthStatus(): void {
@@ -57,6 +60,11 @@ export class Header {
 
   closeProfileDropdown(): void {
     this.isProfileDropdownOpen.set(false);
+  }
+
+  @HostListener('document:keydown.escape')
+  closeMenus(): void {
+    this.closeProfileDropdown();
   }
 
   logout(): void {

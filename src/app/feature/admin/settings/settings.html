@@ -56,6 +56,7 @@
                 <input [(ngModel)]="settings().platform.support_phone" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
               </div>
             </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Support email and phone appear on Contact Us. Leave either field blank to hide it.</p>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Currency</label>
               <select [(ngModel)]="settings().platform.currency" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200">
@@ -206,6 +207,17 @@
               </div>
             </div>
 
+            <hr class="border-gray-200 dark:border-gray-700" />
+
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Contact Us</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">The public contact page uses the support email and phone from the Platform tab. Leave a field blank to hide it.</p>
+              <div>
+                <label for="contact-hours" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Support opening hours (optional)</label>
+                <textarea id="contact-hours" [(ngModel)]="settings().content.contact_hours" maxlength="300" rows="3" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200"></textarea>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Include your time zone if you publish opening hours.</p>
+              </div>
+            </div>
             <hr class="border-gray-200 dark:border-gray-700" />
 
             <!-- Hero Section -->

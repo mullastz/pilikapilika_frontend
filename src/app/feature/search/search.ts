@@ -1,21 +1,26 @@
-import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, OnDestroy, inject } from '@angular/core';
 import { CommonModule, Location  } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AgentService } from '../../core/services/agent.service';
 import { Agent } from '../../core/interfaces/auth.interface';
 import { formatAgentPrice, normalizeCurrencyCode } from '../../core/utils/agent-price.util';
 import { Subject, Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, timeout } from 'rxjs/operators';
+import { SeoService, hasSearchFiltersInUrl } from '../../core/services/seo.service';
+import { Header } from '../../shared/header/header';
+import { Footer } from '../../shared/footer/footer';
+import { resolveImageUrl } from '../../core/utils/image-url.util';
 
 @Component({
   selector: 'app-search',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink, Header, Footer],
   templateUrl: './search.html',
   styleUrl: './search.css',
 })
 export class Search implements OnInit, OnDestroy {
+  private readonly seo = inject(SeoService);
   // Combined search query
   searchQuery = '';
   private searchSubject = new Subject<string>();
@@ -72,6 +77,7 @@ export class Search implements OnInit, OnDestroy {
   }
 
   private performSearch(): void {
+    this.seo.searchPage(this.hasActiveFilters() || hasSearchFiltersInUrl(this.router.url));
     // Build search params from current filters and search query
     const params: { specialization?: string; transport?: string; min_price?: number; max_price?: number; q?: string } = {};
 
@@ -91,7 +97,7 @@ export class Search implements OnInit, OnDestroy {
       params.q = this.searchQuery.trim();
     }
 
-    this.agentService.searchAgents(params).subscribe({
+    this.agentService.searchAgents(params).pipe(timeout(8000)).subscribe({
       next: (agents: Agent[]) => {
         this.agents = agents;
         this.isLoading = false;
@@ -123,7 +129,7 @@ export class Search implements OnInit, OnDestroy {
   }
 
   getAgentImage(agent: Agent): string {
-    return agent.profile_photo || agent.image || 'assets/landingpage_images/profile4.jpg';
+    return resolveImageUrl(agent.profile_photo || agent.image, 'assets/landingpage_images/profile4.jpg');
   }
 
   // Filter options - matching agent-details.ts

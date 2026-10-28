@@ -5,6 +5,7 @@ import { AdminService } from '../../../core/services/admin.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { RouterModule } from '@angular/router';
 import { resolveImageUrl } from '../../../core/utils/image-url.util';
+import { ContentService } from '../../../core/services/content.service';
 
 interface AppSettings {
   platform: {
@@ -45,6 +46,7 @@ interface AppSettings {
     hero_title: string;
     hero_subtitle: string;
     hero_image: string;
+    contact_hours: string;
   };
 }
 
@@ -100,6 +102,7 @@ export class AdminSettings implements OnInit {
       hero_title: '',
       hero_subtitle: '',
       hero_image: '',
+      contact_hours: '',
     },
   });
 
@@ -118,7 +121,8 @@ export class AdminSettings implements OnInit {
 
   constructor(
     private adminService: AdminService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private contentService: ContentService
   ) {}
 
   ngOnInit(): void {
@@ -157,6 +161,7 @@ export class AdminSettings implements OnInit {
     this.uploadingImage.set(key);
     this.adminService.uploadContentImage(key, file).subscribe({
       next: (res) => {
+        this.contentService.clearCache();
         this.settings.update((s) => ({
           ...s,
           content: { ...s.content, [key]: res.data.url },
@@ -182,6 +187,7 @@ export class AdminSettings implements OnInit {
     this.saving.set(true);
     this.adminService.updateSettings({ settings: this.settings() }).subscribe({
       next: () => {
+        this.contentService.clearCache();
         this.toastService.success('Settings saved successfully');
         this.saving.set(false);
       },

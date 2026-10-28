@@ -70,7 +70,8 @@
         <!-- PROFILE -->
         <div class="flex flex-col sm:flex-row sm:items-center gap-4">
 
-          <img [src]="agent.image || 'assets/landingpage_images/profile4.jpg'"
+          <img [src]="getProfileImage()" [alt]="getFullName()" width="80" height="80"
+               (error)="profileImageFailed = true"
                class="w-20 h-20 rounded-full border-2 border-orange-500 object-cover"/>
 
           <div class="flex-1">
@@ -101,11 +102,6 @@
 
           <!-- CTA -->
           <div class="flex gap-3">
-            <button (click)="startConversation()" 
-                    class="bg-blue-500 text-white px-5 py-2 rounded-full hover:scale-105 transition shadow">
-              <i class="fa-solid fa-message mr-2"></i>
-              Message
-            </button>
             <button (click)="bookShipment()" class="bg-orange-500 text-white px-5 py-2 rounded-full hover:scale-105 transition shadow">
               Book Shipment
             </button>

@@ -1,9 +1,10 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, afterNextRender } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { MenuBar } from './shared/menu-bar/menu-bar';
 import { MenuBarService } from './core/services/menu-bar.service';
+import { SeoService } from './core/services/seo.service';
 
 @Component({
   selector: 'app-root',
@@ -17,15 +18,15 @@ export class App {
   private router = inject(Router);
   private menuBarService = inject(MenuBarService);
 
+  constructor() {
+    inject(SeoService).start();
+    afterNextRender(() => {
+      const saved = localStorage.getItem('theme');
+      document.documentElement.classList.toggle('dark', saved === 'dark');
+    });
+  }
+
   ngOnInit() {
-    const saved = localStorage.getItem('theme');
-
-    if (saved === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
     this.showMenuBar.set(!this.router.url.startsWith('/admin'));
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((e: any) => {
       this.showMenuBar.set(!e.url.startsWith('/admin'));

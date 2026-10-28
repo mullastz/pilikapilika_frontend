@@ -1,0 +1,51 @@
+<div class="bg-[#f5f5f5] dark:bg-[#0a0a0a] min-h-screen text-gray-900 dark:text-white">
+  <div class="relative h-20 sm:h-24"><app-header /></div>
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 pb-16">
+    <section class="py-10 sm:py-16 max-w-3xl">
+      <p class="text-sm font-semibold uppercase tracking-widest text-orange-600 dark:text-orange-400 mb-3">Get in touch</p>
+      <h1 class="text-3xl sm:text-5xl font-bold tracking-tight">Contact Pilikapilika</h1>
+      <p class="mt-5 text-base sm:text-lg leading-relaxed text-gray-600 dark:text-gray-300">Have a question about using Pilikapilika? Find our public support details here, or use the links below to get help with finding an agent and managing a shipment.</p>
+    </section>
+
+    <section aria-label="Support contact details" class="grid sm:grid-cols-2 gap-4">
+      @if (email) {
+        <div class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+          <i class="fa-solid fa-envelope text-orange-500 text-xl mb-4" aria-hidden="true"></i>
+          <h2 class="text-lg font-semibold">Email support</h2>
+          <a [href]="'mailto:' + email" class="inline-block mt-2 text-orange-600 dark:text-orange-400 hover:underline break-all">{{email}}</a>
+        </div>
+      }
+      @if (phone) {
+        <div class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+          <i class="fa-solid fa-phone text-orange-500 text-xl mb-4" aria-hidden="true"></i>
+          <h2 class="text-lg font-semibold">Call us</h2>
+          <a [href]="phoneLink" class="inline-block mt-2 text-orange-600 dark:text-orange-400 hover:underline">{{phone}}</a>
+        </div>
+      }
+      @if (hours) {
+        <div class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+          <i class="fa-solid fa-clock text-orange-500 text-xl mb-4" aria-hidden="true"></i>
+          <h2 class="text-lg font-semibold">Support hours</h2>
+          <p class="mt-2 text-gray-600 dark:text-gray-300 whitespace-pre-line">{{hours}}</p>
+        </div>
+      }
+    </section>
+
+    <section class="mt-8 grid sm:grid-cols-2 gap-6">
+      <div class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 sm:p-8">
+        <h2 class="text-xl font-semibold">Help with an existing shipment</h2>
+        <p class="mt-3 text-gray-600 dark:text-gray-300 leading-relaxed">Sign in to view your shipment details and message your agent about pickup, delivery arrangements, or status updates. Have your tracking number ready when asking about a shipment.</p>
+        <a routerLink="/account/shipping" class="inline-flex items-center gap-2 mt-5 text-orange-600 dark:text-orange-400 font-medium hover:underline">My Shipping <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+      </div>
+      <div class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 sm:p-8">
+        <h2 class="text-xl font-semibold">New to Pilikapilika?</h2>
+        <p class="mt-3 text-gray-600 dark:text-gray-300 leading-relaxed">Learn how to compare agents, prepare parcel details, and book a shipment. You can explore public agent profiles before creating an account.</p>
+        <div class="flex flex-wrap gap-4 mt-5">
+          <a routerLink="/how-it-works" class="text-orange-600 dark:text-orange-400 font-medium hover:underline">How It Works</a>
+          <a routerLink="/search" class="text-orange-600 dark:text-orange-400 font-medium hover:underline">Search Agents</a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <app-footer />
+</div>

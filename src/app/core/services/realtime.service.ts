@@ -99,7 +99,7 @@ export class RealtimeService {
     }
 
     try {
-      const wsUrl = this.buildWsUrl(user.uuid, token);
+      const wsUrl = this.buildWsUrl();
       this.ws = new WebSocket(wsUrl);
 
       // Set connection timeout
@@ -248,14 +248,12 @@ export class RealtimeService {
     }, this.reconnectDelay);
   }
 
-  private buildWsUrl(userId: string, token: string): string {
-    // Hardcode localhost for development since environment file seems corrupted
-    const apiUrl = 'http://localhost:8000/api/v1';
-    const wsProtocol = 'ws:';
-    const baseUrl = apiUrl.replace(/^https?:/, wsProtocol).replace(/:\d+/, ':6001').replace(/\/api\/v1\/?$/, '');
-    const appKey = environment.reverbAppKey;
-    const finalUrl = `${baseUrl}/app/${appKey}?protocol=7&client=js&version=7.0.3&flash=false&user=${userId}&token=${token}`;
-    return finalUrl;
+  private buildWsUrl(): string {
+    const url = new URL(`/app/${encodeURIComponent(environment.reverbAppKey)}`, environment.reverbUrl);
+    url.search = new URLSearchParams({
+      protocol: '7', client: 'js', version: '7.0.3', flash: 'false',
+    }).toString();
+    return url.toString();
   }
 
   isDuplicate(id: number): boolean {

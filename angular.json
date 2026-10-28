@@ -16,12 +16,14 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
+            "browser": "src/main.ts",
             "outputPath": "dist/pilikapilika-frontend",
-            "index": "src/index.html", 
+            "index": "src/index.html",
             "tsConfig": "tsconfig.app.json",
             "assets": [
-             "src/favicon.ico",
-              "src/assets"
+              "src/favicon.ico",
+              "src/assets",
+              { "glob": "**/*", "input": "public", "output": "/", "ignore": ["favicon.ico"] }
             ],
             "styles": [
               "src/styles.css",
@@ -39,6 +41,8 @@
           },
           "configurations": {
             "production": {
+              "server": "src/main.server.ts",
+              "outputMode": "static",
               "budgets": [
                 {
                   "type": "initial",
@@ -74,7 +78,10 @@
           "defaultConfiguration": "development"
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "runnerConfig": "vitest.config.ts"
+          }
         }
       }
     }

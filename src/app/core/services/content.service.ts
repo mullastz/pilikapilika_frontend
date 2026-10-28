@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { map, tap, catchError } from 'rxjs/operators';
+import { map, tap, catchError, timeout } from 'rxjs/operators';
 import { ApiService } from './api.service';
 
 export interface SiteContent {
@@ -15,6 +15,9 @@ export interface SiteContent {
   hero_title?: string;
   hero_subtitle?: string;
   hero_image?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  contact_hours?: string;
   [key: string]: string | undefined;
 }
 
@@ -31,6 +34,7 @@ export class ContentService {
       return of(this.cache);
     }
     return this.api.get<{ success: boolean; data: SiteContent }>('content').pipe(
+      timeout(8000),
       map((res) => res.data || {}),
       tap((data) => (this.cache = data)),
       catchError(() => of(this.cache ?? {}))

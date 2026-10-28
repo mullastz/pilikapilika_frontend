@@ -22,6 +22,8 @@ import { transportLabel, transportIcon } from '../../core/utils/transport-method
 import { QrCodeService } from '../../core/services/qr-code.service';
 import { MenuBarService } from '../../core/services/menu-bar.service';
 import { QRCodeComponent } from 'angularx-qrcode';
+import { finalize } from 'rxjs';
+import { resolveImageUrl } from '../../core/utils/image-url.util';
 
 type QrScanPurpose = 'agent_load_container' | 'user_confirm_delivery';
 
@@ -80,6 +82,8 @@ export class Shipping implements OnInit, OnDestroy {
   // Product expand state for view modal
   public selectedProductUuid = signal<string | null>(null);
   public productDetailsMap = signal<Map<string, any>>(new Map());
+  public productDetailsLoading = signal<Set<string>>(new Set());
+  public productDetailsErrors = signal<Map<string, string>>(new Map());
 
   // Container management state
   public containers = signal<Container[]>([]);
@@ -481,25 +485,6 @@ export class Shipping implements OnInit, OnDestroy {
     }
   }
 
-  getStatusAccentClass(status: string): string {
-    switch (status) {
-      case 'delivered':        return 'bg-green-400';
-      case 'in_transit':       return 'bg-blue-400';
-      case 'at_warehouse':     return 'bg-indigo-400';
-      case 'half_loaded':      return 'bg-amber-400';
-      case 'loading_container': return 'bg-orange-400';
-      case 'loaded_in_container': return 'bg-teal-400';
-      case 'at_tanzania_port': return 'bg-cyan-400';
-      case 'at_tanzania_warehouse': return 'bg-sky-400';
-      case 'confirmed':        return 'bg-purple-400';
-      case 'pending_confirmation': return 'bg-yellow-400';
-      case 'cancelled':        return 'bg-red-400';
-      case 'draft':            return 'bg-gray-400';
-      case 'closed':           return 'bg-teal-400';
-      default:                 return 'bg-gray-400';
-    }
-  }
-
   formatStatus(status: string, transportMethod?: string | null): string {
     const label = status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     return localizeShipmentLabel(label, transportMethod);
@@ -634,6 +619,8 @@ export class Shipping implements OnInit, OnDestroy {
     this.selectedShipmentDetail.set(null);
     this.selectedProductUuid.set(null);
     this.productDetailsMap.set(new Map());
+    this.productDetailsLoading.set(new Set());
+    this.productDetailsErrors.set(new Map());
 
     this.shipmentService.getShipment(shipment.id).subscribe({
       next: (response) => {
@@ -667,6 +654,8 @@ export class Shipping implements OnInit, OnDestroy {
       this.selectedShipmentDetail.set(null);
       this.selectedProductUuid.set(null);
       this.productDetailsMap.set(new Map());
+      this.productDetailsLoading.set(new Set());
+      this.productDetailsErrors.set(new Map());
       this.shipmentDistributions.set({});
       this.deliveryReadiness.set({});
       this.menuBarService.show();
@@ -700,33 +689,65 @@ export class Shipping implements OnInit, OnDestroy {
     return '';
   }
 
+  getProductUuid(product: { qr_code_uuid?: string; uuid?: string; id?: string | number }): string {
+    const id = product.qr_code_uuid || product.uuid || product.id;
+    return id == null ? '' : String(id);
+  }
+
   selectProduct(productId: string): void {
+    if (!productId) return;
     if (this.selectedProductUuid() === productId) {
       this.selectedProductUuid.set(null);
       return;
     }
     this.selectedProductUuid.set(productId);
 
-    const currentMap = this.productDetailsMap();
-    if (!currentMap.has(productId)) {
-      this.qrCodeService.getByUuid(productId).subscribe({
+    if (!this.productDetailsMap().has(productId) && !this.productDetailsLoading().has(productId)) {
+      const shipment = this.selectedShipmentDetail();
+      this.productDetailsLoading.update(loading => new Set(loading).add(productId));
+      this.productDetailsErrors.update(errors => {
+        const next = new Map(errors);
+        next.delete(productId);
+        return next;
+      });
+      this.qrCodeService.getByUuid(productId).pipe(
+        finalize(() => {
+          if (this.selectedShipmentDetail() !== shipment) return;
+          this.productDetailsLoading.update(loading => {
+            const next = new Set(loading);
+            next.delete(productId);
+            return next;
+          });
+        }),
+      ).subscribe({
         next: (res: any) => {
+          if (this.selectedShipmentDetail() !== shipment) return;
           const fullData = res?.data ?? null;
           if (fullData) {
-            const newMap = new Map(currentMap);
-            newMap.set(productId, fullData);
-            this.productDetailsMap.set(newMap);
+            this.productDetailsMap.update(current => new Map(current).set(productId, fullData));
+          } else {
+            this.productDetailsErrors.update(errors => new Map(errors).set(productId, 'Could not load product details. Close and reopen this product to try again.'));
           }
         },
-        error: (err) => {
+        error: () => {
+          if (this.selectedShipmentDetail() !== shipment) return;
+          this.productDetailsErrors.update(errors => new Map(errors).set(productId, 'Could not load product details. Close and reopen this product to try again.'));
         }
       });
     }
   }
 
   getFullProduct(product: any): any {
-    const full = this.productDetailsMap().get(product.id);
+    const full = this.productDetailsMap().get(this.getProductUuid(product));
     return full ? { ...product, ...full } : product;
+  }
+
+  getProductPhotos(product: any): string[] {
+    const photos: unknown = this.getFullProduct(product).photos;
+    if (!Array.isArray(photos)) return [];
+    return photos
+      .filter((photo): photo is string => typeof photo === 'string' && photo.trim().length > 0)
+      .map(photo => resolveImageUrl(photo.trim(), ''));
   }
 
   formatDate(dateString: string | undefined): string {

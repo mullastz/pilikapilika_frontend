@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+# Account and shipment routes use noindex, not Disallow: crawlers must be
+# allowed to read the noindex directive. Authentication protects private data.
+Sitemap: https://pilikapilika.com/sitemap.xml

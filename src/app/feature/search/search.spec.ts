@@ -2,6 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { AgentService } from '../../core/services/agent.service';
+import { AuthService } from '../../core/services/auth.service';
+import { Meta } from '@angular/platform-browser';
 import { makeAgent } from '../../core/testing/agent.fixture';
 import { Search } from './search';
 
@@ -28,7 +30,8 @@ describe('Search agent currencies', () => {
     );
     await TestBed.configureTestingModule({
       imports: [Search],
-      providers: [provideRouter([]), { provide: AgentService, useValue: { searchAgents } }],
+      providers: [provideRouter([]), { provide: AgentService, useValue: { searchAgents } },
+        { provide: AuthService, useValue: { isAuthenticated: () => false, getUser: () => null } }],
     }).compileComponents();
     fixture = TestBed.createComponent(Search);
     component = fixture.componentInstance;
@@ -68,6 +71,21 @@ describe('Search agent currencies', () => {
     expect(text).toContain('TZS 0/kg');
     expect(text).not.toContain('$');
     expect(component.selectedPriceCurrency).toBeNull();
+  });
+
+  it('exposes agent profiles as crawlable UUID links with one page heading', () => {
+    expect(fixture.nativeElement.querySelectorAll('h1')).toHaveLength(1);
+    expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain('Search Agents');
+    expect(fixture.nativeElement.querySelectorAll('a[href="/agent/agent-uuid"]')).toHaveLength(4);
+  });
+
+  it('uses noindex for active filters and restores indexing when cleared', () => {
+    const meta = TestBed.inject(Meta);
+    expect(meta.getTag('name="robots"')?.content).toBe('index, follow');
+    component.selectTransport('sea');
+    expect(meta.getTag('name="robots"')?.content).toBe('noindex, follow');
+    component.clearSearch();
+    expect(meta.getTag('name="robots"')?.content).toBe('index, follow');
   });
 
   it('does not apply dollar price bounds before a currency is chosen', async () => {

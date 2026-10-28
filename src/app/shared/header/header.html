@@ -1,27 +1,26 @@
 <!-- Navbar -->
-<div class="absolute top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 flex items-center justify-between bg-white/10 backdrop-blur-lg px-3 sm:px-6 py-2 sm:py-3 rounded-full border border-white/20">
+<div class="absolute top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 z-30 flex items-center justify-between gap-3 bg-white/95 dark:bg-[#1a1a1a]/95 backdrop-blur-lg px-3 sm:px-6 py-2 sm:py-3 rounded-full border border-gray-200 dark:border-gray-700">
 
-    <h1 class="text-orange-400 font-lobster font-bold text-lg sm:text-xl cursor-pointer" routerLink="/">Pilikapilika</h1>
+    <a class="text-orange-400 font-lobster font-bold text-base sm:text-xl cursor-pointer" routerLink="/">Pilikapilika</a>
 
-    <div class="flex items-center gap-2 sm:gap-4">
-
+    <div class="flex items-center gap-1 sm:gap-4">
         <!-- Theme Toggle -->
         <button (click)="toggleTheme()"
-                class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition"
+                class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
                 [attr.aria-label]="isDark ? 'Switch to light mode' : 'Switch to dark mode'">
             <i class="fa-solid" [class.fa-sun]="isDark" [class.fa-moon]="!isDark"></i>
         </button>
 
         @if (!isLoggedIn()) {
           <!-- Get Started Button (Not Logged In) -->
-          <button routerLink="/sign-up" class="bg-orange-500 hover:scale-110 transition text-white px-3 sm:px-5 py-1.5 sm:py-2 rounded-full shadow text-sm sm:text-base">
+          <button routerLink="/sign-up" class="bg-orange-500 hover:scale-110 transition text-white px-2 sm:px-5 py-1.5 sm:py-2 rounded-full shadow text-xs sm:text-base">
               Get Started
           </button>
         } @else {
           <!-- Profile Icon with Dropdown (Logged In) - Desktop Only -->
           <div class="relative profile-dropdown-container hidden sm:block">
             <button (click)="toggleProfileDropdown()"
-                    class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition">
+                    class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
               <i class="fa-solid fa-user"></i>
             </button>
 

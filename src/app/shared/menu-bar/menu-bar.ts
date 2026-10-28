@@ -1,4 +1,4 @@
-import { Component, HostListener, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { Component, HostListener, inject, signal, OnInit, OnDestroy, afterNextRender } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -30,6 +30,14 @@ export class MenuBar implements OnInit, OnDestroy {
   scrollThreshold = 10;
 
   private routerSubscription!: Subscription;
+  private hasRendered = false;
+
+  constructor() {
+    afterNextRender(() => {
+      this.hasRendered = true;
+      this.checkAuthStatus();
+    });
+  }
 
   get menuItems(): MenuItem[] {
     const user = this.authService.getUser();
@@ -69,14 +77,13 @@ export class MenuBar implements OnInit, OnDestroy {
   ];
 
   ngOnInit(): void {
-    this.checkAuthStatus();
     this.updateCurrentRoute(this.router.url);
 
     this.routerSubscription = this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
         this.updateCurrentRoute(event.urlAfterRedirects);
-        this.checkAuthStatus();
+        if (this.hasRendered) this.checkAuthStatus();
       });
   }
 

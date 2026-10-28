@@ -17,7 +17,7 @@
         {{ get('about_us_title', 'About Pilikapilika') }}
       </h1>
       <p class="mt-4 text-base sm:text-lg text-gray-500 dark:text-gray-400 transition-colors">
-        {{ get('about_us_subtitle', '') }}
+        {{ get('about_us_subtitle', 'Connecting customers and businesses with logistics agents in Tanzania.') }}
       </p>
     </section>
 
@@ -27,7 +27,7 @@
         <img [src]="imageUrl()" alt="About us" class="w-full rounded-2xl shadow-lg object-cover max-h-105 mb-8 sm:mb-12" />
       }
       <div class="prose max-w-none">
-        @for (paragraph of get('about_us_body', '').split('\n'); track $index) {
+        @for (paragraph of get('about_us_body', 'Pilikapilika is a logistics marketplace that helps individuals and businesses find agents for shipping and delivery. Compare available services, book a shipment, and follow delivery updates in one place.').split('\n'); track $index) {
           @if (paragraph.trim()) {
             <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed mb-4 transition-colors">{{ paragraph }}</p>
           }
@@ -46,7 +46,7 @@
             {{ get('about_us_mission_title', 'Our Mission') }}
           </h2>
           <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed transition-colors">
-            {{ get('about_us_mission_body', '') }}
+            {{ get('about_us_mission_body', 'Make it easier to find and connect with logistics agents through clear service information and straightforward shipment booking.') }}
           </p>
         </div>
 
@@ -58,7 +58,7 @@
             {{ get('about_us_vision_title', 'Our Vision') }}
           </h2>
           <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed transition-colors">
-            {{ get('about_us_vision_body', '') }}
+            {{ get('about_us_vision_body', 'Help customers, businesses, and logistics providers connect through a dependable logistics marketplace.') }}
           </p>
         </div>
       </div>
