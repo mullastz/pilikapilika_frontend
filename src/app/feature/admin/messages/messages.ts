@@ -22,8 +22,8 @@ export class AdminMessages implements OnInit {
 
   columns: TableColumn[] = [
     { key: 'id', label: 'ID' },
-    { key: 'sender.firstname', label: 'From', format: (v, row) => `${row.sender?.firstname || ''} ${row.sender?.lastname || ''}`.trim() || row.sender?.username || '-' },
-    { key: 'recipient.firstname', label: 'To', format: (v, row) => `${row.recipient?.firstname || ''} ${row.recipient?.lastname || ''}`.trim() || row.recipient?.username || '-' },
+    { key: 'sender.firstname', label: 'From', format: (v, row) => `${row.sender?.firstname || ''} ${row.sender?.lastname || ''}`.trim() || row.sender?.email || '-' },
+    { key: 'recipient.firstname', label: 'To', format: (v, row) => `${row.recipient?.firstname || ''} ${row.recipient?.lastname || ''}`.trim() || row.recipient?.email || '-' },
     { key: 'read_at', label: 'Status', badge: (v) => v
       ? { text: 'Read', class: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' }
       : { text: 'Unread', class: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' }

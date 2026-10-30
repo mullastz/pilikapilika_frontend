@@ -7,7 +7,7 @@ import { JSDOM } from 'jsdom';
 
 const output = fileURLToPath(new URL('../dist/pilikapilika-frontend/browser/', import.meta.url));
 const read = path => readFile(join(output, path), 'utf8');
-const publicPages = ['/', '/search/', '/how-it-works/', '/about-us/', '/contact-us/'];
+const publicPages = ['/', '/search/', '/how-it-works/', '/about-us/', '/contact-us/', '/china-to-tanzania-cargo/'];
 
 test('public pages contain indexable HTML and unique production metadata', async () => {
   const titles = new Set();
@@ -61,11 +61,11 @@ test('sitemap lists only successfully rendered public pages', async () => {
 
 test('Cloudflare rules preserve public agent HTML before app fallbacks', async () => {
   const rules = (await read('_redirects')).split('\n');
-  assert.ok(rules.includes('/sign-in /index.csr.html 200'));
-  assert.ok(rules.includes('/account/* /index.csr.html 200'));
+  assert.ok(rules.includes('/sign-in /index.csr 200'));
+  assert.ok(rules.includes('/account/* /index.csr 200'));
   assert.ok(!rules.some(rule => rule.startsWith('/* ')));
   for (const path of publicPages.filter(path => path !== '/')) {
-    assert.ok(!rules.some(rule => rule.startsWith(`${path.slice(0, -1)} /index.csr.html`)));
+    assert.ok(!rules.some(rule => rule.startsWith(`${path.slice(0, -1)} /index.csr`)));
     assert.doesNotMatch(await read('_headers'), new RegExp(`(^|\\n)${path.slice(0, -1)}/?\\n`));
   }
   assert.match(await read('_headers'), /\/messages\n  X-Robots-Tag: noindex, follow/);
@@ -73,7 +73,7 @@ test('Cloudflare rules preserve public agent HTML before app fallbacks', async (
   try { entries = await readdir(join(output, 'agent')); }
   catch (error) { if (error.code !== 'ENOENT') throw error; }
   for (const id of entries) {
-    const index = rules.indexOf(`/agent/${id}/ /agent/${id}/index.html 200`);
-    if (index !== -1) assert.ok(index < rules.indexOf('/agent/* /index.csr.html 200'));
+    const index = rules.indexOf(`/agent/${id}/ /agent/${id}/ 200`);
+    if (index !== -1) assert.ok(index < rules.indexOf('/agent/* /index.csr 200'));
   }
 });

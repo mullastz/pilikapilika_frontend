@@ -71,6 +71,7 @@
             </div>
 
             <!-- CONTACT -->
+            @if (supportEmail || phoneLink || whatsappLink) {
             <div class="mt-8">
 
                 <h2 class="text-base sm:text-lg font-semibold mb-4 dark:text-white">
@@ -79,65 +80,58 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-                    <!-- CHAT -->
-                    <div class="flex items-center gap-3 bg-orange-100 dark:bg-[#333] p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
-
-                        <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
-                            <i class="fa-solid fa-comments"></i>
-                        </div>
-
-                        <div>
-                            <p class="font-medium text-sm dark:text-white">Live Chat</p>
-                            <p class="text-xs text-gray-500">Chat with support</p>
-                        </div>
-
-                    </div>
-
                     <!-- EMAIL -->
-                    <div class="flex items-center gap-3 bg-orange-100 dark:bg-[#333] p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
+                    @if (supportEmail) {
+                    <a [href]="'mailto:' + supportEmail" class="flex items-center gap-3 bg-orange-100 dark:bg-[#333] p-4 rounded-xl hover:scale-[1.02] transition focus-visible:outline-2 focus-visible:outline-orange-500 focus-visible:outline-offset-2">
 
-                        <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
-                            <i class="fa-solid fa-envelope"></i>
+                        <div class="w-10 h-10 shrink-0 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                            <i class="fa-solid fa-envelope" aria-hidden="true"></i>
                         </div>
 
                         <div>
                             <p class="font-medium text-sm dark:text-white">Email Us</p>
-                            <p class="text-xs text-gray-500">support@pilikapilika.com</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 break-all">{{ supportEmail }}</p>
                         </div>
 
-                    </div>
+                    </a>
+                    }
 
                     <!-- CALL -->
-                    <div class="flex items-center gap-3 bg-orange-100 dark:bg-[#333] p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
+                    @if (phoneLink) {
+                    <a [href]="phoneLink" class="flex items-center gap-3 bg-orange-100 dark:bg-[#333] p-4 rounded-xl hover:scale-[1.02] transition focus-visible:outline-2 focus-visible:outline-orange-500 focus-visible:outline-offset-2">
 
-                        <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
-                            <i class="fa-solid fa-phone"></i>
+                        <div class="w-10 h-10 shrink-0 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                            <i class="fa-solid fa-phone" aria-hidden="true"></i>
                         </div>
 
                         <div>
                             <p class="font-medium text-sm dark:text-white">Call Us</p>
-                            <p class="text-xs text-gray-500">+255 700 000 000</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 break-words">{{ supportPhone }}</p>
                         </div>
 
-                    </div>
+                    </a>
+                    }
 
                     <!-- WHATSAPP -->
-                    <div class="flex items-center gap-3 bg-orange-100 dark:bg-[#333] p-4 rounded-xl hover:scale-[1.02] transition cursor-pointer">
+                    @if (whatsappLink) {
+                    <a [href]="whatsappLink" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 bg-orange-100 dark:bg-[#333] p-4 rounded-xl hover:scale-[1.02] transition focus-visible:outline-2 focus-visible:outline-orange-500 focus-visible:outline-offset-2">
 
-                        <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white">
-                            <i class="fa-brands fa-whatsapp"></i>
+                        <div class="w-10 h-10 shrink-0 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                            <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
                         </div>
 
                         <div>
                             <p class="font-medium text-sm dark:text-white">WhatsApp</p>
-                            <p class="text-xs text-gray-500">Quick support</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 break-words">{{ supportWhatsapp }}</p>
                         </div>
 
-                    </div>
+                    </a>
+                    }
 
                 </div>
 
             </div>
+            }
 
         </div>
 

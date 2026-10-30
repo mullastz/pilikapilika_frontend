@@ -56,7 +56,12 @@
                 <input [(ngModel)]="settings().platform.support_phone" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
               </div>
             </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400">Support email and phone appear on Contact Us. Leave either field blank to hide it.</p>
+            <div>
+              <label for="support-whatsapp" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">WhatsApp Support Number</label>
+              <input id="support-whatsapp" type="tel" autocomplete="tel" [(ngModel)]="settings().platform.support_whatsapp" placeholder="+255700123456" aria-describedby="support-whatsapp-hint" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+              <p id="support-whatsapp-hint" class="text-xs text-gray-500 dark:text-gray-400 mt-1">Include the country code. This number opens WhatsApp support from Help Center.</p>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Support email and phone appear on Contact Us and Help Center. WhatsApp appears in Help Center. Leave a contact field blank to hide that method.</p>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Currency</label>
               <select [(ngModel)]="settings().platform.currency" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200">
@@ -176,11 +181,12 @@
                 <p class="text-xs text-gray-500 mt-1">Separate paragraphs with a blank line.</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Page Image (optional)</label>
+                <label for="about-image" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Header Background Image (optional)</label>
                 @if (contentImageUrl('about_us_image')) {
-                  <img [src]="contentImageUrl('about_us_image')" class="w-full max-w-md rounded-lg mb-2 object-cover max-h-48" />
+                  <img [src]="contentImageUrl('about_us_image')" alt="About Us background preview" class="w-full max-w-md rounded-lg mb-2 object-cover max-h-48" />
                 }
-                <input type="file" accept="image/*" (change)="uploadContentImage($event, 'about_us_image')" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#FF7800] file:text-white hover:file:bg-orange-600" />
+                <input id="about-image" type="file" accept="image/jpeg,image/png,image/webp" [disabled]="uploadingImage() !== null" (change)="uploadContentImage($event, 'about_us_image')" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#FF7800] file:text-white hover:file:bg-orange-600 disabled:opacity-50" />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">The image appears blurred behind the centered page title and subtitle. JPG, PNG or WebP, up to 5 MB.</p>
                 @if (uploadingImage() === 'about_us_image') {
                   <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-circle-notch fa-spin"></i> Uploading...</p>
                 }
@@ -210,8 +216,27 @@
             <hr class="border-gray-200 dark:border-gray-700" />
 
             <div class="space-y-4">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Contact Us</h3>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Contact Us Page</h3>
               <p class="text-sm text-gray-500 dark:text-gray-400">The public contact page uses the support email and phone from the Platform tab. Leave a field blank to hide it.</p>
+              <div>
+                <label for="contact-title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Page Title</label>
+                <input id="contact-title" [(ngModel)]="settings().content.contact_title" maxlength="200" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200" />
+              </div>
+              <div>
+                <label for="contact-subtitle" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subtitle</label>
+                <textarea id="contact-subtitle" [(ngModel)]="settings().content.contact_subtitle" maxlength="1000" rows="3" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200"></textarea>
+              </div>
+              <div>
+                <label for="contact-image" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Header Background Image (optional)</label>
+                @if (contentImageUrl('contact_image')) {
+                  <img [src]="contentImageUrl('contact_image')" alt="Contact Us background preview" class="w-full max-w-md rounded-lg mb-2 object-cover max-h-48" />
+                }
+                <input id="contact-image" type="file" accept="image/jpeg,image/png,image/webp" [disabled]="uploadingImage() !== null" (change)="uploadContentImage($event, 'contact_image')" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#FF7800] file:text-white hover:file:bg-orange-600 disabled:opacity-50" />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">The image appears blurred behind the centered page title and subtitle. JPG, PNG or WebP, up to 5 MB.</p>
+                @if (uploadingImage() === 'contact_image') {
+                  <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Uploading...</p>
+                }
+              </div>
               <div>
                 <label for="contact-hours" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Support opening hours (optional)</label>
                 <textarea id="contact-hours" [(ngModel)]="settings().content.contact_hours" maxlength="300" rows="3" class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm text-gray-700 dark:text-gray-200"></textarea>

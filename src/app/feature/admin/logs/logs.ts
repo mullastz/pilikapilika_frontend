@@ -22,7 +22,7 @@ export class AdminLogs implements OnInit {
 
   columns: TableColumn[] = [
     { key: 'id', label: 'ID' },
-    { key: 'user.firstname', label: 'User', format: (v, row) => `${row.user?.firstname || ''} ${row.user?.lastname || ''}`.trim() || row.user?.username || row.email || '-' },
+    { key: 'user.firstname', label: 'User', format: (v, row) => `${row.user?.firstname || ''} ${row.user?.lastname || ''}`.trim() || row.user?.email || row.email || '-' },
     { key: 'email', label: 'Email' },
     { key: 'loginType', label: 'Type' },
     { key: 'login_time', label: 'Login', format: (v) => v ? new Date(v).toLocaleString() : '-' },

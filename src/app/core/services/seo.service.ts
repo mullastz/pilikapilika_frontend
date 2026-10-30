@@ -13,7 +13,7 @@ export interface PageSeo {
 }
 
 export const SITE_URL = 'https://pilikapilika.com';
-export const SITE_DESCRIPTION = 'Find logistics and delivery agents in Tanzania. Compare services, book shipments, and follow delivery updates with Pilikapilika.';
+export const SITE_DESCRIPTION = 'Find agents for China to Tanzania cargo and shipping. Compare logistics services, discuss your shipment, and manage bookings with Pilikapilika.';
 
 export function hasSearchFiltersInUrl(url: string): boolean {
   const params = new URL(url, SITE_URL).searchParams;
@@ -38,7 +38,9 @@ export class SeoService {
       if (event instanceof NavigationEnd) {
         const path = event.urlAfterRedirects.split(/[?#]/, 1)[0].replace(/\/+$/, '') || '/';
         if (path === '/') {
-          this.update({ title: 'Pilikapilika | Logistics & Delivery Agents in Tanzania', description: SITE_DESCRIPTION, path, index: true });
+          this.update({ title: 'China to Tanzania Cargo Agents | Pilikapilika', description: SITE_DESCRIPTION, path, index: true });
+        } else if (path === '/china-to-tanzania-cargo') {
+          this.update({ title: 'China to Tanzania Cargo & Shipping Guide | Pilikapilika', description: 'Planning cargo from China to Tanzania? Find logistics agents, compare air and sea freight options, and prepare shipment details before booking.', path, index: true });
         } else if (path === '/about-us') {
           this.update({ title: 'About Pilikapilika | Logistics Marketplace in Tanzania', description: 'Learn how Pilikapilika connects customers and businesses with logistics agents for shipping, delivery, and shipment updates.', path, index: true });
         } else if (path === '/search') {
@@ -106,8 +108,9 @@ export class SeoService {
         '@graph': [
           { '@type': 'Organization', '@id': `${SITE_URL}/#organization`, name: 'Pilikapilika', url: `${SITE_URL}/` },
           { '@type': 'WebSite', '@id': `${SITE_URL}/#website`, name: 'Pilikapilika', url: `${SITE_URL}/`, publisher: { '@id': `${SITE_URL}/#organization` } },
+          ...(url ? [{ '@type': 'WebPage', '@id': `${url}#webpage`, url, name: page.title, description: page.description, isPartOf: { '@id': `${SITE_URL}/#website` } }] : []),
         ],
-      });
+      }).replace(/</g, '\\u003c');
       this.document.head.appendChild(schema);
     }
   }

@@ -27,7 +27,7 @@ export class AdminUsers implements OnInit {
 
   columns: TableColumn[] = [
     { key: 'id', label: 'ID' },
-    { key: 'firstname', label: 'Name', format: (v, row) => `${row.firstname || ''} ${row.lastname || ''}`.trim() || row.username },
+    { key: 'firstname', label: 'Name', format: (v, row) => `${row.firstname || ''} ${row.lastname || ''}`.trim() || row.email },
     { key: 'email', label: 'Email' },
     { key: 'role', label: 'Role', badge: (v) => {
       const classes: Record<string, string> = {
@@ -138,7 +138,7 @@ export class AdminUsers implements OnInit {
   }
 
   onDelete(user: User): void {
-    if (!confirm(`Delete user ${user.firstname || user.username}?`)) return;
+    if (!confirm(`Delete user ${user.firstname || user.email}?`)) return;
     this.adminService.deleteUser(user.id).subscribe({
       next: () => {
         this.toastService.success('User deleted');

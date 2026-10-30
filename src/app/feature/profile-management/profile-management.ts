@@ -17,7 +17,7 @@ export class ProfileManagement implements OnInit {
   showLogoutModal = signal(false);
   user: User | null = null;
   isAgent = false;
-  readonly fallbackPhoto = 'assets/landingpage_images/profile1.webp';
+  readonly fallbackPhoto = 'assets/landingpage_images/defaultprofile.jfif';
 
   get profilePhotoSrc(): string {
     return resolveImageUrl(this.user?.profile_photo, this.fallbackPhoto);

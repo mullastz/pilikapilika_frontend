@@ -1,3 +1,4 @@
+@if (!dashboardOnly) {
 <div class="bg-[#f5f5f5] dark:bg-[#0a0a0a] min-h-screen transition-colors duration-300">
 
     <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-5xl mx-auto">
@@ -187,7 +188,7 @@
                      [class.scale-[1.02]]="isHighlighted(shipment.id)"
 >
 
-                    <!-- HEADER ROW: Title + Status Badge (mobile optimized) -->
+                    <!-- Parcel title and additional information -->
                     <div class="mb-3">
                         <!-- Title + Status on same line -->
                         <div class="flex items-start justify-between gap-2">
@@ -206,12 +207,6 @@
                                         <i class="fa-solid fa-question text-gray-500 dark:text-gray-400 text-xs group-hover:text-orange-500 transition-colors"></i>
                                     </button>
                                 </ng-container>
-
-                                <span
-                                  class="status-badge text-[11px] font-semibold px-3 py-1 rounded-full whitespace-nowrap shadow-sm"
-                                  [ngClass]="getStatusClass(shipment.status)">
-                                  {{formatStatus(shipment.status, shipment.transport_method)}}
-                                </span>
                                 <span *ngIf="getExpectedQuantity(shipment) > 1"
                                   class="text-[10px] bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-md font-medium">
                                   {{getExpectedQuantity(shipment)}} units
@@ -249,8 +244,8 @@
                     <!-- Progress Bar Section -->
                     <div class="mb-3">
                         <div class="flex items-center justify-between mb-1.5">
-                            <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Progress</span>
-                            <span class="text-[11px] font-bold" [ngClass]="getStatusClass(shipment.status)">{{getShipmentProgress(shipment.status)}}%</span>
+                            <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{formatStatus(shipment.status, shipment.transport_method)}}</span>
+                            <span class="text-[11px] font-bold text-gray-700 dark:text-gray-300">{{getShipmentProgress(shipment.status)}}%</span>
                         </div>
                         <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
                             <div class="h-2.5 rounded-full transition-all duration-700 ease-out"
@@ -481,9 +476,135 @@
 
 </div>
 
+}
+
+@if (dashboardOnly) {
+  @if (dashboardError()) {
+    <div class="px-4 sm:px-6 py-4 text-sm text-red-500" role="alert">
+      {{ dashboardError() }}
+      <button type="button" (click)="loadDashboardContainers()" class="underline ml-2">Retry</button>
+    </div>
+  }
+  @for (group of dashboardGroups; track group.mode) {
+    @if (dashboardLoading() || (!dashboardError() && activeContainersFor(group.mode).length > 0)) {
+    <section class="px-4 sm:px-6 py-4" [attr.aria-busy]="dashboardLoading()" [attr.aria-label]="group.title">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        @if (dashboardLoading()) {
+          <div class="h-6 w-44 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" aria-hidden="true"></div>
+        } @else {
+        <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <i class="fa-solid text-orange-500" [ngClass]="group.icon"></i>{{ group.title }}
+        </h2>
+        @if (isAgent()) {
+          <button type="button" (click)="manageDashboardGroup(group.mode)" class="text-orange-500 text-sm font-medium hover:underline">View all</button>
+        }
+        }
+      </div>
+      @if (dashboardLoading()) {
+        <span class="sr-only" role="status">Loading {{ group.title.toLowerCase() }}...</span>
+        <div class="flex gap-4 overflow-x-auto pb-3 scrollbar-hide" aria-hidden="true">
+          @for (placeholder of [1, 2, 3]; track placeholder) {
+            <div class="w-72 sm:w-80 min-h-36 shrink-0 bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow animate-pulse flex flex-col justify-between">
+              <div class="flex items-start justify-between gap-3">
+                <div class="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div class="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+              </div>
+              <div class="flex items-end justify-between gap-3 mt-6">
+                <div class="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div class="h-4 w-28 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="flex gap-4 overflow-x-auto pb-3 scrollbar-hide">
+          @for (container of activeContainersFor(group.mode); track container.id) {
+            <button type="button" (click)="openDashboardContainer(container)" class="w-72 sm:w-80 min-h-36 shrink-0 flex flex-col text-left bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow hover:shadow-lg transition">
+              <div class="flex items-start justify-between gap-3 w-full">
+                <p class="flex-1 min-w-0 font-semibold text-gray-900 dark:text-white break-words">{{ container.reference_number }}</p>
+                <span class="shrink-0 max-w-[55%] text-xs px-2 py-1 rounded-full text-right" [ngClass]="getStatusClass(container.status)">{{ formatStatus(container.status, group.mode) }}</span>
+              </div>
+              <div class="flex items-end justify-between gap-3 w-full mt-auto pt-6">
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ container.shipments_count || 0 }} shipments</p>
+                <span class="text-sm text-orange-500 text-right ml-auto">View {{ group.mode === 'air' ? 'Batch' : 'Container' }} <i class="fa-solid fa-arrow-right ml-1"></i></span>
+              </div>
+            </button>
+          }
+        </div>
+      }
+    </section>
+    }
+  }
+
+  @if (error()) {
+    <div class="px-4 sm:px-6 py-4 text-sm text-red-500" role="alert">
+      {{ error() }}
+      <button type="button" (click)="loadDashboardParcels()" class="underline ml-2">Retry</button>
+    </div>
+  }
+  @if (loading() || shipments().length > 0) {
+    <section class="px-4 sm:px-6 py-4" [attr.aria-busy]="loading()" aria-label="All Parcels">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        @if (loading()) {
+          <div class="h-6 w-36 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" aria-hidden="true"></div>
+        } @else {
+          <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">All Parcels</h2>
+          <button type="button" (click)="viewAllParcels()" class="text-orange-500 text-sm font-medium hover:underline">View all</button>
+        }
+      </div>
+      @if (loading()) {
+        <span class="sr-only" role="status">Loading parcels...</span>
+        <div class="flex gap-4 overflow-x-auto pb-3 scrollbar-hide" aria-hidden="true">
+          @for (placeholder of [1, 2, 3]; track placeholder) {
+            <div class="w-72 sm:w-80 shrink-0 bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow animate-pulse">
+              <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div class="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+              </div>
+              <div class="h-4 w-40 bg-gray-200 dark:bg-gray-700 rounded mb-5"></div>
+              <div class="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+              <div class="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded mt-4 ml-auto"></div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="flex gap-4 overflow-x-auto pb-3 scrollbar-hide">
+          @for (shipment of shipments(); track shipment.id) {
+            <button type="button" (click)="openViewModal(shipment)" class="w-72 sm:w-80 shrink-0 text-left bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow hover:shadow-lg transition">
+              <div class="flex items-start justify-between gap-3">
+                <p class="flex-1 min-w-0 font-semibold text-gray-900 dark:text-white break-words">{{ shipment.title || shipment.tracking_number || 'Parcel' }}</p>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 truncate">
+                @if (isAgent()) {
+                  Customer: {{ shipment.user?.firstname }} {{ shipment.user?.lastname }}
+                } @else {
+                  Agent: {{ shipment.agent?.firstname }} {{ shipment.agent?.lastname }}
+                }
+              </p>
+              <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-4 mb-1">
+                <span>{{formatStatus(shipment.status, shipment.transport_method)}}</span><span>{{ getShipmentProgress(shipment.status) }}%</span>
+              </div>
+              <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div class="h-full rounded-full" [ngClass]="getShipmentProgressColor(shipment.status)" [style.width.%]="getShipmentProgress(shipment.status)"></div>
+              </div>
+              <p class="text-sm text-orange-500 mt-4 text-right">View Parcel <i class="fa-solid fa-arrow-right ml-1"></i></p>
+            </button>
+          }
+          @if (dashboardParcelsHasMore()) {
+            <button type="button" (click)="loadDashboardParcels(true)" [disabled]="dashboardParcelsLoadingMore()" class="w-40 shrink-0 flex flex-col items-center justify-center gap-2 bg-white dark:bg-[#1a1a1a] rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-4 text-orange-500 disabled:opacity-50">
+              <i class="fa-solid" [ngClass]="dashboardParcelsLoadingMore() ? 'fa-circle-notch fa-spin' : 'fa-chevron-right'"></i>
+              {{ dashboardParcelsLoadingMore() ? 'Loading...' : 'Load More' }}
+            </button>
+          }
+        </div>
+      }
+    </section>
+  }
+}
+
 <!-- Confirmation Modal -->
 @if (confirmModalOpen()) {
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeConfirmModal()">
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-[150] p-4" (click)="closeConfirmModal()">
     <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 max-w-sm w-full shadow-2xl" (click)="$event.stopPropagation()">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ confirmModalConfig().title }}</h3>
@@ -497,7 +618,7 @@
           Cancel
         </button>
         <button (click)="executeConfirmedAction()" class="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
-          Confirm
+          {{ confirmationButtonLabel() }}
         </button>
       </div>
     </div>
@@ -552,74 +673,62 @@
 
       <!-- Containers List -->
       <div class="p-6">
-        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Your {{modalTermPlural}}</h4>
-        
-        <div *ngIf="containersLoading()" class="text-center py-8">
-          <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
+        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{{ guidingShipment() ? 'Assigned ' + modalTermPlural : 'Your ' + modalTermPlural }}</h4>
+        <div *ngIf="guidingShipment()" class="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl text-sm text-orange-700 dark:text-orange-300">
+          <p><strong>{{ guidingShipment()!.title || 'This parcel' }}</strong> follows the status of the {{ modalTermPlural.toLowerCase() }} below. Use their status buttons to update the parcel and the other parcels inside.</p>
         </div>
+        <label class="sr-only" for="container-search">Search {{ modalTermPlural }}</label>
+        <div class="relative mb-4">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+          <input id="container-search" type="search" [ngModel]="containerSearch()" (ngModelChange)="containerSearch.set($event)"
+            [placeholder]="'Search ' + modalTermPlural.toLowerCase() + ' by name or status'"
+            class="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-100 dark:bg-[#222] dark:text-white outline-none focus:ring-2 focus:ring-orange-500" />
+        </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Ordered from loading to the final delivery stage.</p>
 
-        <div *ngIf="!containersLoading() && containers().length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <div *ngIf="containersLoading() || containerGuideLoading()" class="text-center py-8" role="status">
+          <span class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></span>
+          <span class="sr-only">Loading {{ modalTermPlural }}</span>
+        </div>
+        <div *ngIf="containerGuideError()" class="text-sm text-red-500 mb-4" role="alert">
+          {{ containerGuideError() }}
+          <button type="button" (click)="retryContainerGuide()" class="underline ml-2">Retry</button>
+        </div>
+        <div *ngIf="!containersLoading() && !containerGuideLoading() && !containerGuideError() && filteredContainers().length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
           <i class="fa-solid fa-box-open text-3xl mb-2"></i>
-          <p class="text-sm">No {{modalTermPlural.toLowerCase()}} yet</p>
+          <p class="text-sm">{{ containerSearch() ? 'No matching ' + modalTermPlural.toLowerCase() : 'No ' + modalTermPlural.toLowerCase() + ' found' }}</p>
         </div>
 
         <div *ngIf="selectedShipmentForContainer()" class="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
-          <p class="text-sm text-orange-700 dark:text-orange-300">
-            <i class="fa-solid fa-box mr-1"></i>
-            Loading shipment: <strong>{{selectedShipmentForContainer()!.title || 'Untitled'}}</strong>
-          </p>
-          <p class="text-xs text-orange-600 dark:text-orange-400 mt-1">Select a draft {{modalTerm.toLowerCase()}} below to add this shipment.</p>
+          <p class="text-sm text-orange-700 dark:text-orange-300"><i class="fa-solid fa-box mr-1"></i>Loading parcel: <strong>{{selectedShipmentForContainer()!.title || 'Untitled'}}</strong></p>
+          <p class="text-xs text-orange-600 dark:text-orange-400 mt-1">Select a draft {{modalTerm.toLowerCase()}} below to add this parcel.</p>
         </div>
 
-        <div *ngIf="!containersLoading() && containers().length > 0" class="space-y-3">
-          <div *ngFor="let container of containers()" 
-               class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-[#222] transition">
-            <div class="flex justify-between items-start mb-2">
-              <div>
-                <p class="font-medium dark:text-white">{{container.reference_number}}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  Status: <span class="font-medium" [ngClass]="getStatusClass(container.status)">{{formatStatus(container.status, container.transport_method)}}</span>
-                  <span *ngIf="container.shipments_count"> &middot; {{container.shipments_count}} shipment(s)</span>
-                </p>
+        <div *ngIf="!containersLoading() && !containerGuideLoading() && !containerGuideError()" class="space-y-3">
+          <div *ngFor="let container of filteredContainers()" class="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+            <div class="flex justify-between items-start gap-3 mb-3">
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold dark:text-white break-words">{{container.reference_number}}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{formatStatus(container.status, container.transport_method)}} &middot; {{container.shipments_count || 0}} parcel shipment(s)</p>
               </div>
-              <div class="flex gap-2 flex-wrap justify-end">
-                <button
-                  *ngIf="selectedShipmentForContainer() && container.status === 'draft'"
-                  (click)="loadShipmentToContainer(container.id)"
-                  [disabled]="updatingShipment() === selectedShipmentForContainer()!.id"
-                  class="px-3 py-1 text-xs bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 transition">
-                  <span *ngIf="updatingShipment() === selectedShipmentForContainer()!.id" class="animate-spin inline-block w-3 h-3 border border-white border-t-transparent rounded-full mr-1"></span>
-                  Add Shipment
-                </button>
-                <button
-                  *ngIf="container.status === 'draft'"
-                  (click)="openQrScanner('agent_load_container', { containerId: container.id })"
-                  class="px-3 py-1 text-xs bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition">
-                  <i class="fa-solid fa-camera mr-1"></i> Scan to Load
-                </button>
-                <button
-                  *ngIf="container.status === 'draft'"
-                  (click)="closeContainer(container.id)"
-                  [disabled]="updatingContainer() === container.id"
-                  class="px-3 py-1 text-xs bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:bg-gray-300 transition">
-                  <span *ngIf="updatingContainer() === container.id" class="animate-spin inline-block w-3 h-3 border border-white border-t-transparent rounded-full mr-1"></span>
-                  Close
-                </button>
-                <button
-                  *ngIf="getNextContainerStatus(container.status)"
-                  (click)="updateContainerStatus(container.id, getNextContainerStatus(container.status)!)"
-                  [disabled]="updatingContainer() === container.id"
-                  class="px-3 py-1 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 transition">
-                  <span *ngIf="updatingContainer() === container.id" class="animate-spin inline-block w-3 h-3 border border-white border-t-transparent rounded-full mr-1"></span>
-                  {{getNextContainerStatusLabel(container.status)}}
-                </button>
-              </div>
+              <button type="button" (click)="openContainerDetail(container)" class="shrink-0 text-xs text-orange-500 hover:underline text-right">
+                View Details <i class="fa-solid fa-chevron-right ml-1"></i>
+              </button>
             </div>
-            <button
-              (click)="openContainerDetail(container)"
-              class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
-              View Details <i class="fa-solid fa-chevron-right"></i>
-            </button>
+            <div class="flex gap-2 flex-wrap border-t border-gray-100 dark:border-gray-700 pt-3">
+              <button type="button" *ngIf="selectedShipmentForContainer() && container.status === 'draft'" (click)="loadShipmentToContainer(container.id)"
+                [disabled]="updatingShipment() === selectedShipmentForContainer()!.id"
+                class="px-3 py-2 text-xs bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 transition">Add Parcel to {{ modalTerm }}</button>
+              <button type="button" *ngIf="container.status === 'draft'" (click)="openQrScanner('agent_load_container', { containerId: container.id })"
+                class="px-3 py-2 text-xs bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"><i class="fa-solid fa-camera mr-1"></i>Scan Parcel to Load</button>
+              <button type="button" *ngIf="container.status === 'draft'" (click)="closeContainer(container.id)" [disabled]="updatingContainer() === container.id"
+                class="px-3 py-2 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition">
+                <i *ngIf="updatingContainer() === container.id" class="fa-solid fa-circle-notch fa-spin mr-1"></i>Close {{ modalTerm }}</button>
+              <button type="button" *ngIf="getNextContainerStatus(container.status)" (click)="updateContainerStatus(container.id, getNextContainerStatus(container.status)!)" [disabled]="updatingContainer() === container.id"
+                class="px-3 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">
+                <i *ngIf="updatingContainer() === container.id" class="fa-solid fa-circle-notch fa-spin mr-1"></i>Update to {{getNextContainerStatusLabel(container.status)}}</button>
+              <p *ngIf="container.status === 'at_tanzania_warehouse'" class="text-xs text-gray-500 dark:text-gray-400">Final transport stage reached. Confirm delivery from each parcel when it is collected.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -795,15 +904,17 @@
             {{formatStatus(selectedContainer()!.status, selectedContainer()!.transport_method)}}
           </span>
         </div>
+        <p *ngIf="containerDetailLoading()" class="text-sm text-gray-500 py-4" role="status">Loading shipments...</p>
+        <p *ngIf="containerDetailError()" class="text-sm text-red-500 py-4" role="alert">{{ containerDetailError() }}</p>
         <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Shipments in {{modalTerm}}</h4>
-        <div *ngIf="!hasContainerShipments()" class="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
+        <div *ngIf="!containerDetailLoading() && !containerDetailError() && !hasContainerShipments()" class="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
           No shipments in this {{modalTerm.toLowerCase()}}
         </div>
         <div *ngIf="hasContainerShipments()" class="space-y-2">
           <div *ngFor="let s of getContainerShipments()" class="bg-gray-50 dark:bg-[#222] rounded-lg p-3">
             <p class="text-sm font-medium dark:text-white">{{s.title || 'Untitled'}}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400">
-              Status: {{formatStatus(s.status)}}
+              Status: {{formatStatus(s.status, s.transport_method)}}
               <span *ngIf="s.pivot_quantity" class="ml-2 text-orange-500 font-medium">&middot; Qty in this {{modalTerm.toLowerCase()}}: {{s.pivot_quantity}}</span>
             </p>
 

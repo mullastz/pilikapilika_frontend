@@ -33,7 +33,8 @@ describe('LandingPage', () => {
   it('renders useful fallback copy and crawlable UUID agent links', () => {
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelectorAll('h1')).toHaveLength(1);
-    expect(element.querySelector('h1')?.textContent).toContain('logistics and delivery agents in Tanzania');
+    expect(element.querySelector('h1')?.textContent).toContain('China to Tanzania cargo agents');
+    expect(element.querySelector('a[href="/china-to-tanzania-cargo"]')).not.toBeNull();
     expect(element.querySelector('a[href="/agent/agent-uuid"]')).not.toBeNull();
     expect(element.querySelector('img[fetchpriority="high"]')?.getAttribute('alt')).toBeTruthy();
   });

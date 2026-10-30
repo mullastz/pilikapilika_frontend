@@ -481,7 +481,7 @@
             <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-3"></i>
             <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">Click to upload product photos (bulk allowed)</p>
             <p class="text-xs text-gray-400">Supports: JPG, PNG, WEBP (Max 5MB each) — {{ productPhotos.length }} / 12 uploaded</p>
-            <input #fileInput type="file" accept="image/*" multiple (change)="onPhotoUpload($event)" class="hidden" />
+            <input #fileInput type="file" accept="image/jpeg,image/png,image/webp" multiple (change)="onPhotoUpload($event)" class="hidden" />
           </div>
 
           <p *ngIf="productPhotos.length >= 12" class="text-xs text-orange-500 text-center mb-4">Maximum 12 photos reached.</p>

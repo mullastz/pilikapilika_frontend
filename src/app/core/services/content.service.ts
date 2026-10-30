@@ -15,8 +15,12 @@ export interface SiteContent {
   hero_title?: string;
   hero_subtitle?: string;
   hero_image?: string;
+  contact_title?: string;
+  contact_subtitle?: string;
+  contact_image?: string;
   contact_email?: string;
   contact_phone?: string;
+  contact_whatsapp?: string;
   contact_hours?: string;
   [key: string]: string | undefined;
 }

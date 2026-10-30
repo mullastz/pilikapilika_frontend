@@ -13,6 +13,7 @@ export const routes: Routes = [
   { path: '', loadComponent: () => import('./feature/landing-page/landing-page').then(m => m.LandingPage) },
   { path: 'about-us', loadComponent: () => import('./feature/about-us/about-us').then(m => m.AboutUs) },
   { path: 'how-it-works', loadComponent: () => import('./feature/how-it-works/how-it-works').then(m => m.HowItWorks) },
+  { path: 'china-to-tanzania-cargo', loadComponent: () => import('./feature/china-to-tanzania-cargo/china-to-tanzania-cargo').then(m => m.ChinaToTanzaniaCargo) },
   { path: 'contact-us', loadComponent: () => import('./feature/contact-us/contact-us').then(m => m.ContactUs) },
   { path: 'home', loadComponent: () => import('./feature/home/home').then(m => m.Home), canActivate: [ProfileCompletionGuard] },
   { path: 'profile-management', loadComponent: () => import('./feature/profile-management/profile-management').then(m => m.ProfileManagement), canActivate: [ProfileCompletionGuard] },

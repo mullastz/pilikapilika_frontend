@@ -129,7 +129,7 @@ export class Search implements OnInit, OnDestroy {
   }
 
   getAgentImage(agent: Agent): string {
-    return resolveImageUrl(agent.profile_photo || agent.image, 'assets/landingpage_images/profile4.jpg');
+    return resolveImageUrl(agent.profile_photo || agent.image, 'assets/landingpage_images/defaultprofile.jfif');
   }
 
   // Filter options - matching agent-details.ts

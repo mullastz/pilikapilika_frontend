@@ -1,6 +1,6 @@
 <!-- Mobile view -->
 <div class="min-h-screen lg:hidden bg-cover bg-center bg-no-repeat relative"
-     style="background-image: url('assets/landingpage_images/logistics.webp');">
+     style="background-image: url('assets/landingpage_images/signup image for mobile.webp');">
 
   <!-- Main content -->
   <div class="relative z-10 min-h-screen flex flex-col">
@@ -25,23 +25,6 @@
     <div class="bg-white dark:bg-[#0a0a0a] rounded-t-3xl px-6 pt-8 pb-10 shadow-2xl overflow-y-auto">
 
       <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="space-y-4">
-
-        <!-- Username -->
-        <div class="relative">
-          <label class="block text-sm font-medium text-[#FF7800] dark:text-[#FF7800] mb-1">Username</label>
-          <div class="relative">
-            <i class="fa-solid fa-at absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
-            <input formControlName="username" type="text"
-                   class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:text-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none"
-                   placeholder="johndoe" />
-          </div>
-          @if (f['username'].touched && f['username'].hasError('required')) {
-            <p class="mt-1 text-sm text-red-600">Username is required</p>
-          }
-          @if (f['username'].touched && f['username'].hasError('minlength')) {
-            <p class="mt-1 text-sm text-red-600">Min 3 characters</p>
-          }
-        </div>
 
         <!-- Email -->
         <div class="relative">
@@ -131,7 +114,7 @@
       </form>
 
       <!-- Already have account -->
-      <div class="text-right mt-6 text-sm text-gray-600 dark:text-gray-400">
+      <div class="text-center mt-6 text-sm text-gray-600 dark:text-gray-400">
         Already have an account?
         <a routerLink="/sign-in" class="text-[#FF7800] underline font-medium ml-1">Sign In</a>
       </div>
@@ -198,23 +181,6 @@
           <p class="text-gray-500 dark:text-gray-400 mb-6">Quick registration - complete your profile later</p>
 
           <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="space-y-4 flex-1">
-
-            <!-- Username -->
-            <div class="relative">
-              <label class="block text-sm font-medium text-[#FF7800] mb-1">Username</label>
-              <div class="relative">
-                <i class="fa-solid fa-at absolute left-4 top-1/2 -translate-y-1/2 text-[#FF7800]"></i>
-                <input formControlName="username" type="text"
-                       class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#0a0a0a] dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-1 focus:ring-primary outline-none"
-                       placeholder="johndoe" />
-              </div>
-              @if (f['username'].touched && f['username'].hasError('required')) {
-                <p class="mt-1 text-sm text-red-600">Username is required</p>
-              }
-              @if (f['username'].touched && f['username'].hasError('minlength')) {
-                <p class="mt-1 text-sm text-red-600">Min 3 characters</p>
-              }
-            </div>
 
             <!-- Email -->
             <div class="relative">
@@ -302,6 +268,11 @@
             </button>
 
           </form>
+
+          <p class="text-center mt-5 text-sm text-gray-600 dark:text-gray-400">
+            Already have an account?
+            <a routerLink="/sign-in" class="text-[#FF7800] underline font-medium ml-1">Sign In</a>
+          </p>
 
         </div>
       </div>

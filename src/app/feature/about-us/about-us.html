@@ -12,20 +12,15 @@
   } @else {
 
     <!-- HERO -->
-    <section class="px-4 sm:px-6 py-12 sm:py-20 text-center max-w-4xl mx-auto">
-      <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white transition-colors">
-        {{ get('about_us_title', 'About Pilikapilika') }}
-      </h1>
-      <p class="mt-4 text-base sm:text-lg text-gray-500 dark:text-gray-400 transition-colors">
-        {{ get('about_us_subtitle', 'Connecting customers and businesses with logistics agents in Tanzania.') }}
-      </p>
-    </section>
+    <div class="px-4 sm:px-6 py-6 sm:py-10 max-w-5xl mx-auto">
+      <app-page-hero
+        [title]="get('about_us_title', 'About Pilikapilika')"
+        [subtitle]="get('about_us_subtitle', 'Connecting customers and businesses with logistics agents in Tanzania.')"
+        [imageUrl]="imageUrl()" />
+    </div>
 
-    <!-- IMAGE + BODY -->
+    <!-- BODY -->
     <section class="px-4 sm:px-6 pb-12 sm:pb-20 max-w-5xl mx-auto">
-      @if (imageUrl()) {
-        <img [src]="imageUrl()" alt="About us" class="w-full rounded-2xl shadow-lg object-cover max-h-105 mb-8 sm:mb-12" />
-      }
       <div class="prose max-w-none">
         @for (paragraph of get('about_us_body', 'Pilikapilika is a logistics marketplace that helps individuals and businesses find agents for shipping and delivery. Compare available services, book a shipment, and follow delivery updates in one place.').split('\n'); track $index) {
           @if (paragraph.trim()) {

@@ -1,6 +1,5 @@
 // Simplified registration - only required fields
 export interface SignupRequest {
-  username: string;
   email: string;
   password: string;
   password_confirmation: string;
@@ -28,7 +27,7 @@ export interface SignupResponse {
 }
 
 export interface LoginRequest {
-  login: string; // email or username
+  login: string; // email address
   password: string;
 }
 
@@ -73,7 +72,6 @@ export interface User {
   firstname: string;
   lastname: string;
   gender: string;
-  username: string;
   email: string;
   phone: string | null;
   region: string | null;

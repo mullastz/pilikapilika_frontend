@@ -1,5 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { QRCodeComponent } from 'angularx-qrcode';
@@ -370,23 +371,34 @@ export class QrGenerator implements OnInit {
 
   onPhotoUpload(event: Event) {
     const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      const remainingSlots = 12 - this.productPhotos.length;
-      const filesToProcess = Math.min(input.files.length, remainingSlots);
-      if (input.files.length > remainingSlots) {
-        alert(`You can upload at most 12 images. Only the first ${filesToProcess} will be added.`);
+    const files = Array.from(input.files || []);
+    const remainingSlots = Math.max(0, 12 - this.productPhotos.length);
+    const errors: string[] = [];
+    if (files.length > remainingSlots) errors.push(`You can upload at most 12 images. Only the first ${remainingSlots} will be added.`);
+    for (const file of files.slice(0, remainingSlots)) {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        errors.push(`${file.name}: choose a JPG, PNG or WEBP image.`);
+        continue;
       }
-      for (let i = 0; i < filesToProcess; i++) {
-        const file = input.files[i];
-        if (!file.type.startsWith('image/')) continue;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          this.productPhotos.push({ file, preview: e.target?.result as string });
-          this.cdr.detectChanges();
-        };
-        reader.readAsDataURL(file);
+      if (file.size > 5 * 1024 * 1024) {
+        errors.push(`${file.name}: each image must not exceed 5MB.`);
+        continue;
       }
+      const photo = { file, preview: '' };
+      this.productPhotos.push(photo);
+      const reader = new FileReader();
+      reader.onload = () => {
+        photo.preview = String(reader.result || '');
+        this.cdr.detectChanges();
+      };
+      reader.onerror = () => {
+        this.productPhotos = this.productPhotos.filter(item => item !== photo);
+        this.errorMessage = `Unable to read ${file.name}. Please select it again.`;
+        this.cdr.detectChanges();
+      };
+      reader.readAsDataURL(file);
     }
+    this.errorMessage = errors.length ? errors.join(' ') : null;
     input.value = '';
     if (this.fileInput) this.fileInput.nativeElement.value = '';
   }
@@ -411,7 +423,7 @@ export class QrGenerator implements OnInit {
   // ── QR generation ───────────────────────────────────────────────
 
   generateQR() {
-    if (!this.isFormValid()) return;
+    if (!this.isFormValid() || this.isLoading) return;
     this.isLoading = true;
     this.errorMessage = null;
 
@@ -443,9 +455,13 @@ export class QrGenerator implements OnInit {
       setTimeout(() => this.scrollToQRCode(), 300);
     };
 
-    const handleError = (err: any) => {
+    const handleError = (err: HttpErrorResponse) => {
       this.isLoading = false;
-      const msg = err?.error?.message || err?.error?.errors?.photos?.[0] || 'Failed to save QR code. Please try again.';
+      const validationErrors: unknown[] = Object.values(err.error?.errors || {}).flat();
+      const firstError = validationErrors.find((value): value is string => typeof value === 'string');
+      const msg = err.status === 413
+        ? 'The selected photos exceed the server upload limit. Use fewer or smaller photos and try again.'
+        : firstError || err.error?.message || 'Failed to save QR code. Please try again.';
       setTimeout(() => { this.errorMessage = msg; this.cdr.detectChanges(); });
     };
 
@@ -457,7 +473,6 @@ export class QrGenerator implements OnInit {
     };
 
     if (this.editUuid) {
-      formData.append('_method', 'PUT');
       this.qrCodeService.update(this.editUuid, formData).subscribe({
         next: (response: any) => {
           const qrData = response.data?.qr_code || response.data;

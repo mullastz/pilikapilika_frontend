@@ -1,0 +1,78 @@
+<div class="bg-[#f5f5f5] dark:bg-[#0a0a0a] min-h-screen text-gray-900 dark:text-white">
+  <div class="relative h-20 sm:h-24"><app-header /></div>
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 pb-16">
+    <nav aria-label="Breadcrumb" class="pt-6 text-sm text-gray-600 dark:text-gray-400">
+      <a routerLink="/" class="hover:text-orange-600 hover:underline">Home</a>
+      <span aria-hidden="true" class="mx-2">/</span>
+      <span aria-current="page">China to Tanzania cargo</span>
+    </nav>
+
+    <div class="py-6 sm:py-10">
+      <app-page-hero
+        title="China to Tanzania cargo and shipping agents"
+        subtitle="Planning to ship goods from China to Tanzania? Use Pilikapilika to find logistics agents, review their services, and discuss your cargo before booking. Confirm with each agent that they currently handle your collection point in China and delivery destination in Tanzania."
+        imageUrl="assets/landingpage_images/deliveryman.webp">
+        <div class="flex flex-wrap justify-center gap-3 mt-7">
+          <a routerLink="/search" class="inline-flex items-center px-5 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-medium focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-400">Find a cargo agent</a>
+          <a routerLink="/how-it-works" class="inline-flex items-center px-5 py-3 rounded-xl border border-white/60 text-white hover:bg-white/10 hover:border-white font-medium focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">How booking works</a>
+        </div>
+      </app-page-hero>
+    </div>
+
+    <section aria-labelledby="cargo-options" class="mb-10">
+      <h2 id="cargo-options" class="text-2xl font-bold">Compare air cargo and sea cargo options</h2>
+      <p class="mt-3 text-gray-600 dark:text-gray-300 leading-relaxed">Start with your goods and delivery needs. Check an agent's listed transport methods, then ask about the specific China-to-Tanzania service they can arrange.</p>
+      <div class="grid sm:grid-cols-2 gap-5 mt-5">
+        <article class="rounded-2xl bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 p-6">
+          <h3 class="text-xl font-semibold">Questions about air freight</h3>
+          <p class="mt-3 text-gray-600 dark:text-gray-300 leading-relaxed">If an agent offers air cargo, ask whether your items are accepted, how the chargeable weight is calculated, and which collection and delivery points the quote covers. Request the current departure arrangements and an estimated arrival date.</p>
+        </article>
+        <article class="rounded-2xl bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 p-6">
+          <h3 class="text-xl font-semibold">Questions about sea freight</h3>
+          <p class="mt-3 text-gray-600 dark:text-gray-300 leading-relaxed">If an agent offers sea cargo, ask how your goods will be measured and charged, when cargo is collected, and how shipment updates are provided. Confirm the destination handling and collection or delivery arrangements in Tanzania.</p>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="cargo-quote" class="mb-10 rounded-2xl bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/40 p-6 sm:p-8">
+      <h2 id="cargo-quote" class="text-2xl font-bold">Get a clear China to Tanzania cargo quote</h2>
+      <p class="mt-3 text-gray-600 dark:text-gray-300 leading-relaxed">A useful quote explains the full service for your goods. Share the same shipment details with each agent so you can compare what is included.</p>
+      <ul class="mt-4 space-y-3 list-disc pl-5 text-gray-600 dark:text-gray-300 leading-relaxed">
+        <li>Describe the goods, number of items, packaging, weight, and dimensions.</li>
+        <li>Provide the collection location in China and your destination in Tanzania.</li>
+        <li>Confirm whether the price is per kilogram, per cubic metre (CBM), per item, or for the whole shipment.</li>
+        <li>Check the currency and ask which collection, transport, handling, and final delivery charges are included.</li>
+        <li>Ask the agent to explain any documentation, clearance arrangements, or additional charges that apply to your shipment.</li>
+      </ul>
+      <p class="mt-4 text-gray-600 dark:text-gray-300 leading-relaxed">Agree on these details with your agent before booking or sending goods to a collection point. Prices and service availability depend on the agent and shipment.</p>
+    </section>
+
+    <section aria-labelledby="cargo-booking" class="mb-10">
+      <h2 id="cargo-booking" class="text-2xl font-bold">Manage your shipment with Pilikapilika</h2>
+      <ol class="mt-5 space-y-4 list-decimal pl-5 text-gray-600 dark:text-gray-300 leading-relaxed">
+        <li><a routerLink="/search" class="text-orange-600 dark:text-orange-400 font-medium hover:underline">Browse logistics agents</a> and review their public profiles. Confirm China-to-Tanzania route coverage with your chosen agent.</li>
+        <li>Prepare your parcel or product details, including descriptions, quantities, supplier information, and useful photos.</li>
+        <li><a routerLink="/sign-up" class="text-orange-600 dark:text-orange-400 font-medium hover:underline">Create an account</a>, complete your profile, and follow the shipment booking steps. Your agent reviews the booking request.</li>
+        <li>Use your account to follow shipment status updates and discuss arrangements with your agent.</li>
+      </ol>
+    </section>
+
+    <section aria-labelledby="cargo-questions" class="mb-10">
+      <h2 id="cargo-questions" class="text-2xl font-bold">China to Tanzania shipping questions</h2>
+      <div class="mt-5 space-y-3">
+        @for (item of questions; track item.question) {
+          <details class="rounded-xl bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 p-5">
+            <summary class="font-semibold cursor-pointer">{{ item.question }}</summary>
+            <p class="mt-3 text-gray-600 dark:text-gray-300 leading-relaxed">{{ item.answer }}</p>
+          </details>
+        }
+      </div>
+    </section>
+
+    <section class="border-t border-gray-200 dark:border-gray-800 pt-8">
+      <h2 class="text-xl font-semibold">Need help getting started?</h2>
+      <p class="mt-3 text-gray-600 dark:text-gray-300 leading-relaxed">Read our <a routerLink="/how-it-works" class="text-orange-600 dark:text-orange-400 hover:underline">shipment booking guide</a> or <a routerLink="/contact-us" class="text-orange-600 dark:text-orange-400 hover:underline">contact Pilikapilika support</a> for help using the platform. Ask your agent about cargo availability, quotes, and shipment arrangements.</p>
+    </section>
+  </main>
+  <app-footer />
+</div>

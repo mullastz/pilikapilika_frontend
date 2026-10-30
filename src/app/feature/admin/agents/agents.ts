@@ -30,7 +30,7 @@ export class AdminAgents implements OnInit {
 
   columns: TableColumn[] = [
     { key: 'id', label: 'ID' },
-    { key: 'firstname', label: 'Name', format: (v, row) => `${row.firstname || ''} ${row.lastname || ''}`.trim() || row.username },
+    { key: 'firstname', label: 'Name', format: (v, row) => `${row.firstname || ''} ${row.lastname || ''}`.trim() || row.email },
     { key: 'email', label: 'Email' },
     { key: 'region', label: 'Region' },
     { key: 'is_agent_verified', label: 'Status', badge: (v) => v

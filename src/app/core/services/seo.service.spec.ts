@@ -43,11 +43,32 @@ describe('SeoService', () => {
     expect(document.getElementById('site-schema')).toBeNull();
   });
 
-  it.each(['/search', '/how-it-works', '/contact-us'])('indexes the public page %s', path => {
+  it.each(['/search', '/how-it-works', '/contact-us', '/china-to-tanzania-cargo'])('indexes the public page %s', path => {
     seo.start();
     events.next(new NavigationEnd(1, path, path));
     expect(TestBed.inject(Meta).getTag('name="robots"')?.content).toBe('index, follow');
     expect(document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href).toBe(`${SITE_URL}${path}/`);
+  });
+
+  it('provides route-specific cargo metadata and structured page identity', () => {
+    seo.start();
+    events.next(new NavigationEnd(1, '/china-to-tanzania-cargo?utm_source=share', '/china-to-tanzania-cargo?utm_source=share'));
+    expect(TestBed.inject(Title).getTitle()).toBe('China to Tanzania Cargo & Shipping Guide | Pilikapilika');
+    const schema = JSON.parse(document.getElementById('site-schema')!.textContent!);
+    const webpage = schema['@graph'].find((item: { '@type': string }) => item['@type'] === 'WebPage');
+    expect(webpage.url).toBe(`${SITE_URL}/china-to-tanzania-cargo/`);
+    expect(webpage.name).toBe(TestBed.inject(Title).getTitle());
+    expect(TestBed.inject(Meta).getTag('property="og:title"')?.content).toBe(webpage.name);
+  });
+
+  it('escapes agent text that could close the structured-data script in prerendered HTML', () => {
+    const title = 'Agent </script><script>alert(1)</script>';
+    seo.update({ title, description: 'Cargo <details>', path: '/agent/public-agent', index: true });
+    const json = document.getElementById('site-schema')!.textContent!;
+    expect(json).not.toContain('<');
+    const webpage = JSON.parse(json)['@graph'].find((item: { '@type': string }) => item['@type'] === 'WebPage');
+    expect(webpage.name).toBe(title);
+    expect(webpage.description).toBe('Cargo <details>');
   });
 
   it('excludes filtered searches and restores indexing for the main directory', () => {

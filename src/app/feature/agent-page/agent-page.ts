@@ -112,7 +112,7 @@ export class AgentPage implements OnInit {
   }
 
   getProfileImage(): string {
-    const fallback = 'assets/landingpage_images/profile4.jpg';
+    const fallback = 'assets/landingpage_images/defaultprofile.jfif';
     return this.profileImageFailed
       ? fallback
       : resolveImageUrl(this.agent?.profile_photo || this.agent?.image, fallback);

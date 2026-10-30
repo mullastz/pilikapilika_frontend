@@ -33,7 +33,7 @@ agent = {
   rating: 4.9,
   location: 'Wang Zu, China',
   price: '$ 20 / 1kg',
-  image: 'assets/landingpage_images/profile4.jpg'
+  image: 'assets/landingpage_images/defaultprofile.jfif'
 };
 
 }

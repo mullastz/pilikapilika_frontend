@@ -7,6 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { Agent, AgentProfileResponse, User, UpdateAgentProfileRequest } from '../../core/interfaces/auth.interface';
 import { ToastService } from '../../core/services/toast.service';
+import { Address } from '../../core/services/address.service';
 import { AgentAddresses } from './agent-addresses/agent-addresses';
 
 @Component({
@@ -26,6 +27,13 @@ export class AgentDetails implements OnInit {
   verificationRequested = false;
   verificationPending = false;
   verificationCancelled = false;
+
+  hasRequiredAddresses = false;
+
+  onAddressesChanged(addresses: Address[]): void {
+    this.hasRequiredAddresses = addresses.some(a => a.address_type === 'local') && addresses.some(a => a.address_type === 'abroad');
+    this.refreshProfileCompletion();
+  }
 
   selectedSpecializations: string[] = [];
   selectedTransport: string[] = [];
@@ -126,6 +134,10 @@ export class AgentDetails implements OnInit {
   }
 
   requestVerification(): void {
+    if (!this.hasRequiredAddresses) {
+      this.toastService.error('Add both a Local Address and an Abroad Address before requesting verification.');
+      return;
+    }
     this.isRequestingVerification = true;
     this.cdr.detectChanges();
 
@@ -183,6 +195,11 @@ export class AgentDetails implements OnInit {
   onSubmit(): void {
     if (this.agentForm.invalid) {
       this.agentForm.markAllAsTouched();
+      return;
+    }
+
+    if (!this.hasRequiredAddresses) {
+      this.toastService.error('Add both a Local Address and an Abroad Address before saving your agent profile.');
       return;
     }
 

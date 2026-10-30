@@ -1,6 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AdminService } from '../../../core/services/admin.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { RouterModule } from '@angular/router';
@@ -12,6 +13,7 @@ interface AppSettings {
     platform_name: string;
     support_email: string;
     support_phone: string;
+    support_whatsapp: string;
     currency: string;
   };
   delivery: {
@@ -46,6 +48,9 @@ interface AppSettings {
     hero_title: string;
     hero_subtitle: string;
     hero_image: string;
+    contact_title: string;
+    contact_subtitle: string;
+    contact_image: string;
     contact_hours: string;
   };
 }
@@ -68,6 +73,7 @@ export class AdminSettings implements OnInit {
       platform_name: '',
       support_email: '',
       support_phone: '',
+      support_whatsapp: '',
       currency: 'TZS',
     },
     delivery: {
@@ -102,6 +108,9 @@ export class AdminSettings implements OnInit {
       hero_title: '',
       hero_subtitle: '',
       hero_image: '',
+      contact_title: '',
+      contact_subtitle: '',
+      contact_image: '',
       contact_hours: '',
     },
   });
@@ -153,7 +162,7 @@ export class AdminSettings implements OnInit {
 
   uploadingImage = signal<string | null>(null);
 
-  uploadContentImage(event: Event, key: 'about_us_image' | 'hero_image'): void {
+  uploadContentImage(event: Event, key: 'about_us_image' | 'contact_image' | 'hero_image'): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
@@ -178,7 +187,7 @@ export class AdminSettings implements OnInit {
     });
   }
 
-  contentImageUrl(key: 'about_us_image' | 'hero_image'): string {
+  contentImageUrl(key: 'about_us_image' | 'contact_image' | 'hero_image'): string {
     const url = this.settings().content[key];
     return url ? resolveImageUrl(url, '') : '';
   }
@@ -191,8 +200,10 @@ export class AdminSettings implements OnInit {
         this.toastService.success('Settings saved successfully');
         this.saving.set(false);
       },
-      error: () => {
-        this.toastService.error('Failed to save settings');
+      error: (error: HttpErrorResponse) => {
+        const validationErrors: unknown[] = Object.values(error.error?.errors || {}).flat();
+        const message = validationErrors.find((value): value is string => typeof value === 'string');
+        this.toastService.error(message || error.error?.message || 'Failed to save settings');
         this.saving.set(false);
       },
     });

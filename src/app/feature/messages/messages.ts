@@ -123,7 +123,7 @@ export class Messages implements OnInit, OnDestroy {
       this.conversations = (apiConversations as any[]).map((conv: any): UiConversation => ({
         id: conv.user_id,
         customerName: conv.name || 'Unknown',
-        customerImage: conv.avatar || 'assets/landingpage_images/profile4.jpg',
+        customerImage: conv.avatar || 'assets/landingpage_images/defaultprofile.jfif',
         lastMessage: '', // Will be populated when messages load
         lastMessageTime: conv.last_message_at ? new Date(conv.last_message_at) : new Date(),
         unreadCount: conv.unread_count,
@@ -380,7 +380,7 @@ export class Messages implements OnInit, OnDestroy {
       conversation = {
         id: userId,
         customerName: name || 'Unknown',
-        customerImage: 'assets/landingpage_images/profile4.jpg',
+        customerImage: 'assets/landingpage_images/defaultprofile.jfif',
         lastMessage: '',
         lastMessageTime: new Date(),
         unreadCount: 0,

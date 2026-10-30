@@ -6,7 +6,7 @@
   <!-- Section Header -->
   <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
     <h2 id="agent-receiving-addresses-heading" class="text-lg font-semibold dark:text-white">
-      Warehouses &amp; Receiving Addresses
+      Physical Addresses *
     </h2>
     <button
       *ngIf="!showAddressForm"
@@ -15,13 +15,22 @@
       class="flex items-center gap-2 bg-orange-500 text-white text-sm px-4 py-2 rounded-full hover:bg-orange-600 transition"
     >
       <i class="fa-solid fa-plus"></i>
-      Add Address
+      Add {{ selectedCategory === 'local' ? 'Local' : 'Abroad' }} Address
     </button>
   </div>
 
   <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-    Manage the warehouses and receiving points where you store goods and receive customer parcels.
+    Agents must add at least one Local Address and one Abroad Address. Assign a category to any existing addresses below.
   </p>
+
+  <div class="flex gap-2 mb-4" role="group" aria-label="Address category">
+    <button type="button" (click)="selectCategory('local')" [attr.aria-pressed]="selectedCategory === 'local'" [disabled]="isSavingAddress"
+      class="flex-1 px-4 py-2 rounded-full text-sm font-medium transition disabled:opacity-50"
+      [ngClass]="selectedCategory === 'local' ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-[#222] text-gray-600 dark:text-gray-300'">Local Addresses ({{ addressesFor('local').length }})</button>
+    <button type="button" (click)="selectCategory('abroad')" [attr.aria-pressed]="selectedCategory === 'abroad'" [disabled]="isSavingAddress"
+      class="flex-1 px-4 py-2 rounded-full text-sm font-medium transition disabled:opacity-50"
+      [ngClass]="selectedCategory === 'abroad' ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-[#222] text-gray-600 dark:text-gray-300'">Abroad Addresses ({{ addressesFor('abroad').length }})</button>
+  </div>
 
   <!-- Loading State -->
   <div *ngIf="isLoadingAddresses" class="flex justify-center py-8">
@@ -30,7 +39,7 @@
 
   <!-- Address Form (Add/Edit) -->
   <div *ngIf="showAddressForm" class="bg-white dark:bg-[#222] rounded-xl p-4 mb-4 shadow">
-    <form [formGroup]="addressForm" (ngSubmit)="saveAddress()">
+    <div [formGroup]="addressForm">
       <div class="space-y-4">
         <!-- Warehouse or receiving point name (optional) -->
         <div>
@@ -46,6 +55,14 @@
           <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
             If left empty, it will be auto-generated as "Address 1", "Address 2", etc.
           </p>
+        </div>
+
+        <div>
+          <label class="text-sm text-gray-500 dark:text-gray-400" for="agent-address-type">Address Category *</label>
+          <select id="agent-address-type" formControlName="address_type" class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500">
+            <option value="local">Local Address</option>
+            <option value="abroad">Abroad Address</option>
+          </select>
         </div>
 
         <!-- Address Line -->
@@ -76,7 +93,7 @@
             class="w-full mt-1 p-3 rounded-xl bg-orange-50 dark:bg-orange-900/20 text-sm text-orange-600 dark:text-orange-400"
           >
             <i class="fa-solid fa-circle-info mr-1"></i>
-            Choose and save your transport methods above before adding an address.
+            Choose your transport methods above before adding an address.
           </div>
 
           <!-- Custom themed dropdown -->
@@ -168,7 +185,8 @@
       <!-- Form Actions -->
       <div class="flex items-center gap-3 mt-4">
         <button
-          type="submit"
+          type="button"
+          (click)="saveAddress()"
           [disabled]="isSavingAddress"
           class="bg-orange-500 text-white px-6 py-2 rounded-full hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
@@ -187,18 +205,24 @@
           Cancel
         </button>
       </div>
-    </form>
+    </div>
   </div>
 
   <!-- Addresses List -->
-  <div *ngIf="!isLoadingAddresses && addresses.length > 0" class="space-y-3">
+  <div *ngIf="!isLoadingAddresses" class="space-y-3">
+    <ng-container *ngFor="let category of visibleCategories">
+      <div *ngIf="category !== 'uncategorized' || addressesFor(category).length > 0" class="pt-3">
+        <h3 class="font-semibold dark:text-white mb-3">{{ category === 'local' ? 'Local Addresses *' : category === 'abroad' ? 'Abroad Addresses *' : 'Choose a category for these addresses' }}</h3>
+        <p *ngIf="addressesFor(category).length === 0" class="text-sm text-red-500 mb-3">At least one {{ category }} address is required.</p>
+        <button *ngIf="category !== 'uncategorized' && !showAddressForm" type="button" (click)="showAddAddressForm(category === 'local' ? 'local' : 'abroad')" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium mb-3 transition">+ Add {{ category === 'local' ? 'Local' : 'Abroad' }} Address</button>
+      </div>
     <div
-      *ngFor="let address of addresses"
+      *ngFor="let address of addressesFor(category)"
       class="bg-white dark:bg-[#222] rounded-xl p-4 shadow border border-gray-200 dark:border-gray-700"
     >
-      <div class="flex items-start justify-between">
-        <div class="flex-1">
-          <div class="flex items-center gap-2 mb-2">
+      <div class="flex flex-col sm:flex-row items-start justify-between gap-3">
+        <div class="flex-1 min-w-0 w-full">
+          <div class="flex flex-wrap items-center gap-2 mb-2">
             <span
               class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400"
             >
@@ -218,11 +242,11 @@
               {{ transportLabel(address.transport_method) }}
             </span>
           </div>
-          <p class="text-sm text-gray-700 dark:text-gray-300">
+          <p class="text-sm text-gray-700 dark:text-gray-300 break-words whitespace-pre-line">
             {{ address.address_line }}
           </p>
         </div>
-        <div class="flex items-center gap-2 ml-4">
+        <div class="flex items-center gap-2 w-full sm:w-auto border-t sm:border-t-0 border-gray-200 dark:border-gray-700 pt-2 sm:pt-0 sm:ml-4 shrink-0">
           <button
             *ngIf="!address.is_default"
             type="button"
@@ -254,6 +278,7 @@
         </div>
       </div>
     </div>
+    </ng-container>
   </div>
 
   <!-- Empty State -->
@@ -266,9 +291,9 @@
     <button
       type="button"
       (click)="showAddAddressForm()"
-      class="mt-3 text-orange-500 hover:text-orange-600 font-medium text-sm"
+      class="mt-3 px-4 py-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-medium text-sm"
     >
-      Add your first address
+      Add {{ selectedCategory === 'local' ? 'Local' : 'Abroad' }} Address
     </button>
   </div>
 </section>

@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild } from '@an
 import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -13,7 +13,7 @@ import { resolveImageUrl } from '../../core/utils/image-url.util';
 
 @Component({
   selector: 'app-manage-account',
-  imports: [CommonModule, ReactiveFormsModule, ProfileOnboardingWizard],
+  imports: [CommonModule, ReactiveFormsModule, ProfileOnboardingWizard, RouterLink],
   templateUrl: './manage-account.html',
   styleUrl: './manage-account.css',
 })
@@ -25,6 +25,7 @@ export class ManageAccount implements OnInit {
   user: User | null = null;
   isLoading = false;
   isSaving = false;
+  missingAgentAddresses = false;
   passwordChangeRequested = false;
   isRequestingPasswordChange = false;
 
@@ -38,7 +39,11 @@ export class ManageAccount implements OnInit {
   selectedPhotoFile: File | null = null;
   isUploadingPhoto = false;
 
-  readonly FALLBACK_PHOTO = 'assets/landingpage_images/profile1.webp';
+  readonly FALLBACK_PHOTO = 'assets/landingpage_images/defaultprofile.jfif';
+
+  get isAgent(): boolean {
+    return ['seller', 'agent'].includes(this.user?.role?.toLowerCase() || '');
+  }
 
   genderOptions = ['Male', 'Female', 'Other'];
 
@@ -94,8 +99,10 @@ export class ManageAccount implements OnInit {
 
     // Always fetch fresh data from server
     this.userService.getProfile().subscribe({
-      next: (response: any) => {
+      next: (response) => {
         this.user = response.data;
+        this.authService.saveUser(response.data);
+        this.missingAgentAddresses = !!response.profile?.missing_fields.some(field => ['local_address', 'abroad_address'].includes(field));
         this.populateForm(response.data);
 
         // Verify profile completion status from backend (prevents abuse)
@@ -293,6 +300,8 @@ export class ManageAccount implements OnInit {
       next: (response) => {
         this.isSaving = false;
         this.user = response.data;
+        this.authService.saveUser(response.data);
+        this.missingAgentAddresses = !!response.profile?.missing_fields.some(field => ['local_address', 'abroad_address'].includes(field));
         if (response.profile?.is_complete) {
           this.authService.setProfileComplete();
         } else if (response.profile) {

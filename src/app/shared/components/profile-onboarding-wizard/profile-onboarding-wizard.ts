@@ -83,7 +83,7 @@ export class ProfileOnboardingWizard implements OnInit {
   ngOnInit(): void {
     const user = this.authService.getUser();
     if (user) {
-      this.userName = user.firstname || user.username || 'there';
+      this.userName = user.firstname || 'there';
       this.userRole = this.profileService.getRole(user);
       this.prefillFromUser(user);
     }
@@ -125,17 +125,17 @@ export class ProfileOnboardingWizard implements OnInit {
     const step1Fields: WizardField[] = [];
     if (missingFields.includes('firstname')) {
       step1Fields.push({
-        name: 'firstname', label: 'First Name', placeholder: 'Enter your first name',
+        name: 'firstname', label: this.userRole === 'agent' ? 'First Name (Business Name)' : 'First Name', placeholder: this.userRole === 'agent' ? 'Enter the first part of your business name' : 'Enter your first name',
         inputType: 'text', required: true,
-        tip: 'This is how others will address you on the platform.',
+        tip: this.userRole === 'agent' ? 'Use the first part of your business name here.' : 'This is how others will address you on the platform.',
         example: 'e.g., John, Grace, Michael'
       });
     }
     if (missingFields.includes('lastname')) {
       step1Fields.push({
-        name: 'lastname', label: 'Last Name', placeholder: 'Enter your last name',
+        name: 'lastname', label: this.userRole === 'agent' ? 'Last Name (Business Name)' : 'Last Name', placeholder: this.userRole === 'agent' ? 'Enter the remaining part of your business name' : 'Enter your last name',
         inputType: 'text', required: true,
-        tip: 'Your family name appears on shipping labels and documents.',
+        tip: this.userRole === 'agent' ? 'Use the remaining part of your business name here.' : 'Your family name appears on shipping labels and documents.',
         example: 'e.g., Mwakalinga, Nyerere, Smith'
       });
     }
@@ -418,8 +418,11 @@ export class ProfileOnboardingWizard implements OnInit {
         });
 
         if (missingBasic.length === 0) {
-          // Basic profile is complete — mark as done in localStorage
-          this.authService.setProfileComplete();
+          if (response.profile) {
+            localStorage.setItem('profile_completion', JSON.stringify(response.profile));
+          } else {
+            this.authService.setProfileComplete();
+          }
           this.profileUpdated.emit();
 
           this.completeAndRedirectHome();
@@ -444,12 +447,14 @@ export class ProfileOnboardingWizard implements OnInit {
    * Notify parent and redirect the user to the home page
    */
   private completeAndRedirectHome(): void {
-    this.toastService.success('Profile setup complete! Welcome aboard!');
+    const missing = this.authService.getProfileCompletionStatus()?.missing_fields || [];
+    const needsAddresses = this.userRole === 'agent' && missing.some(field => ['local_address', 'abroad_address'].includes(field));
+    this.toastService.success(needsAddresses ? 'Account details saved. Add your Local and Abroad addresses to complete your agent profile.' : 'Profile setup complete! Welcome aboard!');
     this.complete.emit();
 
     // Redirect to home after a brief moment so the toast is visible
     setTimeout(() => {
-      this.router.navigate(['/home']);
+      this.router.navigate([needsAddresses ? '/account/agent' : '/home']);
     }, 800);
   }
 

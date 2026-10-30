@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, Input, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import {
@@ -23,6 +23,8 @@ import {
 export class AgentAddresses implements OnInit {
   @Input() transportMethods: readonly string[] = [];
 
+  @Output() addressesChanged = new EventEmitter<Address[]>();
+
   private readonly addressService = inject(AddressService);
   private readonly toastService = inject(ToastService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -30,12 +32,25 @@ export class AgentAddresses implements OnInit {
 
   readonly addressForm = this.fb.group({
     label: ['', Validators.maxLength(50)],
+    address_type: ['local', Validators.required],
     address_line: ['', [Validators.required, Validators.maxLength(500)]],
     transport_method: ['', Validators.required],
     is_default: [false],
   });
   readonly transportLabel = transportLabel;
   readonly transportIcon = transportIcon;
+
+  selectedCategory: 'local' | 'abroad' = 'local';
+
+  get visibleCategories(): string[] {
+    return [this.selectedCategory, ...(this.addressesFor('uncategorized').length ? ['uncategorized'] : [])];
+  }
+
+  selectCategory(category: 'local' | 'abroad'): void {
+    if (this.isSavingAddress) return;
+    this.selectedCategory = category;
+    if (this.showAddressForm) this.addressForm.controls.address_type.setValue(category);
+  }
 
   addresses: Address[] = [];
   isLoadingAddresses = false;
@@ -88,6 +103,7 @@ export class AgentAddresses implements OnInit {
       .subscribe({
         next: (response) => {
           this.addresses = response.data || [];
+          this.addressesChanged.emit(this.addresses);
         },
         error: () => {
           this.toastService.error('Failed to load receiving addresses. Please try again.');
@@ -95,17 +111,24 @@ export class AgentAddresses implements OnInit {
       });
   }
 
-  showAddAddressForm(): void {
+  addressesFor(type: string): Address[] {
+    return this.addresses.filter(address => type === 'uncategorized' ? !address.address_type : address.address_type === type);
+  }
+
+  showAddAddressForm(type: 'local' | 'abroad' = this.selectedCategory): void {
+    this.selectedCategory = type;
     this.editingAddressId = null;
-    this.addressForm.reset();
+    this.addressForm.reset({ address_type: type });
     this.isTransportDropdownOpen = false;
     this.showAddressForm = true;
   }
 
   editAddress(address: Address): void {
+    this.selectedCategory = address.address_type || this.selectedCategory;
     this.editingAddressId = address.id;
     this.addressForm.reset({
       label: address.label || '',
+      address_type: address.address_type || 'local',
       address_line: address.address_line,
       transport_method: address.transport_method || '',
       is_default: address.is_default,
@@ -139,7 +162,7 @@ export class AgentAddresses implements OnInit {
     if (!this.selectedTransportOption) {
       this.addressForm.controls.transport_method.setErrors({ unavailableTransport: true });
       this.addressForm.controls.transport_method.markAsTouched();
-      this.toastService.error('Select a transport method saved in your Agent Profile.');
+      this.toastService.error('Select one of your Agent Profile transport methods.');
       return;
     }
 
@@ -147,6 +170,7 @@ export class AgentAddresses implements OnInit {
     const data: CreateAddressRequest = {
       label: value.label.trim() || undefined,
       address_line: value.address_line.trim(),
+      address_type: value.address_type as 'local' | 'abroad',
       transport_method: value.transport_method,
       is_default: value.is_default,
     };
@@ -175,6 +199,7 @@ export class AgentAddresses implements OnInit {
               ? 'Receiving address updated successfully!'
               : 'Receiving address added successfully!',
           );
+          this.selectedCategory = data.address_type === 'abroad' ? 'abroad' : 'local';
           this.cancelAddressForm();
           this.loadAddresses();
         },

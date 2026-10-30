@@ -163,6 +163,14 @@
             </div>
           </div>
 
+          <div class="sm:col-span-2">
+            <app-agent-addresses
+              *ngIf="agent && agent.id === user?.id"
+              [transportMethods]="selectedTransport"
+              (addressesChanged)="onAddressesChanged($event)"
+            ></app-agent-addresses>
+          </div>
+
           <!-- ID VERIFICATION NUMBER (Read-only if verified) -->
           <div>
             <label class="text-sm text-gray-500 dark:text-gray-400">ID/Verification Number</label>
@@ -269,11 +277,6 @@
         </div>
 
       </form>
-
-      <app-agent-addresses
-        *ngIf="!isLoading && agent && agent.id === user?.id"
-        [transportMethods]="agent.transport_methods || []"
-      ></app-agent-addresses>
 
     </div>
 

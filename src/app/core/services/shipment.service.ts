@@ -88,11 +88,11 @@ export class ShipmentService {
   /**
    * Get user's shipments with pagination (default 10 per page)
    */
-  getUserShipments(page: number = 1, perPage: number = 10): Observable<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }> {
+  getUserShipments(page: number = 1, perPage: number = 10, transportMethod?: 'sea' | 'air'): Observable<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }> {
     this.loading.set(true);
     this.error.set(null);
 
-    return this.apiService.get<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }>(`${this.endpoint}?page=${page}&per_page=${perPage}`, {}).pipe(
+    return this.apiService.get<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }>(`${this.endpoint}?page=${page}&per_page=${perPage}${transportMethod ? '&transport_method=' + transportMethod : ''}`, {}).pipe(
       tap({
         next: (response) => {
           if (response.success) {
@@ -111,15 +111,15 @@ export class ShipmentService {
   /**
    * Get user's shipments by status with pagination
    */
-  getUserShipmentsByStatus(status: string, page: number = 1, perPage: number = 10): Observable<{ success: boolean; data: { shipments: Shipment[]; status: string; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }> {
-    return this.apiService.get<{ success: boolean; data: { shipments: Shipment[]; status: string; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }>(`${this.endpoint}/status/${status}?page=${page}&per_page=${perPage}`, {});
+  getUserShipmentsByStatus(status: string, page: number = 1, perPage: number = 10, transportMethod?: 'sea' | 'air'): Observable<{ success: boolean; data: { shipments: Shipment[]; status: string; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }> {
+    return this.apiService.get<{ success: boolean; data: { shipments: Shipment[]; status: string; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }>(`${this.endpoint}/status/${status}?page=${page}&per_page=${perPage}${transportMethod ? '&transport_method=' + transportMethod : ''}`, {});
   }
 
   /**
    * Get agent's shipments with pagination (default 10 per page)
    */
-  getAgentShipments(page: number = 1, perPage: number = 10): Observable<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }> {
-    return this.apiService.get<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }>(`${this.endpoint}/agent?page=${page}&per_page=${perPage}`, {});
+  getAgentShipments(page: number = 1, perPage: number = 10, transportMethod?: 'sea' | 'air'): Observable<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }> {
+    return this.apiService.get<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }>(`${this.endpoint}/agent?page=${page}&per_page=${perPage}${transportMethod ? '&transport_method=' + transportMethod : ''}`, {});
   }
 
   /**
@@ -177,8 +177,8 @@ export class ShipmentService {
   /**
    * Get agent's shipments by status with pagination
    */
-  getAgentShipmentsByStatus(status: string, page: number = 1, perPage: number = 10): Observable<{ success: boolean; data: { shipments: Shipment[]; status: string; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }> {
-    return this.apiService.get<{ success: boolean; data: { shipments: Shipment[]; status: string; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }>(`${this.endpoint}/agent/${status}?page=${page}&per_page=${perPage}`, {});
+  getAgentShipmentsByStatus(status: string, page: number = 1, perPage: number = 10, transportMethod?: 'sea' | 'air'): Observable<{ success: boolean; data: { shipments: Shipment[]; status: string; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }> {
+    return this.apiService.get<{ success: boolean; data: { shipments: Shipment[]; status: string; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }>(`${this.endpoint}/agent/${status}?page=${page}&per_page=${perPage}${transportMethod ? '&transport_method=' + transportMethod : ''}`, {});
   }
 
   /**
@@ -267,8 +267,8 @@ export class ShipmentService {
   /**
    * Get container loading status for a shipment
    */
-  getContainerStatus(shipmentId: string): Observable<{ success: boolean; data: { expected_quantity: number; loaded_quantity: number; remaining_quantity: number; is_fully_loaded: boolean; containers: { reference_number: string; quantity: number }[] } }> {
-    return this.apiService.get<{ success: boolean; data: { expected_quantity: number; loaded_quantity: number; remaining_quantity: number; is_fully_loaded: boolean; containers: { reference_number: string; quantity: number }[] } }>(
+  getContainerStatus(shipmentId: string): Observable<{ success: boolean; data: { expected_quantity: number; loaded_quantity: number; remaining_quantity: number; is_fully_loaded: boolean; containers: { id: string; reference_number: string; status: string; transport_method?: string | null; quantity: number }[] } }> {
+    return this.apiService.get<{ success: boolean; data: { expected_quantity: number; loaded_quantity: number; remaining_quantity: number; is_fully_loaded: boolean; containers: { id: string; reference_number: string; status: string; transport_method?: string | null; quantity: number }[] } }>(
       `${this.endpoint}/${shipmentId}/container-status`,
       {}
     );

@@ -24,7 +24,7 @@ export class SignIn {
 
   constructor() {
     this.signInForm = this.fb.group({
-      login: ['', [Validators.required]],
+      login: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8)]]
     });
   }
@@ -111,11 +111,11 @@ export class SignIn {
 
     // HTTP status based fallbacks
     if (err.status === 422) {
-      return 'Invalid login credentials. Please check your email/username and password.';
+      return 'Invalid login credentials. Please check your email and password.';
     }
 
     if (err.status === 401) {
-      return 'Invalid credentials. Please check your email/username and password.';
+      return 'Invalid credentials. Please check your email and password.';
     }
 
     if (err.status === 403) {

@@ -7,7 +7,7 @@ export interface Container {
   agent_id: string;
   reference_number: string;
   transport_method?: 'air' | 'sea' | null;
-  status: 'draft' | 'closed' | 'in_transit' | 'at_tanzania_port' | 'at_tanzania_warehouse';
+  status: 'draft' | 'closed' | 'at_port_abroad' | 'in_transit' | 'at_tanzania_port' | 'at_tanzania_warehouse';
   closed_at?: string;
   in_transit_at?: string;
   at_tanzania_port_at?: string;
@@ -26,8 +26,11 @@ export class ContainerService {
 
   constructor(private apiService: ApiService) {}
 
-  getContainers(transportMethod?: string | null): Observable<{ success: boolean; data: { containers: Container[] } }> {
-    const params = transportMethod ? `?transport_method=${transportMethod}` : '';
+  getContainers(transportMethod?: string | null, activeOnly = false): Observable<{ success: boolean; data: { containers: Container[] } }> {
+    const query = new URLSearchParams();
+    if (transportMethod) query.set('transport_method', transportMethod);
+    if (activeOnly) query.set('active_only', '1');
+    const params = query.size ? '?' + query.toString() : '';
     return this.apiService.get<{ success: boolean; data: { containers: Container[] } }>(this.endpoint + params, {});
   }
 

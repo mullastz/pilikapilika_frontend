@@ -4,12 +4,13 @@ import { Router, RouterModule } from '@angular/router';
 import { AgentService } from '../../core/services/agent.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
-import { ShipmentService, Shipment } from '../../core/services/shipment.service';
+import { Shipment } from '../../core/services/shipment.service';
 import { QrCodeService } from '../../core/services/qr-code.service';
 import { ProfileCompletionService, ProfileAnalysis } from '../../core/services/profile-completion.service';
 import { Agent, User } from '../../core/interfaces/auth.interface';
 import { resolveImageUrl } from '../../core/utils/image-url.util';
 import { formatAgentPrice } from '../../core/utils/agent-price.util';
+import { Shipping } from '../shipping/shipping';
 import { Footer } from '../../shared/footer/footer';
 import { Header } from '../../shared/header/header';
 import { ProfileCompletionPopup } from '../../shared/components/profile-completion-popup/profile-completion-popup';
@@ -28,7 +29,7 @@ import {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, Footer, Header, ProfileCompletionPopup],
+  imports: [CommonModule, RouterModule, Footer, Header, ProfileCompletionPopup, Shipping],
   templateUrl: './home.html',
   styleUrl: './home.css'
 })
@@ -37,10 +38,9 @@ export class Home implements OnInit {
   currentUser: User | null = null;
 
   agentPhoto(agent: Agent): string {
-    return resolveImageUrl(agent.profile_photo || agent.image, 'assets/landingpage_images/profile4.jpg');
+    return resolveImageUrl(agent.profile_photo || agent.image, 'assets/landingpage_images/defaultprofile.jfif');
   }
   isLoadingAgents = true;
-  isLoadingShipments = true;
   isLoadingProducts = true;
 
   // Profile completion
@@ -62,14 +62,7 @@ export class Home implements OnInit {
   verifiedAgents: Agent[] = [];
 
   // Shipments and Products
-  activeShipments: Shipment[] = [];
   recentProducts: any[] = [];
-
-  // Agent shipments pagination
-  agentShipmentsPage = 1;
-  agentShipmentsPerPage = 10;
-  agentShipmentsHasMore = false;
-  isLoadingMoreShipments = false;
 
   // Agents pagination
   agentsPage = 1;
@@ -90,7 +83,6 @@ export class Home implements OnInit {
     protected router: Router,
     private agentService: AgentService,
     private authService: AuthService,
-    private shipmentService: ShipmentService,
     private qrCodeService: QrCodeService,
     private profileCompletionService: ProfileCompletionService,
     toastService: ToastService,
@@ -103,7 +95,6 @@ export class Home implements OnInit {
     this.loadCurrentUser();
     this.checkProfileCompletion();
     this.loadAgents();
-    this.loadShipments();
     this.loadProducts();
   }
 
@@ -301,58 +292,6 @@ export class Home implements OnInit {
 
   trackByAgentId(index: number, agent: Agent): number {
     return agent.id;
-  }
-
-  loadShipments(): void {
-    this.isLoadingShipments = true;
-
-    if (this.isAgent) {
-      // Agents see their own active shipments (excluding delivered/cancelled), ordered by status priority
-      this.shipmentService.getAgentShipments(this.agentShipmentsPage, this.agentShipmentsPerPage).subscribe({
-        next: (response) => {
-          if (response.success) {
-            if (this.agentShipmentsPage === 1) {
-              this.activeShipments = response.data.shipments;
-            } else {
-              this.activeShipments = [...this.activeShipments, ...response.data.shipments];
-            }
-            this.agentShipmentsHasMore = response.data.pagination?.has_more ?? false;
-          }
-          this.isLoadingShipments = false;
-          this.isLoadingMoreShipments = false;
-          this.cdr.detectChanges();
-        },
-        error: (err: any) => {
-          this.isLoadingShipments = false;
-          this.isLoadingMoreShipments = false;
-          this.cdr.detectChanges();
-        }
-      });
-    } else {
-      // Customers see their own active shipments
-      this.shipmentService.getUserShipments(1, 10).subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.activeShipments = response.data.shipments
-              .filter(shipment => !['cancelled', 'delivered'].includes(shipment.status))
-              .slice(0, 5); // Show only 5 most recent
-          }
-          this.isLoadingShipments = false;
-          this.cdr.detectChanges();
-        },
-        error: (err: any) => {
-          this.isLoadingShipments = false;
-          this.cdr.detectChanges();
-        }
-      });
-    }
-  }
-
-  loadMoreAgentShipments(): void {
-    if (!this.agentShipmentsHasMore || this.isLoadingMoreShipments) return;
-    this.isLoadingMoreShipments = true;
-    this.agentShipmentsPage++;
-    this.loadShipments();
   }
 
   loadProducts(): void {

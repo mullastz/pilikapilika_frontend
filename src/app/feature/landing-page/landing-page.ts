@@ -22,7 +22,7 @@ import { ContentService } from '../../core/services/content.service';
 export class LandingPage implements OnInit {
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   agentPhoto(agent: Agent): string {
-    return resolveImageUrl(agent.profile_photo || agent.image, 'assets/landingpage_images/profile4.jpg');
+    return resolveImageUrl(agent.profile_photo || agent.image, 'assets/landingpage_images/defaultprofile.jfif');
   }
 
   @ViewChild('agentsContainer') agentsContainer!: ElementRef;
@@ -33,8 +33,8 @@ export class LandingPage implements OnInit {
   isLoadingAgents = true;
   showProfilePopup = false;
 
-  heroTitle = signal('Find logistics and delivery agents in Tanzania');
-  heroSubtitle = signal('Compare logistics services, book shipments, and follow your delivery updates with Pilikapilika.');
+  heroTitle = signal('Find China to Tanzania cargo agents');
+  heroSubtitle = signal('Explore logistics agents, discuss your cargo needs, and manage shipment bookings with Pilikapilika.');
   heroImage = signal('assets/landingpage_images/logistics.webp');
   isLoadingHero = signal(true);
 
@@ -130,37 +130,37 @@ testimonials = [
     name: 'Andra',
     city: 'Dar-es-salaam',
     message: 'The tracking updates gave me full confidence.',
-    avatar: 'assets/landingpage_images/profile1.webp'
+    avatar: 'assets/landingpage_images/defaultprofile.jfif'
   },
   {
     name: 'Andra',
     city: 'Dar-es-salaam',
     message: 'The tracking updates gave me full confidence.',
-    avatar: 'assets/landingpage_images/profile1.webp'
+    avatar: 'assets/landingpage_images/defaultprofile.jfif'
   },  
   {
     name: 'Andra',
     city: 'Dar-es-salaam',
     message: 'The tracking updates gave me full confidence.',
-    avatar: 'assets/landingpage_images/profile1.webp'
+    avatar: 'assets/landingpage_images/defaultprofile.jfif'
   },  
   {
     name: 'Andra',
     city: 'Dar-es-salaam',
     message: 'The tracking updates gave me full confidence.',
-    avatar: 'assets/landingpage_images/profile1.webp'
+    avatar: 'assets/landingpage_images/defaultprofile.jfif'
   },  
   {
     name: 'Andra',
     city: 'Dar-es-salaam',
     message: 'The tracking updates gave me full confidence.',
-    avatar: 'assets/landingpage_images/profile1.webp'
+    avatar: 'assets/landingpage_images/defaultprofile.jfif'
   },  
   {
     name: 'Andra',
     city: 'Dar-es-salaam',
     message: 'The tracking updates gave me full confidence.',
-    avatar: 'assets/landingpage_images/profile1.webp'
+    avatar: 'assets/landingpage_images/defaultprofile.jfif'
   },
 ];
 

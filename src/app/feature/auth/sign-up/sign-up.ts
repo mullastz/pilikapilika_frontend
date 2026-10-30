@@ -9,7 +9,7 @@ import { SignupRequest } from '../../../core/interfaces/auth.interface';
 
 /**
  * Simplified Sign Up Component
- * Only requires: username, email, password, and role
+ * Only requires: email, password, and role
  * Other profile fields can be filled after registration
  */
 @Component({
@@ -32,7 +32,6 @@ export class SignUp {
 
   constructor() {
     this.signupForm = this.fb.group({
-      username: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', Validators.required],
@@ -61,7 +60,6 @@ export class SignUp {
 
     const formValue = this.signupForm.value;
     const signupData: SignupRequest = {
-      username: formValue.username,
       email: formValue.email?.trim().toLowerCase(),
       password: formValue.password,
       password_confirmation: formValue.confirmPassword,
@@ -129,9 +127,6 @@ export class SignUp {
     if (errorStr.includes('email') && errorStr.includes('taken')) {
       return 'This email address is already registered.';
     }
-    if (errorStr.includes('username') && errorStr.includes('taken')) {
-      return 'This username is already taken.';
-    }
     if (errorStr.includes('phone') && errorStr.includes('taken')) {
       return 'This phone number is already registered.';
     }
@@ -142,7 +137,7 @@ export class SignUp {
     }
 
     if (err.status === 409) {
-      return 'An account with this email or username already exists.';
+      return 'An account with this email already exists.';
     }
 
     if (err.status === 0) {

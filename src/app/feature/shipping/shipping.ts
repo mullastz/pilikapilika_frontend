@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, signal, computed } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -22,7 +22,7 @@ import { transportLabel, transportIcon } from '../../core/utils/transport-method
 import { QrCodeService } from '../../core/services/qr-code.service';
 import { MenuBarService } from '../../core/services/menu-bar.service';
 import { QRCodeComponent } from 'angularx-qrcode';
-import { finalize } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
 import { resolveImageUrl } from '../../core/utils/image-url.util';
 
 type QrScanPurpose = 'agent_load_container' | 'user_confirm_delivery';
@@ -34,6 +34,27 @@ type QrScanPurpose = 'agent_load_container' | 'user_confirm_delivery';
   styleUrl: './shipping.css',
 })
 export class Shipping implements OnInit, OnDestroy {
+  @Input() dashboardOnly = false;
+  private shipmentRequest?: Subscription;
+  private pendingConfirmedOperation: (() => void) | null = null;
+  private containerGuideRequest?: Subscription;
+  public confirmationButtonLabel = signal('Confirm');
+  public containerSearch = signal('');
+  public guidingShipment = signal<Shipment | null>(null);
+  public linkedContainerIds = signal<string[]>([]);
+  public containerGuideLoading = signal(false);
+  public containerGuideError = signal<string | null>(null);
+  private containerDetailRequest?: Subscription;
+  private dashboardRequest?: Subscription;
+  public dashboardContainers = signal<Container[]>([]);
+  public dashboardLoading = signal(false);
+  public dashboardError = signal<string | null>(null);
+  public dashboardParcelsLoadingMore = signal(false);
+  public dashboardParcelsHasMore = signal(false);
+  private dashboardParcelsPage = 0;
+  public containerDetailLoading = signal(false);
+  public containerDetailError = signal<string | null>(null);
+
   // Signals
   private _shipments = signal<Shipment[]>([]);
   private _activeTab = signal<string>('all');
@@ -88,6 +109,14 @@ export class Shipping implements OnInit, OnDestroy {
   // Container management state
   public containers = signal<Container[]>([]);
   public containersLoading = signal(false);
+  public filteredContainers = computed(() => {
+    const ranks: Record<string, number> = { draft: 0, closed: 1, at_port_abroad: 2, in_transit: 3, at_tanzania_port: 4, at_tanzania_warehouse: 5 };
+    const search = this.containerSearch().trim().toLowerCase();
+    return this.containers()
+      .filter(container => !this.guidingShipment() || this.linkedContainerIds().includes(container.id))
+      .filter(container => !search || `${container.reference_number} ${this.formatStatus(container.status, container.transport_method)}`.toLowerCase().includes(search))
+      .sort((a, b) => (ranks[a.status] ?? 99) - (ranks[b.status] ?? 99) || b.created_at.localeCompare(a.created_at));
+  });
   public containerModalOpen = signal(false);
   public containerModalClosing = signal(false);
   public selectedContainer = signal<Container | null>(null);
@@ -249,6 +278,11 @@ export class Shipping implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    if (this.dashboardOnly) {
+      this.loadDashboardContainers();
+      this.loadDashboardParcels();
+      return;
+    }
     // Check for highlight query param from home page navigation
     const highlightId = this.route.snapshot.queryParamMap.get('highlight');
     if (highlightId) {
@@ -261,9 +295,10 @@ export class Shipping implements OnInit, OnDestroy {
       }).toString();
       this.location.replaceState(url);
     }
-    this.loadShipments();
     if (this.isAgent()) {
       this.loadAgentTransportCapabilities();
+    } else {
+      this.loadShipments();
     }
   }
 
@@ -284,12 +319,14 @@ export class Shipping implements OnInit, OnDestroy {
           this.transportMode.set('sea');
         }
         this.transportProfileLoading.set(false);
+        this.loadShipments();
       },
       error: () => {
         this.supportsSea.set(true);
         this.supportsAir.set(false);
         this.transportMode.set('sea');
         this.transportProfileLoading.set(false);
+        this.loadShipments();
       }
     });
   }
@@ -297,6 +334,9 @@ export class Shipping implements OnInit, OnDestroy {
   setTransportMode(mode: 'sea' | 'air'): void {
     if (this.transportMode() === mode) return;
     this.transportMode.set(mode);
+    this.page.set(1);
+    this._shipments.set([]);
+    this.loadShipments();
     this.selectedContainer.set(null);
     this.containerDetailOpen.set(false);
     this.containerDetailClosing.set(false);
@@ -307,6 +347,11 @@ export class Shipping implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.shipmentRequest?.unsubscribe();
+    this.containerDetailRequest?.unsubscribe();
+    this.dashboardRequest?.unsubscribe();
+    this.containerGuideRequest?.unsubscribe();
+    this.menuBarService.show();
     this.stopQrScanner();
   }
 
@@ -335,56 +380,26 @@ export class Shipping implements OnInit, OnDestroy {
   }
 
   private loadShipments(): void {
-    this.loading.set(true);
-    this.error.set(null);
-
-    const currentTab = this.activeTab();
-    const isAgentUser = this.isAgent();
-    const currentPage = this.page();
-    const currentPerPage = this.perPage();
-    
-    if (isAgentUser) {
-      if (currentTab === 'all') {
-        this.loadAgentShipments(currentPage, currentPerPage);
-      } else if (currentTab === 'my_shippings') {
-        this.loadUserShipments(currentPage, currentPerPage);
-      } else if (currentTab === 'cancelled') {
-        this.loadAgentShipmentsByStatus('cancelled', currentPage, currentPerPage);
-      } else {
-        this.loadAgentShipmentsByStatus(currentTab, currentPage, currentPerPage);
-      }
-    } else {
-      if (currentTab === 'all') {
-        this.loadUserShipments(currentPage, currentPerPage);
-      } else {
-        this.loadUserShipmentsByStatus(currentTab, currentPage, currentPerPage);
-      }
+    if (this.dashboardOnly) {
+      this.loadDashboardContainers();
+      this.loadDashboardParcels();
+      return;
     }
-  }
-
-  private loadUserShipments(page: number = 1, perPage: number = 10): void {
-    this.shipmentService.getUserShipments(page, perPage).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this._shipments.set(response.data.shipments);
-          this.pagination.set(response.data.pagination ?? null);
-          this.scrollToHighlightedShipment();
-        } else {
-          this.toastService.error('Failed to load shipments');
-        }
-        this.loading.set(false);
-      },
-      error: (error: any) => {
-        this.error.set('Failed to load shipments');
-        this.toastService.error('Failed to load shipments');
-        this.loading.set(false);
-      }
-    });
-  }
-
-  private loadUserShipmentsByStatus(status: string, page: number = 1, perPage: number = 10): void {
-    this.shipmentService.getUserShipmentsByStatus(status, page, perPage).subscribe({
-      next: (response) => {
+    this.shipmentRequest?.unsubscribe();
+    this.loading.set(true);
+    this.error.set(null);
+    const tab = this.activeTab();
+    const mode = this.isAgent() ? this.transportMode() : undefined;
+    const agentView = this.isAgent() && tab !== 'my_shippings';
+    const request = agentView
+      ? tab === 'all'
+        ? this.shipmentService.getAgentShipments(this.page(), this.perPage(), mode)
+        : this.shipmentService.getAgentShipmentsByStatus(tab, this.page(), this.perPage(), mode)
+      : tab === 'all' || tab === 'my_shippings'
+        ? this.shipmentService.getUserShipments(this.page(), this.perPage(), mode)
+        : this.shipmentService.getUserShipmentsByStatus(tab, this.page(), this.perPage(), mode);
+    this.shipmentRequest = request.subscribe({
+      next: response => {
         if (response.success) {
           this._shipments.set(response.data.shipments);
           this.pagination.set(response.data.pagination ?? null);
@@ -394,75 +409,80 @@ export class Shipping implements OnInit, OnDestroy {
         }
         this.loading.set(false);
       },
-      error: (error: any) => {
+      error: () => {
         this.error.set('Failed to load shipments');
         this.loading.set(false);
       }
     });
   }
 
-  private loadAgentShipments(page: number = 1, perPage: number = 10): void {
-    this.shipmentService.getAgentShipments(page, perPage).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this._shipments.set(response.data.shipments);
-          this.pagination.set(response.data.pagination ?? null);
-          this.scrollToHighlightedShipment();
-        } else {
-          this.toastService.error('Failed to load shipments');
-        }
-        this.loading.set(false);
+  loadDashboardContainers(): void {
+    this.dashboardLoading.set(true);
+    this.dashboardError.set(null);
+    this.dashboardRequest?.unsubscribe();
+    this.dashboardRequest = this.containerService.getContainers(undefined, true).subscribe({
+      next: response => {
+        this.dashboardContainers.set(response.data.containers);
+        this.dashboardLoading.set(false);
       },
-      error: (error: any) => {
-        this.error.set('Failed to load shipments');
-        this.toastService.error('Failed to load shipments');
-        this.loading.set(false);
+      error: () => {
+        this.dashboardError.set('Unable to load containers and air batches. Please try again.');
+        this.dashboardLoading.set(false);
       }
     });
   }
 
-  private loadAgentShipmentsByStatus(status: string, page: number = 1, perPage: number = 10): void {
-    this.loading.set(true);
+  dashboardGroups = [
+    { mode: 'sea' as const, title: 'Active Containers', icon: 'fa-ship' },
+    { mode: 'air' as const, title: 'Active Air Batches', icon: 'fa-plane' },
+  ];
+
+  loadDashboardParcels(loadMore = false): void {
+    if (loadMore && (!this.dashboardParcelsHasMore() || this.dashboardParcelsLoadingMore() || this.loading())) return;
+    const page = loadMore ? this.dashboardParcelsPage + 1 : 1;
+    this.shipmentRequest?.unsubscribe();
     this.error.set(null);
-
-    this.shipmentService.getAgentShipmentsByStatus(status, page, perPage).subscribe({
-      next: (response) => {
+    this.loading.set(!loadMore);
+    this.dashboardParcelsLoadingMore.set(loadMore);
+    const request = this.isAgent()
+      ? this.shipmentService.getAgentShipments(page, this.perPage())
+      : this.shipmentService.getUserShipments(page, this.perPage());
+    this.shipmentRequest = request.subscribe({
+      next: response => {
         if (response.success) {
-          this._shipments.set(response.data.shipments);
-          this.pagination.set(response.data.pagination ?? null);
-          this.scrollToHighlightedShipment();
+          this._shipments.set(loadMore ? [...this.shipments(), ...response.data.shipments] : response.data.shipments);
+          this.dashboardParcelsPage = page;
+          this.dashboardParcelsHasMore.set(response.data.pagination?.has_more ?? false);
         } else {
-          this.error.set('Failed to load shipments');
+          this.error.set('Unable to load parcels. Please try again.');
         }
         this.loading.set(false);
+        this.dashboardParcelsLoadingMore.set(false);
       },
-      error: (error: any) => {
-        this.error.set('Failed to load shipments');
+      error: () => {
+        this.error.set('Unable to load parcels. Please try again.');
         this.loading.set(false);
+        this.dashboardParcelsLoadingMore.set(false);
       }
     });
   }
 
-  private loadCancelledShipments(page: number = 1, perPage: number = 10): void {
-    this.loading.set(true);
-    this.error.set(null);
+  viewAllParcels(): void {
+    this.router.navigate(['/account/shipping']);
+  }
 
-    this.shipmentService.getAgentShipmentsByStatus('cancelled', page, perPage).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this._shipments.set(response.data.shipments);
-          this.pagination.set(response.data.pagination ?? null);
-          this.scrollToHighlightedShipment();
-        } else {
-          this.error.set('Failed to load cancelled shipments');
-        }
-        this.loading.set(false);
-      },
-      error: (error: any) => {
-        this.error.set('Failed to load shipments');
-        this.loading.set(false);
-      }
-    });
+  activeContainersFor(mode: 'sea' | 'air'): Container[] {
+    return this.dashboardContainers().filter(container => (container.transport_method || 'sea') === mode);
+  }
+
+  openDashboardContainer(container: Container): void {
+    this.transportMode.set(container.transport_method === 'air' ? 'air' : 'sea');
+    this.openContainerDetail(container);
+  }
+
+  manageDashboardGroup(mode: 'sea' | 'air'): void {
+    this.transportMode.set(mode);
+    this.openContainerModal();
   }
 
   getStatusClass(status: string): string {
@@ -1034,6 +1054,8 @@ export class Shipping implements OnInit, OnDestroy {
     shipment: Shipment,
     action: 'confirm' | 'reject' | 'cancel' | 'at_warehouse' | 'in_transit' | 'delivered' | 'user_delivered' | 'return_to_warehouse'
   ): void {
+    this.pendingConfirmedOperation = null;
+    this.confirmationButtonLabel.set('Confirm');
     const configMap: Record<typeof action, { title: string; message: string }> = {
       confirm: { title: 'Confirm Shipment', message: 'Are you sure you want to confirm this shipment request?' },
       reject: { title: 'Reject Shipment', message: 'Are you sure you want to reject this shipment request?' },
@@ -1042,7 +1064,7 @@ export class Shipping implements OnInit, OnDestroy {
       in_transit: { title: 'Mark as In Transit', message: 'Are you sure you want to mark this shipment as in transit?' },
       delivered: { title: 'Mark as Delivered', message: 'Are you sure you want to mark this shipment as delivered?' },
       user_delivered: { title: 'Confirm Delivery', message: 'Are you sure you want to confirm delivery of this shipment?' },
-      return_to_warehouse: { title: 'Return to Warehouse', message: 'This will remove the shipment from the container and return it to warehouse status. Are you sure?' },
+      return_to_warehouse: { title: 'Return to Warehouse', message: `This will remove the parcel from its ${this.containerTerm(shipment).toLowerCase()} and return it to warehouse status. Are you sure?` },
     };
     const cfg = configMap[action];
     this.confirmModalConfig.set({ ...cfg, action, shipment });
@@ -1051,10 +1073,25 @@ export class Shipping implements OnInit, OnDestroy {
 
   closeConfirmModal(): void {
     this.confirmModalOpen.set(false);
+    this.pendingConfirmedOperation = null;
+    this.confirmationButtonLabel.set('Confirm');
     this.confirmModalConfig.set({ title: '', message: '', action: 'confirm', shipment: null });
   }
 
+  private confirmOperation(title: string, message: string, operation: () => void, buttonLabel = 'Confirm'): void {
+    this.pendingConfirmedOperation = operation;
+    this.confirmationButtonLabel.set(buttonLabel);
+    this.confirmModalConfig.set({ title, message, action: 'confirm', shipment: null });
+    this.confirmModalOpen.set(true);
+  }
+
   executeConfirmedAction(): void {
+    if (this.pendingConfirmedOperation) {
+      const operation = this.pendingConfirmedOperation;
+      this.closeConfirmModal();
+      operation();
+      return;
+    }
     const cfg = this.confirmModalConfig();
     if (!cfg.shipment) return;
 
@@ -1159,6 +1196,12 @@ export class Shipping implements OnInit, OnDestroy {
   }
 
   openContainerModal(shipment?: Shipment): void {
+    this.containerGuideRequest?.unsubscribe();
+    this.containerSearch.set('');
+    this.guidingShipment.set(null);
+    this.linkedContainerIds.set([]);
+    this.containerGuideLoading.set(false);
+    this.containerGuideError.set(null);
     this.menuBarService.hide();
     this.containerModalOpen.set(true);
     this.selectedShipmentForContainer.set(shipment || null);
@@ -1166,6 +1209,7 @@ export class Shipping implements OnInit, OnDestroy {
   }
 
   closeContainerModal(): void {
+    this.containerGuideRequest?.unsubscribe();
     this.containerModalClosing.set(true);
     setTimeout(() => {
       this.containerModalOpen.set(false);
@@ -1174,6 +1218,7 @@ export class Shipping implements OnInit, OnDestroy {
       this.containerDetailOpen.set(false);
       this.containerDetailClosing.set(false);
       this.menuBarService.show();
+      if (this.dashboardOnly) this.loadDashboardContainers();
     }, 280);
   }
 
@@ -1182,9 +1227,13 @@ export class Shipping implements OnInit, OnDestroy {
     this.containerDetailOpen.set(true);
     this.selectedContainer.set(container);
     this.shipmentDistributions.set({});
-    this.containerService.getContainer(container.id).subscribe({
+    this.containerDetailLoading.set(true);
+    this.containerDetailError.set(null);
+    this.containerDetailRequest?.unsubscribe();
+    this.containerDetailRequest = this.containerService.getContainer(container.id).subscribe({
       next: (response) => {
         if (response.success) {
+          this.containerDetailLoading.set(false);
           this.selectedContainer.set(response.data.container);
           // Fetch distribution data for each shipment that is half_loaded
           const shipments = response.data.container?.shipments || [];
@@ -1195,7 +1244,9 @@ export class Shipping implements OnInit, OnDestroy {
           });
         }
       },
-      error: (error: any) => {
+      error: () => {
+        this.containerDetailLoading.set(false);
+        this.containerDetailError.set('Unable to load details. Close this window and try again.');
       }
     });
   }
@@ -1265,6 +1316,7 @@ export class Shipping implements OnInit, OnDestroy {
   }
 
   closeContainerDetail(): void {
+    this.containerDetailRequest?.unsubscribe();
     this.containerDetailClosing.set(true);
     setTimeout(() => {
       this.containerDetailOpen.set(false);
@@ -1397,6 +1449,11 @@ export class Shipping implements OnInit, OnDestroy {
   }
 
   private doLoadShipment(containerId: string, shipmentId: string, qty: number): void {
+    const container = this.containers().find(item => item.id === containerId);
+    this.confirmOperation('Confirm Parcel Loading', `Load ${qty} unit(s) into ${container?.reference_number || 'this container or batch'}?`, () => this.performLoadShipment(containerId, shipmentId, qty));
+  }
+
+  private performLoadShipment(containerId: string, shipmentId: string, qty: number): void {
     this.quantityError.set('');
     this.updatingShipment.set(shipmentId);
     this.containerService.addShipment(containerId, shipmentId, qty).subscribe({
@@ -1405,6 +1462,8 @@ export class Shipping implements OnInit, OnDestroy {
           this.toastService.success(response.message || 'Shipment added to container');
           this.loadShipments();
           this.closeQuantityModal();
+          this.selectedShipmentForContainer.set(null);
+          this.loadContainers();
         } else {
           this.toastService.error(response.message || 'Failed to add shipment');
         }
@@ -1425,33 +1484,19 @@ export class Shipping implements OnInit, OnDestroy {
     const container = this.containers().find(c => c.id === containerId);
     if (!container) return;
 
-    // If quantity is 1 or shipment has no explicit quantity, load directly
-    // Otherwise show quantity modal
     if (expected <= 1) {
-      this.updatingShipment.set(shipment.id);
-      this.containerService.addShipment(containerId, shipment.id, 1).subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.toastService.success('Shipment added to container');
-            this.loadShipments();
-            this.selectedShipmentForContainer.set(null);
-          } else {
-            this.toastService.error(response.message || 'Failed to add shipment');
-          }
-          this.updatingShipment.set(null);
-        },
-        error: (error: any) => {
-          this.toastService.error('Failed to add shipment to container');
-          this.updatingShipment.set(null);
-        }
-      });
+      this.doLoadShipment(containerId, shipment.id, 1);
     } else {
-      // Show quantity modal
       this.openQuantityModal(container, shipment);
     }
   }
 
   removeShipmentFromContainer(shipment: Shipment): void {
+    if (!shipment.container_id) return;
+    this.confirmOperation(`Remove from ${this.containerTerm(shipment)}`, `Remove ${shipment.title || 'this parcel'} from its ${this.containerTerm(shipment).toLowerCase()}? Its loading status will be recalculated.`, () => this.performRemoveShipmentFromContainer(shipment));
+  }
+
+  private performRemoveShipmentFromContainer(shipment: Shipment): void {
     if (!shipment.container_id) return;
     this.updatingShipment.set(shipment.id);
     this.containerService.removeShipment(shipment.container_id, shipment.id).subscribe({
@@ -1472,6 +1517,13 @@ export class Shipping implements OnInit, OnDestroy {
   }
 
   closeContainer(containerId: string): void {
+    const container = this.containers().find(item => item.id === containerId);
+    if (!container) return;
+    const term = container.transport_method === 'air' ? 'Batch' : 'Container';
+    this.confirmOperation(`Close ${term}`, `Close ${container.reference_number}? This ends loading and updates the status of the parcels inside.`, () => this.performCloseContainer(containerId));
+  }
+
+  private performCloseContainer(containerId: string): void {
     this.updatingContainer.set(containerId);
     this.containerService.closeContainer(containerId).subscribe({
       next: (response) => {
@@ -1492,6 +1544,13 @@ export class Shipping implements OnInit, OnDestroy {
   }
 
   updateContainerStatus(containerId: string, status: string): void {
+    const container = this.containers().find(item => item.id === containerId);
+    if (!container) return;
+    const label = this.formatStatus(status, container.transport_method);
+    this.confirmOperation(`Update to ${label}`, `Update ${container.reference_number} to ${label}? This will also update the shipping status of its parcels.`, () => this.performUpdateContainerStatus(containerId, status));
+  }
+
+  private performUpdateContainerStatus(containerId: string, status: string): void {
     this.updatingContainer.set(containerId);
     this.containerService.updateContainerStatus(containerId, status).subscribe({
       next: (response) => {
@@ -1507,6 +1566,47 @@ export class Shipping implements OnInit, OnDestroy {
       error: (error: any) => {
         this.toastService.error('Failed to update container status');
         this.updatingContainer.set(null);
+      }
+    });
+  }
+
+  isContainerManaged(shipment: Shipment): boolean {
+    return ['loaded_in_container', 'at_port_abroad', 'in_transit', 'at_tanzania_port', 'at_tanzania_warehouse'].includes(shipment.status);
+  }
+
+  openShipmentStatusGuide(shipment: Shipment): void {
+    const term = this.containerTerm(shipment);
+    this.confirmOperation('Update Parcel Status',
+      `This parcel's shipping status is updated through its ${term.toLowerCase()}. Changing that status also updates the other parcels inside it. Continue to the assigned ${term.toLowerCase()} to update its status.`,
+      () => this.openAssignedContainers(shipment), `Open ${term}`);
+  }
+
+  retryContainerGuide(): void {
+    const shipment = this.guidingShipment();
+    if (shipment) this.openAssignedContainers(shipment);
+  }
+
+  private openAssignedContainers(shipment: Shipment): void {
+    this.transportMode.set(shipment.transport_method === 'air' ? 'air' : 'sea');
+    this.openContainerModal();
+    this.guidingShipment.set(shipment);
+    this.containerGuideLoading.set(true);
+    this.containerGuideRequest = this.shipmentService.getContainerStatus(shipment.id).subscribe({
+      next: response => {
+        if (!response.success) {
+          this.containerGuideError.set('Unable to find the assigned container or batch. Please try again.');
+        } else {
+          const ids = response.data.containers.map(container => container.id);
+          if (shipment.container_id && !ids.includes(shipment.container_id)) ids.push(shipment.container_id);
+          this.linkedContainerIds.set(ids);
+          if (!ids.length) this.containerGuideError.set('No assigned container or batch was found for this parcel.');
+        }
+        this.containerGuideLoading.set(false);
+      },
+      error: () => {
+        if (shipment.container_id) this.linkedContainerIds.set([shipment.container_id]);
+        else this.containerGuideError.set('Unable to find the assigned container or batch. Please try again.');
+        this.containerGuideLoading.set(false);
       }
     });
   }
@@ -1782,7 +1882,19 @@ export class Shipping implements OnInit, OnDestroy {
         }
       });
     } else if (this.qrScanPurpose() === 'user_confirm_delivery' && this.qrScanShipmentId()) {
-      this.shipmentService.markAsUserDelivered(this.qrScanShipmentId()!, uuid).subscribe({
+      const shipmentId = this.qrScanShipmentId()!;
+      this.qrScanState.set('info');
+      this.qrScanMessage.set('Delivery is awaiting your confirmation.');
+      this.confirmOperation('Confirm Delivery', 'Confirm that you have received this parcel? This will mark it as delivered.', () => this.performScannedDelivery(shipmentId, uuid));
+    } else {
+      this.qrScanState.set('error');
+      this.qrScanMessage.set('Invalid scan configuration.');
+    }
+  }
+
+  private performScannedDelivery(shipmentId: string, uuid: string): void {
+    this.qrScanState.set('processing');
+      this.shipmentService.markAsUserDelivered(shipmentId, uuid).subscribe({
         next: (response) => {
           if (response.success && response.info) {
             this.qrScanState.set('info');
@@ -1802,10 +1914,6 @@ export class Shipping implements OnInit, OnDestroy {
           this.qrScanMessage.set(err?.error?.message || 'Something went wrong. Please try again.');
         }
       });
-    } else {
-      this.qrScanState.set('error');
-      this.qrScanMessage.set('Invalid scan configuration.');
-    }
   }
 
   resetQrScanner(): void {
@@ -1889,7 +1997,10 @@ export class Shipping implements OnInit, OnDestroy {
     if (this.canRemoveFromContainer(shipment)) {
       items.push({ label: `Remove from ${this.containerTerm(shipment)}`, icon: 'fa-arrow-left', colorClass: 'text-yellow-600 dark:text-yellow-400', action: () => this.removeShipmentFromContainer(shipment), disabled: this.isUpdating(shipment.id) });
     }
-    if (this.canMarkInTransit(shipment)) {
+    if (this.isContainerManaged(shipment)) {
+      items.push({ label: 'Update Status', icon: 'fa-arrows-rotate', colorClass: 'text-orange-600 dark:text-orange-400', action: () => this.openShipmentStatusGuide(shipment), disabled: this.isUpdating(shipment.id) });
+    }
+    if (this.canMarkInTransit(shipment) && !this.isContainerManaged(shipment)) {
       items.push({ label: 'In Transit', icon: 'fa-truck', colorClass: 'text-blue-600 dark:text-blue-400', action: () => this.markAsInTransitAction(shipment), disabled: this.isUpdating(shipment.id) });
     }
     if (this.canReturnToWarehouse(shipment)) {

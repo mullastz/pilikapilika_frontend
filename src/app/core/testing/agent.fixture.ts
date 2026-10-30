@@ -7,7 +7,6 @@ export function makeAgent(overrides: Partial<Agent> = {}): Agent {
     firstname: 'Agent',
     lastname: 'Example',
     gender: 'Male',
-    username: 'agent-example',
     email: 'agent@example.test',
     phone: '123456789',
     region: 'Arusha',

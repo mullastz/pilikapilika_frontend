@@ -110,7 +110,7 @@ export class AdminPayments implements OnInit {
   fullName(user: any): string {
     if (!user) return '-';
     const name = `${user.firstname || ''} ${user.lastname || ''}`.trim();
-    return name || user.username || user.email || `User #${user.id}`;
+    return name || user.email || `User #${user.id}`;
   }
 
   shipmentLabel(shipment: any): string {

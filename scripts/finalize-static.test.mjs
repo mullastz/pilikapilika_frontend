@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname, basename, resolve } from 'node:path';
 
 const run = promisify(execFile);
-const pages = ['', 'search', 'how-it-works', 'about-us', 'contact-us'];
+const pages = ['', 'search', 'how-it-works', 'about-us', 'contact-us', 'china-to-tanzania-cargo'];
 const rendered = '<h1>Public page</h1><meta name="robots" content="index, follow">';
 
 async function fixture(t, omittedPage) {
@@ -32,21 +32,21 @@ async function fixture(t, omittedPage) {
   return { output, build: () => run(process.execPath, [script]) };
 }
 
-test('all five public pages enter the sitemap without private Cloudflare rules', async t => {
+test('all public pages enter the sitemap without private Cloudflare rules', async t => {
   const { output, build } = await fixture(t);
   await build();
   const sitemap = await readFile(join(output, 'sitemap.xml'), 'utf8');
   const redirects = await readFile(join(output, '_redirects'), 'utf8');
   const headers = await readFile(join(output, '_headers'), 'utf8');
-  assert.equal((sitemap.match(/<loc>/g) || []).length, 5);
+  assert.equal((sitemap.match(/<loc>/g) || []).length, pages.length);
   for (const page of pages) {
     assert.ok(sitemap.includes(`<loc>https://pilikapilika.com/${page ? `${page}/` : ''}</loc>`));
     if (page) {
-      assert.ok(!redirects.includes(`/${page} /index.csr.html`));
+      assert.ok(!redirects.includes(`/${page} /index.csr`));
       assert.doesNotMatch(headers, new RegExp(`(^|\\n)/${page}/?\\n`));
     }
   }
-  assert.match(redirects, /\/account\/\* \/index.csr.html 200/);
+  assert.match(redirects, /\/account\/\* \/index\.csr 200/);
   assert.match(headers, /\/messages\n  X-Robots-Tag: noindex, follow/);
 });
 
@@ -61,7 +61,10 @@ test('failed agent pages stay out of the sitemap and successful profiles win ove
   const redirects = await readFile(join(output, '_redirects'), 'utf8');
   assert.ok(sitemap.includes('/agent/available-agent/'));
   assert.ok(!sitemap.includes('/agent/failed-agent/'));
-  assert.ok(redirects.indexOf('/agent/available-agent/ /agent/available-agent/index.html 200') < redirects.indexOf('/agent/* /index.csr.html 200'));
+  assert.ok(redirects.includes('/agent/available-agent /agent/available-agent/ 301'));
+  const profileRule = redirects.indexOf('/agent/available-agent/ /agent/available-agent/ 200');
+  assert.ok(profileRule >= 0 && profileRule < redirects.indexOf('/agent/* /index.csr 200'));
+  assert.ok(!redirects.includes('/agent/failed-agent/ /agent/failed-agent/ 200'));
 });
 
 test('packaging fails if a required public page was not prerendered', async t => {

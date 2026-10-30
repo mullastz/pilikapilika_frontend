@@ -19,8 +19,8 @@ describe('Public agent prerender discovery', () => {
     return TestBed.runInInjectionContext(() => getParams());
   }
 
-  it('prerenders the homepage and all four public navigation pages', () => {
-    for (const path of ['', 'search', 'how-it-works', 'about-us', 'contact-us']) {
+  it('prerenders the homepage and all public navigation pages', () => {
+    for (const path of ['', 'search', 'how-it-works', 'about-us', 'contact-us', 'china-to-tanzania-cargo']) {
       expect(serverRoutes.find(route => route.path === path)?.renderMode).toBe(RenderMode.Prerender);
     }
   });

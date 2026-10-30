@@ -1,11 +1,9 @@
 <div class="bg-[#f5f5f5] dark:bg-[#0a0a0a] min-h-screen text-gray-900 dark:text-white">
   <div class="relative h-20 sm:h-24"><app-header /></div>
   <main class="max-w-5xl mx-auto px-4 sm:px-6 pb-16">
-    <section class="py-10 sm:py-16 max-w-3xl">
-      <p class="text-sm font-semibold uppercase tracking-widest text-orange-600 dark:text-orange-400 mb-3">Get in touch</p>
-      <h1 class="text-3xl sm:text-5xl font-bold tracking-tight">Contact Pilikapilika</h1>
-      <p class="mt-5 text-base sm:text-lg leading-relaxed text-gray-600 dark:text-gray-300">Have a question about using Pilikapilika? Find our public support details here, or use the links below to get help with finding an agent and managing a shipment.</p>
-    </section>
+    <div class="py-6 sm:py-10">
+      <app-page-hero [title]="title" [subtitle]="subtitle" [imageUrl]="imageUrl" />
+    </div>
 
     <section aria-label="Support contact details" class="grid sm:grid-cols-2 gap-4">
       @if (email) {
