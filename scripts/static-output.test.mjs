@@ -7,7 +7,7 @@ import { JSDOM } from 'jsdom';
 
 const output = fileURLToPath(new URL('../dist/pilikapilika-frontend/browser/', import.meta.url));
 const read = path => readFile(join(output, path), 'utf8');
-const publicPages = ['/', '/search/', '/how-it-works/', '/about-us/', '/contact-us/', '/china-to-tanzania-cargo/'];
+const publicPages = ['/blog/', '/', '/search/', '/how-it-works/', '/about-us/', '/contact-us/', '/china-to-tanzania-cargo/'];
 
 test('public pages contain indexable HTML and unique production metadata', async () => {
   const titles = new Set();

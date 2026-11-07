@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.spec.json",
+  "include": [
+    "src/app/core/helpers/shipment-progress.helper.spec.ts",
+    "src/app/feature/shipping/shipping.spec.ts",
+    "src/app/feature/blog/blog.spec.ts"
+  ]
+}

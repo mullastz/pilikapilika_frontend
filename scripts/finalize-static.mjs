@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 const output = fileURLToPath(new URL('../dist/pilikapilika-frontend/browser/', import.meta.url));
 const origin = 'https://pilikapilika.com';
-const publicPaths = ['/', '/search/', '/how-it-works/', '/about-us/', '/contact-us/', '/china-to-tanzania-cargo/'];
+const publicPaths = ['/blog/', '/', '/search/', '/how-it-works/', '/about-us/', '/contact-us/', '/china-to-tanzania-cargo/'];
 const rewrites = [];
 for (const path of publicPaths) {
   const html = await readFile(join(output, path.slice(1), 'index.html'), 'utf8');
@@ -39,7 +39,7 @@ if (rewrites.length > 1900) throw new Error('Too many agent rewrites for Pages. 
 const appRoutes = [
   '/sign-up', '/sign-in', '/forgot-password', '/home', '/profile-management',
   '/account/*', '/admin', '/admin/*', '/messages', '/qr-generator',
-  '/package-generator', '/scan-qr', '/verify-email/*', '/reset-password/*',
+  '/blog/*', '/package-generator', '/scan-qr', '/verify-email/*', '/reset-password/*',
   '/track-shipping/*', '/qr/*', '/package/*', '/book-shipment/*', '/agent/*',
 ];
 
@@ -57,6 +57,6 @@ await writeFile(join(output, '_redirects'), `${rewrites.join('\n')}\n`);
 
 // Apply noindex before JavaScript runs on private/auth/tool routes.
 // Agent fallbacks inherit noindex from index.csr.html until the next prerender build.
-const privateRoutes = appRoutes.filter(path => path !== '/agent/*');
+const privateRoutes = appRoutes.filter(path => path !== '/agent/*' && path !== '/blog/*');
 await writeFile(join(output, '_headers'), `${privateRoutes.map(path => `${path}\n  X-Robots-Tag: noindex, follow\n${!path.includes('*') ? `${path}/\n  X-Robots-Tag: noindex, follow\n` : ''}`).join('\n')}\n/index.csr\n  X-Robots-Tag: noindex, follow\n/index.csr.html\n  X-Robots-Tag: noindex, follow\n`);
 console.log(`Prepared Cloudflare static output: ${publicPaths.length} public URLs in sitemap.xml.`);

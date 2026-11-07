@@ -60,14 +60,14 @@ const STAGE_META: Record<string, { label: string; icon: string }> = {
   pending_confirmation: { label: 'Pending', icon: 'fa-clock' },
   confirmed: { label: 'Confirmed', icon: 'fa-check' },
   partially_received: { label: 'Partially Received', icon: 'fa-triangle-exclamation' },
-  at_warehouse: { label: 'At Warehouse', icon: 'fa-warehouse' },
+  at_warehouse: { label: 'At Warehouse Abroad', icon: 'fa-warehouse' },
   half_loaded: { label: 'Half Loaded', icon: 'fa-box-open' },
   loading_container: { label: 'Loading', icon: 'fa-dolly' },
   loaded_in_container: { label: 'Loaded', icon: 'fa-box-open' },
   at_port_abroad: { label: 'At Port Abroad', icon: 'fa-anchor' },
   in_transit: { label: 'In Transit', icon: 'fa-ship' },
-  at_tanzania_port: { label: 'At Port', icon: 'fa-anchor' },
-  at_tanzania_warehouse: { label: 'Local Warehouse', icon: 'fa-store' },
+  at_tanzania_port: { label: 'Tanzania Port', icon: 'fa-anchor' },
+  at_tanzania_warehouse: { label: 'Tanzania Warehouse', icon: 'fa-store' },
   delivered: { label: 'Delivered', icon: 'fa-handshake' },
 };
 
@@ -103,7 +103,7 @@ export function getShipmentStageLabel(status: string, transportMethod?: string |
     pending_confirmation: 'Pending Confirmation',
     confirmed: 'Confirmed',
     partially_received: 'Partially Received',
-    at_warehouse: 'At Warehouse',
+    at_warehouse: 'At Warehouse Abroad',
     half_loaded: 'Half Loaded',
     loading_container: 'Loading Container',
     loaded_in_container: 'Loaded in Container',
@@ -200,10 +200,7 @@ export function getProgressStages(
  */
 export function formatShipmentStatus(status: string): string {
   if (!status) return 'Unknown';
-  return status
-    .split('_')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
+  return getShipmentStageLabel(status);
 }
 
 /**
@@ -224,4 +221,24 @@ export function getStatusBadgeClass(status: string): string {
     default:
       return 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400';
   }
+}
+
+/** Match readable status text to the progress bar, including in dark mode. */
+export function getStatusTextClass(status: string): string {
+  const colors: Record<string, string> = {
+    pending_confirmation: 'text-yellow-700 dark:text-yellow-400',
+    confirmed: 'text-purple-700 dark:text-purple-400',
+    partially_received: 'text-yellow-700 dark:text-yellow-400',
+    at_warehouse: 'text-indigo-700 dark:text-indigo-400',
+    half_loaded: 'text-amber-700 dark:text-amber-400',
+    loading_container: 'text-orange-700 dark:text-orange-400',
+    loaded_in_container: 'text-teal-700 dark:text-teal-400',
+    at_port_abroad: 'text-amber-700 dark:text-amber-400',
+    in_transit: 'text-blue-700 dark:text-blue-400',
+    at_tanzania_port: 'text-cyan-700 dark:text-cyan-400',
+    at_tanzania_warehouse: 'text-sky-700 dark:text-sky-400',
+    delivered: 'text-green-700 dark:text-green-400',
+    cancelled: 'text-red-700 dark:text-red-400',
+  };
+  return colors[status] ?? 'text-gray-600 dark:text-gray-400';
 }

@@ -3,7 +3,7 @@
     <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Settings</h2>
     <button
       (click)="save()"
-      [disabled]="saving()"
+      [disabled]="saving() || uploadingImage() !== null"
       class="px-4 py-2 bg-[#FF7800] text-white rounded-lg hover:bg-orange-600 transition disabled:opacity-50 flex items-center gap-2"
     >
       @if (saving()) {
@@ -185,7 +185,7 @@
                 @if (contentImageUrl('about_us_image')) {
                   <img [src]="contentImageUrl('about_us_image')" alt="About Us background preview" class="w-full max-w-md rounded-lg mb-2 object-cover max-h-48" />
                 }
-                <input id="about-image" type="file" accept="image/jpeg,image/png,image/webp" [disabled]="uploadingImage() !== null" (change)="uploadContentImage($event, 'about_us_image')" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#FF7800] file:text-white hover:file:bg-orange-600 disabled:opacity-50" />
+                <input id="about-image" type="file" accept="image/jpeg,image/png,image/webp" [disabled]="uploadingImage() !== null || saving()" (change)="uploadContentImage($event, 'about_us_image')" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#FF7800] file:text-white hover:file:bg-orange-600 disabled:opacity-50" />
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">The image appears blurred behind the centered page title and subtitle. JPG, PNG or WebP, up to 5 MB.</p>
                 @if (uploadingImage() === 'about_us_image') {
                   <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-circle-notch fa-spin"></i> Uploading...</p>
@@ -231,7 +231,7 @@
                 @if (contentImageUrl('contact_image')) {
                   <img [src]="contentImageUrl('contact_image')" alt="Contact Us background preview" class="w-full max-w-md rounded-lg mb-2 object-cover max-h-48" />
                 }
-                <input id="contact-image" type="file" accept="image/jpeg,image/png,image/webp" [disabled]="uploadingImage() !== null" (change)="uploadContentImage($event, 'contact_image')" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#FF7800] file:text-white hover:file:bg-orange-600 disabled:opacity-50" />
+                <input id="contact-image" type="file" accept="image/jpeg,image/png,image/webp" [disabled]="uploadingImage() !== null || saving()" (change)="uploadContentImage($event, 'contact_image')" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#FF7800] file:text-white hover:file:bg-orange-600 disabled:opacity-50" />
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">The image appears blurred behind the centered page title and subtitle. JPG, PNG or WebP, up to 5 MB.</p>
                 @if (uploadingImage() === 'contact_image') {
                   <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Uploading...</p>
@@ -261,12 +261,42 @@
                 @if (contentImageUrl('hero_image')) {
                   <img [src]="contentImageUrl('hero_image')" class="w-full max-w-md rounded-lg mb-2 object-cover max-h-48" />
                 }
-                <input type="file" accept="image/*" (change)="uploadContentImage($event, 'hero_image')" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#FF7800] file:text-white hover:file:bg-orange-600" />
+                <input type="file" accept="image/jpeg,image/png,image/webp" [disabled]="uploadingImage() !== null || saving()" (change)="uploadContentImage($event, 'hero_image')" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#FF7800] file:text-white hover:file:bg-orange-600" />
                 @if (uploadingImage() === 'hero_image') {
                   <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-circle-notch fa-spin"></i> Uploading...</p>
                 }
               </div>
             </div>
+            <hr class="border-gray-200 dark:border-gray-700" />
+            <section class="space-y-5" aria-labelledby="blog-editor-title">
+              <div class="flex items-center justify-between gap-3">
+                <h3 id="blog-editor-title" class="text-lg font-semibold text-gray-900 dark:text-white">Blog Posts</h3>
+                <button type="button" (click)="addBlogPost()" class="px-3 py-2 text-sm bg-orange-500 text-white rounded-lg">Add Post</button>
+              </div>
+              <p class="text-sm text-gray-500 dark:text-gray-400">The existing shipping guides appear on the Blog page automatically. Add future articles here, choose Published when ready, then Save Changes. Leave Published unchecked to keep a draft.</p>
+              @for (post of blogPosts(); track $index; let index = $index) {
+                <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-4">
+                  <div class="flex items-center justify-between">
+                    <h4 class="font-semibold dark:text-white">{{post.title || 'New article'}}</h4>
+                    <button type="button" (click)="removeBlogPost(index)" class="text-sm text-red-600 dark:text-red-400">Remove</button>
+                  </div>
+                  <label class="block text-sm dark:text-gray-300">Title
+                    <input [(ngModel)]="post.title" maxlength="200" class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] dark:text-white" />
+                  </label>
+                  <label class="block text-sm dark:text-gray-300">URL slug
+                    <input [(ngModel)]="post.slug" maxlength="120" placeholder="preparing-your-first-shipment" class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] dark:text-white" />
+                    <span class="text-xs text-gray-500">Use a unique name with lowercase letters, numbers, and hyphens.</span>
+                  </label>
+                  <label class="block text-sm dark:text-gray-300">Short description
+                    <textarea [(ngModel)]="post.excerpt" maxlength="600" rows="2" class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] dark:text-white"></textarea>
+                  </label>
+                  <label class="block text-sm dark:text-gray-300">Article text
+                    <textarea [(ngModel)]="post.body" maxlength="30000" rows="10" class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#222] dark:text-white"></textarea>
+                  </label>
+                  <label class="flex items-center gap-2 text-sm dark:text-gray-300"><input type="checkbox" [(ngModel)]="post.published" /> Published</label>
+                </div>
+              }
+            </section>
           </div>
         }
       </div>

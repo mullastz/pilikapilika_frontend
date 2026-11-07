@@ -41,6 +41,8 @@ export class SeoService {
           this.update({ title: 'China to Tanzania Cargo Agents | Pilikapilika', description: SITE_DESCRIPTION, path, index: true });
         } else if (path === '/china-to-tanzania-cargo') {
           this.update({ title: 'China to Tanzania Cargo & Shipping Guide | Pilikapilika', description: 'Planning cargo from China to Tanzania? Find logistics agents, compare air and sea freight options, and prepare shipment details before booking.', path, index: true });
+        } else if (path === '/blog') {
+          this.update({ title: 'Shipping Guides & Articles | Pilikapilika Blog', description: 'Explore shipping guides, parcel tips, and articles from Pilikapilika. Learn about air and sea freight and managing your shipments.', path, index: true });
         } else if (path === '/about-us') {
           this.update({ title: 'About Pilikapilika | Logistics Marketplace in Tanzania', description: 'Learn how Pilikapilika connects customers and businesses with logistics agents for shipping, delivery, and shipment updates.', path, index: true });
         } else if (path === '/search') {
@@ -49,7 +51,7 @@ export class SeoService {
           this.update({ title: 'How Pilikapilika Works | Find Agents & Book Shipments', description: 'Learn how to find a logistics agent, prepare your parcel, book a shipment, follow delivery updates, and confirm receipt with Pilikapilika.', path, index: true });
         } else if (path === '/contact-us') {
           this.update({ title: 'Contact Pilikapilika | Logistics Marketplace Support', description: 'Contact Pilikapilika for platform support and find help with agent discovery, shipment bookings, and delivery updates.', path, index: true });
-        } else if (!/^\/agent\/[^/]+$/.test(path)) {
+        } else if (!/^\/(agent|blog)\/[^/]+$/.test(path)) {
           this.privatePage();
         }
         // AgentPage sets its metadata only after a public profile has loaded.

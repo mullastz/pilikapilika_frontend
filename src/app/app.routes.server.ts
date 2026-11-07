@@ -5,6 +5,7 @@ import { AgentService } from './core/services/agent.service';
 
 export const serverRoutes: ServerRoute[] = [
   { path: '', renderMode: RenderMode.Prerender },
+  { path: 'blog', renderMode: RenderMode.Prerender },
   { path: 'about-us', renderMode: RenderMode.Prerender },
   { path: 'search', renderMode: RenderMode.Prerender },
   { path: 'how-it-works', renderMode: RenderMode.Prerender },

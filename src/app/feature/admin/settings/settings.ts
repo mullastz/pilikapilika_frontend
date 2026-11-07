@@ -6,6 +6,7 @@ import { AdminService } from '../../../core/services/admin.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { RouterModule } from '@angular/router';
 import { resolveImageUrl } from '../../../core/utils/image-url.util';
+import { BlogPost, parseBlogPosts } from '../../../core/services/blog.service';
 import { ContentService } from '../../../core/services/content.service';
 
 interface AppSettings {
@@ -37,6 +38,7 @@ interface AppSettings {
     platform_commission_percent: number;
   };
   content: {
+    blog_posts: string;
     about_us_title: string;
     about_us_subtitle: string;
     about_us_body: string;
@@ -97,6 +99,7 @@ export class AdminSettings implements OnInit {
       platform_commission_percent: 5,
     },
     content: {
+      blog_posts: '[]',
       about_us_title: '',
       about_us_subtitle: '',
       about_us_body: '',
@@ -114,6 +117,16 @@ export class AdminSettings implements OnInit {
       contact_hours: '',
     },
   });
+
+  blogPosts = signal<BlogPost[]>([]);
+
+  addBlogPost(): void {
+    this.blogPosts.update(posts => [...posts, { slug: '', title: '', excerpt: '', body: '', published: false }]);
+  }
+
+  removeBlogPost(index: number): void {
+    this.blogPosts.update(posts => posts.filter((_, i) => i !== index));
+  }
 
   loading = signal(true);
   saving = signal(false);
@@ -151,6 +164,7 @@ export class AdminSettings implements OnInit {
           }
         }
         this.settings.set(merged);
+        this.blogPosts.set(parseBlogPosts(merged.content.blog_posts));
         this.loading.set(false);
       },
       error: () => {
@@ -166,6 +180,17 @@ export class AdminSettings implements OnInit {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
+    if (this.uploadingImage() || this.saving()) { input.value = ''; return; }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      this.toastService.error('Choose a JPEG, PNG, or WebP image.');
+      input.value = '';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.toastService.error('Choose an image smaller than 5 MB.');
+      input.value = '';
+      return;
+    }
 
     this.uploadingImage.set(key);
     this.adminService.uploadContentImage(key, file).subscribe({
@@ -179,8 +204,10 @@ export class AdminSettings implements OnInit {
         this.uploadingImage.set(null);
         input.value = '';
       },
-      error: () => {
-        this.toastService.error('Failed to upload image');
+      error: (error: HttpErrorResponse) => {
+        const validationErrors: unknown[] = Object.values(error.error?.errors || {}).flat();
+        const message = validationErrors.find((value): value is string => typeof value === 'string');
+        this.toastService.error(message || error.error?.message || (error.status === 413 ? 'Image exceeds the server upload limit. Choose a smaller image.' : 'Failed to upload image. Please try again.'));
         this.uploadingImage.set(null);
         input.value = '';
       },
@@ -193,6 +220,8 @@ export class AdminSettings implements OnInit {
   }
 
   save(): void {
+    if (this.uploadingImage() || this.saving()) return;
+    this.settings.update(settings => ({ ...settings, content: { ...settings.content, blog_posts: JSON.stringify(this.blogPosts()) } }));
     this.saving.set(true);
     this.adminService.updateSettings({ settings: this.settings() }).subscribe({
       next: () => {

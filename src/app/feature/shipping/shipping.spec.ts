@@ -59,6 +59,90 @@ describe('Shipping', () => {
     fixture.detectChanges();
   });
 
+  it('requires a valid received quantity before a manual warehouse update', () => {
+    const receive = vi.fn().mockReturnValue(of({ success: true, message: 'Received' }));
+    TestBed.inject(ShipmentService).markAsAtWarehouse = receive;
+    component.markAsAtWarehouseAction({ ...shipment, status: 'confirmed', products: [{ quantity: 10 }] });
+    component.executeConfirmedAction();
+    expect(receive).not.toHaveBeenCalled();
+    expect(component.confirmModalOpen()).toBe(true);
+    expect(component.warehouseQuantityError()).toContain('1 and 10');
+    component.warehouseQuantity.set(11);
+    component.executeConfirmedAction();
+    expect(receive).not.toHaveBeenCalled();
+    component.warehouseQuantity.set(10);
+    component.executeConfirmedAction();
+    expect(receive).toHaveBeenCalledWith(shipment.id, 10);
+  });
+
+  it('confirms partial receipt before submitting and allows cancelling without a mutation', () => {
+    const receive = vi.fn().mockReturnValue(of({ success: true, message: 'Partial receipt' }));
+    TestBed.inject(ShipmentService).markAsAtWarehouse = receive;
+    component.markAsAtWarehouseAction({ ...shipment, status: 'confirmed', products: [{ quantity: 10 }] });
+    component.warehouseQuantity.set(4);
+    component.executeConfirmedAction();
+    expect(receive).not.toHaveBeenCalled();
+    expect(component.warehousePartialConfirm()).toBe(true);
+    component.executeConfirmedAction();
+    expect(receive).toHaveBeenCalledWith(shipment.id, 4);
+  });
+
+  it('filters My Shipping by sea or air using the same selector as agents', () => {
+    vi.spyOn(component, 'isAgent').mockReturnValue(false);
+    const getShipments = vi.fn().mockReturnValue(of({ success: true, data: { shipments: [], pagination: { has_more: false } } }));
+    TestBed.inject(ShipmentService).getUserShipments = getShipments;
+    component.page.set(3);
+    expect(component.transportMode()).toBe('sea');
+    component.setTransportMode('air');
+    expect(getShipments).toHaveBeenCalledWith(1, 10, 'air');
+    expect(component.page()).toBe(1);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).not.toContain('All Transport');
+    expect(fixture.nativeElement.textContent).not.toContain('Parcel transport');
+  });
+
+  it('shows clients their own active sea and air parcels without requesting or displaying containers', () => {
+    vi.spyOn(component, 'isAgent').mockReturnValue(false);
+    const getShipments = vi.fn((_page = 1, _size = 10, mode?: 'sea' | 'air') => of({ success: true, data: {
+      shipments: [{ ...shipment, id: mode ?? 'sea', title: `My ${mode} parcel`, transport_method: mode }], pagination: { current_page: 1, last_page: 1, per_page: 10, total: 1, has_more: false },
+    } }));
+    const getContainers = vi.fn();
+    TestBed.inject(ShipmentService).getUserShipments = getShipments;
+    TestBed.inject(ContainerService).getContainers = getContainers;
+    component.dashboardOnly = true;
+    component.loadDashboardContainers();
+    component.loadDashboardParcels();
+    fixture.detectChanges();
+    expect(getContainers).not.toHaveBeenCalled();
+    expect(getShipments).toHaveBeenCalledWith(1, 10, 'sea', true);
+    expect(getShipments).toHaveBeenCalledWith(1, 10, 'air', true);
+    const page = fixture.nativeElement as HTMLElement;
+    expect(page.textContent).toContain('Active Sea Freight Parcels');
+    expect(page.textContent).toContain('Active Air Freight Parcels');
+    expect(page.textContent).toContain('My sea parcel');
+    expect(page.textContent).toContain('My air parcel');
+    expect(page.querySelector('[aria-label="Filter parcels by transport"]')).toBeNull();
+    expect(page.textContent).not.toContain('Active Containers');
+    expect(page.textContent).not.toContain('View Batch');
+  });
+
+  it('colors only the card status above progress and keeps status tabs wide enough to scroll', () => {
+    component.viewModalOpen.set(false);
+    const getShipments = vi.fn().mockReturnValue(of({ success: true, data: { shipments: [shipment] } }));
+    TestBed.inject(ShipmentService).getAgentShipments = getShipments;
+    component.refreshShipments();
+    fixture.detectChanges();
+    const page = fixture.nativeElement as HTMLElement;
+    const progressStatus = page.querySelector('.shipment-card .uppercase') as HTMLElement;
+    expect(progressStatus.classList.contains('text-yellow-700')).toBe(true);
+    const tabs = [...page.querySelectorAll('.status-tabs > button')];
+    expect(tabs.length).toBeGreaterThan(0);
+    expect(tabs.every(tab => tab.classList.contains('flex-none') && tab.classList.contains('min-w-max'))).toBe(true);
+    expect(page.querySelector('.status-tabs .text-yellow-700')).toBeNull();
+    const stageLabels = [...page.querySelectorAll('.shipment-card .text-gray-400')];
+    expect(stageLabels.some(label => label.textContent?.includes('Half Loaded'))).toBe(true);
+  });
+
   it('loads QR-linked products and renders all uploaded photos with full-size links', () => {
     const product = shipment.products![0];
     component.selectProduct(component.getProductUuid(product));

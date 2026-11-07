@@ -11,6 +11,8 @@ export const routes: Routes = [
   { path: 'forgot-password', loadComponent: () => import('./feature/auth/forgot-password/forgot-password').then(m => m.ForgotPassword) },
   { path: 'reset-password/:uuid', loadComponent: () => import('./feature/auth/reset-password/reset-password').then(m => m.ResetPassword) },
   { path: '', loadComponent: () => import('./feature/landing-page/landing-page').then(m => m.LandingPage) },
+  { path: 'blog', loadComponent: () => import('./feature/blog/blog').then(m => m.Blog) },
+  { path: 'blog/:slug', loadComponent: () => import('./feature/blog/blog').then(m => m.Blog) },
   { path: 'about-us', loadComponent: () => import('./feature/about-us/about-us').then(m => m.AboutUs) },
   { path: 'how-it-works', loadComponent: () => import('./feature/how-it-works/how-it-works').then(m => m.HowItWorks) },
   { path: 'china-to-tanzania-cargo', loadComponent: () => import('./feature/china-to-tanzania-cargo/china-to-tanzania-cargo').then(m => m.ChinaToTanzaniaCargo) },

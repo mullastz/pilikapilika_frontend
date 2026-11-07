@@ -88,11 +88,11 @@ export class ShipmentService {
   /**
    * Get user's shipments with pagination (default 10 per page)
    */
-  getUserShipments(page: number = 1, perPage: number = 10, transportMethod?: 'sea' | 'air'): Observable<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }> {
+  getUserShipments(page: number = 1, perPage: number = 10, transportMethod?: 'sea' | 'air', activeOnly = false): Observable<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }> {
     this.loading.set(true);
     this.error.set(null);
 
-    return this.apiService.get<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }>(`${this.endpoint}?page=${page}&per_page=${perPage}${transportMethod ? '&transport_method=' + transportMethod : ''}`, {}).pipe(
+    return this.apiService.get<{ success: boolean; data: { shipments: Shipment[]; pagination?: { current_page: number; last_page: number; per_page: number; total: number; has_more: boolean } } }>(`${this.endpoint}?page=${page}&per_page=${perPage}${transportMethod ? '&transport_method=' + transportMethod : ''}${activeOnly ? '&active_only=1' : ''}`, {}).pipe(
       tap({
         next: (response) => {
           if (response.success) {
@@ -141,9 +141,9 @@ export class ShipmentService {
   /**
    * Mark shipment as at warehouse (for agents)
    */
-  markAsAtWarehouse(id: string): Observable<{ success: boolean; message: string; data: { shipment: Shipment } }> {
+  markAsAtWarehouse(id: string, receivedQuantity: number): Observable<{ success: boolean; message: string; data: { shipment: Shipment } }> {
     return this.apiService.post<{ success: boolean; message: string; data: { shipment: Shipment } }>(
-      `${this.endpoint}/${id}/at-warehouse`, {}
+      `${this.endpoint}/${id}/at-warehouse`, { received_quantity: receivedQuantity }
     );
   }
 

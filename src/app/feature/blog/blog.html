@@ -1,0 +1,48 @@
+<div class="min-h-screen bg-[#f5f5f5] dark:bg-[#0a0a0a] text-gray-900 dark:text-white">
+  <app-header />
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 pt-24 pb-16">
+    @if (slug()) {
+      <a routerLink="/blog" class="inline-flex items-center gap-2 text-orange-600 dark:text-orange-400 mb-6"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> All articles</a>
+      @if (loading()) {
+        <p role="status" class="py-12 text-gray-500 dark:text-gray-400">Loading article...</p>
+      } @else if (selectedPost(); as post) {
+        <article class="max-w-3xl mx-auto bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 sm:p-10">
+          <p class="text-sm font-semibold text-orange-600 dark:text-orange-400 mb-3">Pilikapilika Blog</p>
+          <h1 class="text-3xl sm:text-4xl font-bold break-words">{{post.title}}</h1>
+          <p class="text-lg text-gray-600 dark:text-gray-300 mt-5">{{post.excerpt}}</p>
+          <div class="whitespace-pre-line break-words text-gray-700 dark:text-gray-300 leading-relaxed mt-8">{{post.body}}</div>
+        </article>
+      } @else {
+        <h1 class="text-3xl font-bold">Article not found</h1>
+        <p class="mt-4 text-gray-600 dark:text-gray-400">This article is unavailable. Browse our blog for more shipping guides.</p>
+      }
+    } @else {
+      <app-page-hero title="Pilikapilika Blog" subtitle="Shipping guides, parcel tips, and news to help you plan your next delivery." />
+      <section class="mt-10" aria-labelledby="blog-articles-title">
+        <h2 id="blog-articles-title" class="text-2xl font-bold mb-6">Guides &amp; articles</h2>
+        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          @for (guide of guides; track guide.path) {
+            <article class="flex flex-col bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+              <i class="fa-solid text-3xl text-orange-500 mb-5" [class]="guide.icon" aria-hidden="true"></i>
+              <p class="text-xs uppercase tracking-wider text-orange-600 dark:text-orange-400 font-semibold mb-2">Shipping guide</p>
+              <h3 class="text-xl font-bold"><a [routerLink]="guide.path" class="hover:text-orange-500">{{guide.title}}</a></h3>
+              <p class="text-gray-600 dark:text-gray-400 mt-3 mb-5">{{guide.excerpt}}</p>
+              <a [routerLink]="guide.path" class="text-orange-600 dark:text-orange-400 font-semibold mt-auto" [attr.aria-label]="'Read ' + guide.title">Read guide <i class="fa-solid fa-arrow-right ml-1" aria-hidden="true"></i></a>
+            </article>
+          }
+          @for (post of posts(); track post.slug) {
+            <article class="flex flex-col bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+              <i class="fa-solid fa-newspaper text-3xl text-orange-500 mb-5" aria-hidden="true"></i>
+              <p class="text-xs uppercase tracking-wider text-orange-600 dark:text-orange-400 font-semibold mb-2">Article</p>
+              <h3 class="text-xl font-bold break-words"><a [routerLink]="['/blog', post.slug]" class="hover:text-orange-500">{{post.title}}</a></h3>
+              <p class="text-gray-600 dark:text-gray-400 mt-3 mb-5">{{post.excerpt}}</p>
+              <a [routerLink]="['/blog', post.slug]" class="text-orange-600 dark:text-orange-400 font-semibold mt-auto" [attr.aria-label]="'Read ' + post.title">Read article <i class="fa-solid fa-arrow-right ml-1" aria-hidden="true"></i></a>
+            </article>
+          }
+        </div>
+        @if (loading()) { <p role="status" class="mt-6 text-gray-500 dark:text-gray-400">Loading articles...</p> }
+      </section>
+    }
+  </main>
+  <app-footer />
+</div>

@@ -6,6 +6,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { ShipmentService, Shipment } from '../../core/services/shipment.service';
 import {
   localizeShipmentLabel,
+  getStatusTextClass,
   getShipmentProgress,
   getShipmentProgressColor,
   getShipmentStageLabel,
@@ -54,6 +55,11 @@ export class Shipping implements OnInit, OnDestroy {
   private dashboardParcelsPage = 0;
   public containerDetailLoading = signal(false);
   public containerDetailError = signal<string | null>(null);
+
+  readonly getStatusTextClass = getStatusTextClass;
+  readonly warehouseQuantity = signal<number | null>(null);
+  readonly warehouseQuantityError = signal('');
+  readonly warehousePartialConfirm = signal(false);
 
   // Signals
   private _shipments = signal<Shipment[]>([]);
@@ -222,7 +228,7 @@ export class Shipping implements OnInit, OnDestroy {
     return role === 'agent' || role === 'seller';
   });
 
-  public showTransportToggle = computed(() => this.supportsSea() && this.supportsAir());
+  public showTransportToggle = computed(() => !this.isAgent() || (this.supportsSea() && this.supportsAir()));
 
   // Tab configuration for agents
   agentTabs = [
@@ -230,14 +236,14 @@ export class Shipping implements OnInit, OnDestroy {
     { id: 'pending_confirmation', label: 'Requests', icon: 'fa-clock' },
     { id: 'confirmed', label: 'Confirmed', icon: 'fa-check-circle' },
     { id: 'partially_received', label: 'Partially Received', icon: 'fa-triangle-exclamation' },
-    { id: 'at_warehouse', label: 'At Warehouse', icon: 'fa-warehouse' },
+    { id: 'at_warehouse', label: 'At Warehouse Abroad', icon: 'fa-warehouse' },
     { id: 'half_loaded', label: 'Half Loaded', icon: 'fa-box-open' },
     { id: 'loading_container', label: 'Loading', icon: 'fa-dolly' },
     { id: 'loaded_in_container', label: 'Loaded', icon: 'fa-box' },
     { id: 'at_port_abroad', label: 'At Port Abroad', icon: 'fa-anchor' },
     { id: 'in_transit', label: 'In Transit', icon: 'fa-truck' },
-    { id: 'at_tanzania_port', label: 'At Port', icon: 'fa-ship' },
-    { id: 'at_tanzania_warehouse', label: 'At TZ Warehouse', icon: 'fa-warehouse' },
+    { id: 'at_tanzania_port', label: 'At Tanzania Port', icon: 'fa-ship' },
+    { id: 'at_tanzania_warehouse', label: 'At Tanzania Warehouse', icon: 'fa-warehouse' },
     { id: 'delivered', label: 'Delivered', icon: 'fa-check-double' },
     { id: 'cancelled', label: 'Cancelled', icon: 'fa-times-circle' },
     { id: 'my_shippings', label: 'My Shippings', icon: 'fa-box' }
@@ -249,14 +255,14 @@ export class Shipping implements OnInit, OnDestroy {
     { id: 'pending_confirmation', label: 'Pending', icon: 'fa-clock' },
     { id: 'confirmed', label: 'Confirmed', icon: 'fa-check-circle' },
     { id: 'partially_received', label: 'Partially Received', icon: 'fa-triangle-exclamation' },
-    { id: 'at_warehouse', label: 'At Warehouse', icon: 'fa-warehouse' },
+    { id: 'at_warehouse', label: 'At Warehouse Abroad', icon: 'fa-warehouse' },
     { id: 'half_loaded', label: 'Half Loaded', icon: 'fa-box-open' },
     { id: 'loading_container', label: 'Loading', icon: 'fa-dolly' },
     { id: 'loaded_in_container', label: 'Loaded', icon: 'fa-box' },
     { id: 'at_port_abroad', label: 'At Port Abroad', icon: 'fa-anchor' },
     { id: 'in_transit', label: 'In Transit', icon: 'fa-truck' },
-    { id: 'at_tanzania_port', label: 'At Port', icon: 'fa-ship' },
-    { id: 'at_tanzania_warehouse', label: 'At TZ Warehouse', icon: 'fa-warehouse' },
+    { id: 'at_tanzania_port', label: 'At Tanzania Port', icon: 'fa-ship' },
+    { id: 'at_tanzania_warehouse', label: 'At Tanzania Warehouse', icon: 'fa-warehouse' },
     { id: 'delivered', label: 'Delivered', icon: 'fa-check-double' },
     { id: 'cancelled', label: 'Cancelled', icon: 'fa-times-circle' }
   ];
@@ -283,6 +289,8 @@ export class Shipping implements OnInit, OnDestroy {
       this.loadDashboardParcels();
       return;
     }
+    const transport = this.route.snapshot.queryParamMap.get('transport');
+    if (transport === 'air' || transport === 'sea') this.transportMode.set(transport);
     // Check for highlight query param from home page navigation
     const highlightId = this.route.snapshot.queryParamMap.get('highlight');
     if (highlightId) {
@@ -350,6 +358,8 @@ export class Shipping implements OnInit, OnDestroy {
     this.shipmentRequest?.unsubscribe();
     this.containerDetailRequest?.unsubscribe();
     this.dashboardRequest?.unsubscribe();
+    this.clientParcelRequests.sea?.unsubscribe();
+    this.clientParcelRequests.air?.unsubscribe();
     this.containerGuideRequest?.unsubscribe();
     this.menuBarService.show();
     this.stopQrScanner();
@@ -389,7 +399,7 @@ export class Shipping implements OnInit, OnDestroy {
     this.loading.set(true);
     this.error.set(null);
     const tab = this.activeTab();
-    const mode = this.isAgent() ? this.transportMode() : undefined;
+    const mode = this.transportMode();
     const agentView = this.isAgent() && tab !== 'my_shippings';
     const request = agentView
       ? tab === 'all'
@@ -417,6 +427,7 @@ export class Shipping implements OnInit, OnDestroy {
   }
 
   loadDashboardContainers(): void {
+    if (!this.isAgent()) return;
     this.dashboardLoading.set(true);
     this.dashboardError.set(null);
     this.dashboardRequest?.unsubscribe();
@@ -432,12 +443,51 @@ export class Shipping implements OnInit, OnDestroy {
     });
   }
 
+  private clientParcelRequests: Partial<Record<'sea' | 'air', Subscription>> = {};
+  readonly clientParcelGroups = [
+    { mode: 'sea' as const, title: 'Active Sea Freight Parcels', icon: 'fa-ship' },
+    { mode: 'air' as const, title: 'Active Air Freight Parcels', icon: 'fa-plane' },
+  ];
+  readonly clientParcels = signal<Record<'sea' | 'air', {
+    shipments: Shipment[]; loading: boolean; loadingMore: boolean; error: string | null; page: number; hasMore: boolean;
+  }>>({
+    sea: { shipments: [], loading: false, loadingMore: false, error: null, page: 0, hasMore: false },
+    air: { shipments: [], loading: false, loadingMore: false, error: null, page: 0, hasMore: false },
+  });
+
+  loadClientParcelGroup(mode: 'sea' | 'air', loadMore = false): void {
+    if (this.isAgent()) return;
+    const current = this.clientParcels()[mode];
+    if (loadMore && (!current.hasMore || current.loading || current.loadingMore)) return;
+    const page = loadMore ? current.page + 1 : 1;
+    this.clientParcelRequests[mode]?.unsubscribe();
+    this.clientParcels.update(groups => ({ ...groups, [mode]: {
+      ...groups[mode], loading: !loadMore, loadingMore: loadMore, error: null,
+    } }));
+    this.clientParcelRequests[mode] = this.shipmentService.getUserShipments(page, this.perPage(), mode, true).subscribe({
+      next: response => {
+        this.clientParcels.update(groups => ({ ...groups, [mode]: response.success ? {
+          shipments: loadMore ? [...groups[mode].shipments, ...response.data.shipments] : response.data.shipments,
+          page, hasMore: response.data.pagination?.has_more ?? false, loading: false, loadingMore: false, error: null,
+        } : { ...groups[mode], loading: false, loadingMore: false, error: 'Unable to load your parcels. Please try again.' } }));
+      },
+      error: () => this.clientParcels.update(groups => ({ ...groups, [mode]: {
+        ...groups[mode], loading: false, loadingMore: false, error: 'Unable to load your parcels. Please try again.',
+      } })),
+    });
+  }
+
   dashboardGroups = [
     { mode: 'sea' as const, title: 'Active Containers', icon: 'fa-ship' },
     { mode: 'air' as const, title: 'Active Air Batches', icon: 'fa-plane' },
   ];
 
   loadDashboardParcels(loadMore = false): void {
+    if (!this.isAgent()) {
+      this.loadClientParcelGroup('sea');
+      this.loadClientParcelGroup('air');
+      return;
+    }
     if (loadMore && (!this.dashboardParcelsHasMore() || this.dashboardParcelsLoadingMore() || this.loading())) return;
     const page = loadMore ? this.dashboardParcelsPage + 1 : 1;
     this.shipmentRequest?.unsubscribe();
@@ -467,8 +517,8 @@ export class Shipping implements OnInit, OnDestroy {
     });
   }
 
-  viewAllParcels(): void {
-    this.router.navigate(['/account/shipping']);
+  viewAllParcels(mode?: 'sea' | 'air'): void {
+    this.router.navigate(['/account/shipping'], { queryParams: { transport: mode } });
   }
 
   activeContainersFor(mode: 'sea' | 'air'): Container[] {
@@ -506,8 +556,7 @@ export class Shipping implements OnInit, OnDestroy {
   }
 
   formatStatus(status: string, transportMethod?: string | null): string {
-    const label = status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    return localizeShipmentLabel(label, transportMethod);
+    return getShipmentStageLabel(status, transportMethod);
   }
 
   // Capitalize helper for names, regions, etc.
@@ -803,10 +852,10 @@ export class Shipping implements OnInit, OnDestroy {
 
   markAsAtWarehouse(shipment: Shipment): void {
     this.updatingShipment.set(shipment.id);
-    this.shipmentService.markAsAtWarehouse(shipment.id).subscribe({
+    this.shipmentService.markAsAtWarehouse(shipment.id, this.warehouseQuantity()!).subscribe({
       next: (response) => {
         if (response.success) {
-          this.toastService.success('Shipment marked as at warehouse');
+          this.toastService.success(response.message || 'Shipment received at warehouse abroad');
           this.loadShipments();
         } else {
           this.toastService.error(response.message || 'Failed to update shipment');
@@ -814,7 +863,7 @@ export class Shipping implements OnInit, OnDestroy {
         this.updatingShipment.set(null);
       },
       error: (error: any) => {
-        this.toastService.error('Failed to update shipment');
+        this.toastService.error(error?.error?.message || 'Failed to update shipment');
         this.updatingShipment.set(null);
       }
     });
@@ -1055,12 +1104,15 @@ export class Shipping implements OnInit, OnDestroy {
     action: 'confirm' | 'reject' | 'cancel' | 'at_warehouse' | 'in_transit' | 'delivered' | 'user_delivered' | 'return_to_warehouse'
   ): void {
     this.pendingConfirmedOperation = null;
+    this.warehouseQuantity.set(null);
+    this.warehouseQuantityError.set('');
+    this.warehousePartialConfirm.set(false);
     this.confirmationButtonLabel.set('Confirm');
     const configMap: Record<typeof action, { title: string; message: string }> = {
       confirm: { title: 'Confirm Shipment', message: 'Are you sure you want to confirm this shipment request?' },
       reject: { title: 'Reject Shipment', message: 'Are you sure you want to reject this shipment request?' },
       cancel: { title: 'Cancel Shipment', message: 'Are you sure you want to cancel this shipment?' },
-      at_warehouse: { title: 'Mark as At Warehouse', message: 'Are you sure you want to mark this shipment as at warehouse?' },
+      at_warehouse: { title: 'Receive at Warehouse Abroad', message: 'Enter the number of units actually received at the warehouse abroad.' },
       in_transit: { title: 'Mark as In Transit', message: 'Are you sure you want to mark this shipment as in transit?' },
       delivered: { title: 'Mark as Delivered', message: 'Are you sure you want to mark this shipment as delivered?' },
       user_delivered: { title: 'Confirm Delivery', message: 'Are you sure you want to confirm delivery of this shipment?' },
@@ -1105,9 +1157,21 @@ export class Shipping implements OnInit, OnDestroy {
       case 'cancel':
         this.cancelShipment(cfg.shipment);
         break;
-      case 'at_warehouse':
+      case 'at_warehouse': {
+        const quantity = this.warehouseQuantity();
+        const expected = this.getExpectedQuantity(cfg.shipment);
+        if (quantity === null || !Number.isInteger(quantity) || quantity < 1 || quantity > expected) {
+          this.warehouseQuantityError.set(`Enter a whole number between 1 and ${expected}.`);
+          return;
+        }
+        if (quantity < expected && !this.warehousePartialConfirm()) {
+          this.warehousePartialConfirm.set(true);
+          this.confirmationButtonLabel.set('Confirm Partial Receipt');
+          return;
+        }
         this.markAsAtWarehouse(cfg.shipment);
         break;
+      }
       case 'in_transit':
         this.markAsInTransit(cfg.shipment);
         break;
@@ -1196,6 +1260,7 @@ export class Shipping implements OnInit, OnDestroy {
   }
 
   openContainerModal(shipment?: Shipment): void {
+    if (!this.isAgent()) return;
     this.containerGuideRequest?.unsubscribe();
     this.containerSearch.set('');
     this.guidingShipment.set(null);
@@ -1223,6 +1288,7 @@ export class Shipping implements OnInit, OnDestroy {
   }
 
   openContainerDetail(container: Container): void {
+    if (!this.isAgent()) return;
     this.menuBarService.hide();
     this.containerDetailOpen.set(true);
     this.selectedContainer.set(container);
@@ -1989,7 +2055,7 @@ export class Shipping implements OnInit, OnDestroy {
       items.push({ label: 'Reject', icon: 'fa-times', colorClass: 'text-red-600 dark:text-red-400', action: () => this.rejectShipmentAction(shipment), disabled: this.isUpdating(shipment.id) });
     }
     if (this.canMarkAtWarehouse(shipment)) {
-      items.push({ label: 'At Warehouse', icon: 'fa-warehouse', colorClass: 'text-indigo-600 dark:text-indigo-400', action: () => this.markAsAtWarehouseAction(shipment), disabled: this.isUpdating(shipment.id) });
+      items.push({ label: 'At Warehouse Abroad', icon: 'fa-warehouse', colorClass: 'text-indigo-600 dark:text-indigo-400', action: () => this.markAsAtWarehouseAction(shipment), disabled: this.isUpdating(shipment.id) });
     }
     if (this.canLoadToContainer(shipment)) {
       items.push({ label: `Load to ${this.containerTerm(shipment)}`, icon: 'fa-dolly', colorClass: 'text-orange-600 dark:text-orange-400', action: () => this.openContainerModal(shipment), disabled: this.isUpdating(shipment.id) });

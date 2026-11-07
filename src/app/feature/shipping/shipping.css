@@ -325,3 +325,9 @@
 #shipping-qr-reader > div > canvas {
   display: none !important;
 }
+
+/* Each tab keeps enough width for its full label inside the scroll area. */
+.status-tabs > button {
+  flex: 0 0 auto;
+  min-width: max-content;
+}

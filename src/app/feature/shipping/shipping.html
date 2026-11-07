@@ -37,7 +37,7 @@
             </div>
 
             <!-- TRANSPORT CATEGORY -->
-            <div *ngIf="isAgent()" class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm mb-6 p-4">
+            <div class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm mb-6 p-4">
                 <div class="flex items-center gap-2 flex-wrap">
                     <span class="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mr-1">
                         <i class="fa-solid fa-truck-fast text-orange-500 mr-1"></i>
@@ -80,11 +80,11 @@
 
             <!-- AGENT TABS -->
             <div *ngIf="isAgent()" class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm mb-6">
-                <div class="flex overflow-x-auto scrollbar-hide">
+                <div class="status-tabs flex w-full max-w-full overflow-x-auto scrollbar-hide">
                     <button
                         *ngFor="let tab of agentTabs"
                         (click)="switchTab(tab.id)"
-                        class="flex-1 min-w-30 px-3 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
+                        class="flex-none min-w-max px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
                         [class]="activeTab() === tab.id ?
                             'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20' :
                             'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#333]'"
@@ -97,17 +97,17 @@
 
             <!-- USER TABS -->
             <div *ngIf="!isAgent()" class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm mb-6">
-                <div class="flex overflow-x-auto scrollbar-hide">
+                <div class="status-tabs flex w-full max-w-full overflow-x-auto scrollbar-hide">
                     <button
                         *ngFor="let tab of userTabs"
                         (click)="switchTab(tab.id)"
-                        class="flex-1 min-w-30 px-3 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
+                        class="flex-none min-w-max px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
                         [class]="activeTab() === tab.id ?
                             'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20' :
                             'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#333]'"
                     >
                         <i class="fa-solid {{tab.icon}}"></i>
-                        <span>{{tab.label}}</span>
+                        <span>{{agentTabLabel(tab)}}</span>
                     </button>
                 </div>
             </div>
@@ -136,7 +136,7 @@
                         <ng-container [ngSwitch]="activeTab()">
                             <ng-container *ngSwitchCase="'pending_confirmation'">No shipment requests waiting for confirmation.</ng-container>
                             <ng-container *ngSwitchCase="'confirmed'">No confirmed shipments at the moment.</ng-container>
-                            <ng-container *ngSwitchCase="'at_warehouse'">No shipments at the warehouse.</ng-container>
+                            <ng-container *ngSwitchCase="'at_warehouse'">No shipments at the warehouse abroad.</ng-container>
                             <ng-container *ngSwitchCase="'loading_container'">No shipments being loaded.</ng-container>
                             <ng-container *ngSwitchCase="'loaded_in_container'">No shipments loaded in {{modalTermPlural.toLowerCase()}}.</ng-container>
                             <ng-container *ngSwitchCase="'at_port_abroad'">No shipments at {{modePortTerm().toLowerCase()}} abroad.</ng-container>
@@ -153,7 +153,7 @@
                         <ng-container [ngSwitch]="activeTab()">
                             <ng-container *ngSwitchCase="'pending_confirmation'">No pending shipments waiting for confirmation.</ng-container>
                             <ng-container *ngSwitchCase="'confirmed'">No confirmed shipments at the moment.</ng-container>
-                            <ng-container *ngSwitchCase="'at_warehouse'">No shipments at the warehouse.</ng-container>
+                            <ng-container *ngSwitchCase="'at_warehouse'">No shipments at the warehouse abroad.</ng-container>
                             <ng-container *ngSwitchCase="'loading_container'">No shipments being loaded.</ng-container>
                             <ng-container *ngSwitchCase="'loaded_in_container'">No shipments loaded in containers.</ng-container>
                             <ng-container *ngSwitchCase="'at_port_abroad'">No shipments at port abroad.</ng-container>
@@ -244,7 +244,7 @@
                     <!-- Progress Bar Section -->
                     <div class="mb-3">
                         <div class="flex items-center justify-between mb-1.5">
-                            <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{formatStatus(shipment.status, shipment.transport_method)}}</span>
+                            <span class="text-[11px] font-semibold uppercase tracking-wider" [ngClass]="getStatusTextClass(shipment.status)">{{formatStatus(shipment.status, shipment.transport_method)}}</span>
                             <span class="text-[11px] font-bold text-gray-700 dark:text-gray-300">{{getShipmentProgress(shipment.status)}}%</span>
                         </div>
                         <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
@@ -479,6 +479,7 @@
 }
 
 @if (dashboardOnly) {
+  @if (isAgent()) {
   @if (dashboardError()) {
     <div class="px-4 sm:px-6 py-4 text-sm text-red-500" role="alert">
       {{ dashboardError() }}
@@ -521,7 +522,7 @@
           @for (container of activeContainersFor(group.mode); track container.id) {
             <button type="button" (click)="openDashboardContainer(container)" class="w-72 sm:w-80 min-h-36 shrink-0 flex flex-col text-left bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow hover:shadow-lg transition">
               <div class="flex items-start justify-between gap-3 w-full">
-                <p class="flex-1 min-w-0 font-semibold text-gray-900 dark:text-white break-words">{{ container.reference_number }}</p>
+                <p class="flex-1 min-w-0 font-semibold text-gray-900 dark:text-white wrap-break-word">{{ container.reference_number }}</p>
                 <span class="shrink-0 max-w-[55%] text-xs px-2 py-1 rounded-full text-right" [ngClass]="getStatusClass(container.status)">{{ formatStatus(container.status, group.mode) }}</span>
               </div>
               <div class="flex items-end justify-between gap-3 w-full mt-auto pt-6">
@@ -572,7 +573,7 @@
           @for (shipment of shipments(); track shipment.id) {
             <button type="button" (click)="openViewModal(shipment)" class="w-72 sm:w-80 shrink-0 text-left bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow hover:shadow-lg transition">
               <div class="flex items-start justify-between gap-3">
-                <p class="flex-1 min-w-0 font-semibold text-gray-900 dark:text-white break-words">{{ shipment.title || shipment.tracking_number || 'Parcel' }}</p>
+                <p class="flex-1 min-w-0 font-semibold text-gray-900 dark:text-white wrap-break-word">{{ shipment.title || shipment.tracking_number || 'Parcel' }}</p>
               </div>
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 truncate">
                 @if (isAgent()) {
@@ -582,7 +583,7 @@
                 }
               </p>
               <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-4 mb-1">
-                <span>{{formatStatus(shipment.status, shipment.transport_method)}}</span><span>{{ getShipmentProgress(shipment.status) }}%</span>
+                <span class="font-semibold" [ngClass]="getStatusTextClass(shipment.status)">{{formatStatus(shipment.status, shipment.transport_method)}}</span><span>{{ getShipmentProgress(shipment.status) }}%</span>
               </div>
               <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div class="h-full rounded-full" [ngClass]="getShipmentProgressColor(shipment.status)" [style.width.%]="getShipmentProgress(shipment.status)"></div>
@@ -600,11 +601,53 @@
       }
     </section>
   }
+  } @else {
+    @for (group of clientParcelGroups; track group.mode) {
+      <section class="px-4 sm:px-6 py-4" [attr.aria-label]="group.title" [attr.aria-busy]="clientParcels()[group.mode].loading">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <i class="fa-solid text-orange-500" [ngClass]="group.icon" aria-hidden="true"></i>{{group.title}}
+          </h2>
+          <button type="button" (click)="viewAllParcels(group.mode)" class="text-orange-500 text-sm font-medium hover:underline shrink-0">View all</button>
+        </div>
+        @if (clientParcels()[group.mode].loading) {
+          <p role="status" class="text-sm text-gray-500 dark:text-gray-400 py-6">Loading your parcels...</p>
+        } @else {
+          <div class="flex gap-4 overflow-x-auto pb-3 scrollbar-hide">
+            @for (shipment of clientParcels()[group.mode].shipments; track shipment.id) {
+              <button type="button" (click)="openViewModal(shipment)" class="w-72 sm:w-80 shrink-0 text-left bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow hover:shadow-lg transition">
+                <p class="font-semibold text-gray-900 dark:text-white wrap-break-word">{{shipment.title || shipment.tracking_number || 'Parcel'}}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 truncate">Agent: {{shipment.agent?.firstname}} {{shipment.agent?.lastname}}</p>
+                <div class="flex items-center justify-between gap-2 text-xs mt-4 mb-1">
+                  <span class="font-semibold" [ngClass]="getStatusTextClass(shipment.status)">{{formatStatus(shipment.status, shipment.transport_method)}}</span>
+                  <span class="text-gray-500 dark:text-gray-400 shrink-0">{{getShipmentProgress(shipment.status)}}%</span>
+                </div>
+                <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full" [ngClass]="getShipmentProgressColor(shipment.status)" [style.width.%]="getShipmentProgress(shipment.status)"></div>
+                </div>
+                <p class="text-sm text-orange-500 mt-4 text-right">View Parcel <i class="fa-solid fa-arrow-right ml-1" aria-hidden="true"></i></p>
+              </button>
+            }
+            @if (clientParcels()[group.mode].hasMore) {
+              <button type="button" (click)="loadClientParcelGroup(group.mode, true)" [disabled]="clientParcels()[group.mode].loadingMore" class="w-40 shrink-0 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-4 text-orange-500 disabled:opacity-50">
+                {{clientParcels()[group.mode].loadingMore ? 'Loading...' : 'Load More'}}
+              </button>
+            }
+          </div>
+          @if (clientParcels()[group.mode].error) {
+            <p role="alert" class="text-sm text-red-500">{{clientParcels()[group.mode].error}} <button type="button" (click)="loadClientParcelGroup(group.mode)" class="underline ml-2">Retry</button></p>
+          } @else if (clientParcels()[group.mode].shipments.length === 0) {
+            <p class="text-sm text-gray-500 dark:text-gray-400">No active {{group.mode === 'air' ? 'air' : 'sea'}} freight parcels.</p>
+          }
+        }
+      </section>
+    }
+  }
 }
 
 <!-- Confirmation Modal -->
 @if (confirmModalOpen()) {
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-[150] p-4" (click)="closeConfirmModal()">
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-150 p-4" (click)="closeConfirmModal()">
     <div class="bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 max-w-sm w-full shadow-2xl" (click)="$event.stopPropagation()">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ confirmModalConfig().title }}</h3>
@@ -613,6 +656,19 @@
         </button>
       </div>
       <p class="text-sm text-gray-600 dark:text-gray-300 mb-6">{{ confirmModalConfig().message }}</p>
+      @if (confirmModalConfig().action === 'at_warehouse') {
+        <div class="mb-5 space-y-3">
+          <p class="text-sm dark:text-gray-300">Expected: <strong>{{getExpectedQuantity(confirmModalConfig().shipment!)}} units</strong></p>
+          <label for="warehouse-received-quantity" class="block text-sm font-medium dark:text-white">Quantity received</label>
+          <input id="warehouse-received-quantity" type="number" min="1" step="1" [max]="getExpectedQuantity(confirmModalConfig().shipment!)"
+            [ngModel]="warehouseQuantity()" (ngModelChange)="warehouseQuantity.set($event); warehouseQuantityError.set(''); warehousePartialConfirm.set(false); confirmationButtonLabel.set('Confirm')"
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#222] dark:text-white" />
+          @if (warehouseQuantityError()) { <p class="text-sm text-red-500" role="alert">{{warehouseQuantityError()}}</p> }
+          @if (warehousePartialConfirm()) {
+            <p class="text-sm text-amber-700 dark:text-amber-400" role="alert">Only {{warehouseQuantity()}} of {{getExpectedQuantity(confirmModalConfig().shipment!)}} units received. The shipment will be marked Partially Received and the client notified. Loading stays blocked until the client confirms or the remaining units arrive.</p>
+          }
+        </div>
+      }
       <div class="flex gap-3">
         <button (click)="closeConfirmModal()" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-400 rounded-lg hover:bg-gray-100 transition">
           Cancel
@@ -626,7 +682,7 @@
 }
 
 <!-- Container Management Modal -->
-@if (containerModalOpen()) {
+@if (isAgent() && containerModalOpen()) {
   <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center" (click)="closeContainerModal()">
     <!-- Backdrop -->
     <div class="absolute inset-0 bg-black/50 sheet-backdrop" [class.closing]="containerModalClosing()"></div>
@@ -708,7 +764,7 @@
           <div *ngFor="let container of filteredContainers()" class="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
             <div class="flex justify-between items-start gap-3 mb-3">
               <div class="flex-1 min-w-0">
-                <p class="font-semibold dark:text-white break-words">{{container.reference_number}}</p>
+                <p class="font-semibold dark:text-white wrap-break-word">{{container.reference_number}}</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{formatStatus(container.status, container.transport_method)}} &middot; {{container.shipments_count || 0}} parcel shipment(s)</p>
               </div>
               <button type="button" (click)="openContainerDetail(container)" class="shrink-0 text-xs text-orange-500 hover:underline text-right">
@@ -878,7 +934,7 @@
 }
 
 <!-- Container Detail Modal -->
-@if (containerDetailOpen() && selectedContainer()) {
+@if (isAgent() && containerDetailOpen() && selectedContainer()) {
   <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center" (click)="closeContainerDetail()">
     <!-- Backdrop -->
     <div class="absolute inset-0 bg-black/50 sheet-backdrop" [class.closing]="containerDetailClosing()"></div>

@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname, basename, resolve } from 'node:path';
 
 const run = promisify(execFile);
-const pages = ['', 'search', 'how-it-works', 'about-us', 'contact-us', 'china-to-tanzania-cargo'];
+const pages = ['blog', '', 'search', 'how-it-works', 'about-us', 'contact-us', 'china-to-tanzania-cargo'];
 const rendered = '<h1>Public page</h1><meta name="robots" content="index, follow">';
 
 async function fixture(t, omittedPage) {
