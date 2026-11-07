@@ -38,7 +38,7 @@ if (rewrites.length > 1900) throw new Error('Too many agent rewrites for Pages. 
 // Explicit app routes keep deep links working without turning unknown URLs into 200 pages.
 const appRoutes = [
   '/sign-up', '/sign-in', '/forgot-password', '/home', '/profile-management',
-  '/account/*', '/admin', '/admin/*', '/messages', '/qr-generator',
+  '/staff/*', '/account/*', '/admin', '/admin/*', '/messages', '/qr-generator',
   '/blog/*', '/package-generator', '/scan-qr', '/verify-email/*', '/reset-password/*',
   '/track-shipping/*', '/qr/*', '/package/*', '/book-shipment/*', '/agent/*',
 ];

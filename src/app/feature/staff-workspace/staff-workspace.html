@@ -1,0 +1,88 @@
+<div class="min-h-screen bg-[#f5f5f5] dark:bg-[#0a0a0a] text-gray-900 dark:text-white">
+  <header class="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-5 flex flex-wrap items-center justify-between gap-4">
+      <div><p class="text-orange-500 text-sm font-bold">Pilikapilika ? Staff Workspace</p><h1 class="text-xl sm:text-2xl font-bold mt-1">{{data()?.agency_name || 'My Tasks'}}</h1>@if (data()) { <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{data()!.staff_name}} @if (data()!.job_title) { ? {{data()!.job_title}} }</p> }</div>
+      <div class="flex items-center gap-4 text-sm"><button type="button" (click)="showPassword.set(true)" class="text-gray-500 dark:text-gray-400">Change Password</button><button type="button" (click)="logout()" class="text-red-600 dark:text-red-400">Sign Out</button></div>
+    </div>
+  </header>
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-16">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5"><div><h2 class="text-2xl font-bold">Your assigned work</h2><p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Parcels appear here when they reach a status assigned to you by the agency owner.</p></div><button type="button" (click)="load(data()?.pagination?.current_page ?? 1)" [disabled]="loading()" class="rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm disabled:opacity-50"><i class="fa-solid fa-rotate mr-2" aria-hidden="true"></i>Refresh</button></div>
+    <form (ngSubmit)="load()" class="flex gap-2 mb-5"><label class="sr-only" for="task-search">Find an assigned parcel</label><input id="task-search" name="search" [(ngModel)]="search" maxlength="200" placeholder="Search parcel name or tracking number" class="min-w-0 flex-1 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] px-4 py-3 text-sm" /><button type="submit" class="rounded-xl bg-orange-500 text-white px-5 py-3 text-sm">Find</button><button type="button" (click)="openScanner()" class="rounded-xl border border-orange-500 text-orange-600 dark:text-orange-400 px-4 py-3 text-sm" aria-label="Scan a parcel QR code"><i class="fa-solid fa-qrcode" aria-hidden="true"></i><span class="hidden sm:inline ml-2">Scan</span></button></form>
+    @if (data(); as workspace) {
+      <nav class="flex gap-2 overflow-x-auto pb-3 mb-5" aria-label="Filter assigned tasks">
+        <button type="button" (click)="selectStage('')" [attr.aria-pressed]="selectedStage() === ''" class="shrink-0 rounded-xl px-4 py-2 text-sm" [ngClass]="selectedStage() === '' ? 'bg-orange-500 text-white' : 'bg-white dark:bg-[#222]'">All My Tasks</button>
+        @for (stage of workspace.stages; track stage.status) { <button type="button" (click)="selectStage(stage.status)" [attr.aria-pressed]="selectedStage() === stage.status" class="shrink-0 whitespace-nowrap rounded-xl px-4 py-2 text-sm" [ngClass]="selectedStage() === stage.status ? 'bg-orange-500 text-white' : 'bg-white dark:bg-[#222]'">{{stage.label}} <span class="ml-1 opacity-70">{{workspace.counts[stage.status] || 0}}</span></button> }
+      </nav>
+    }
+    @if (loading()) { <p role="status" class="text-center py-12 text-gray-500">Loading your assigned parcels...</p> }
+    @else if (error()) { <p role="alert" class="text-red-500 p-5 bg-white dark:bg-[#1a1a1a] rounded-xl">{{error()}}</p> }
+    @else if (data(); as workspace) {
+      <div class="space-y-4">
+        @for (task of workspace.tasks; track task.id) {
+          <article class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+            <div class="flex flex-wrap items-start justify-between gap-3"><div class="min-w-0"><h3 class="text-lg font-bold break-words">{{task.title || 'Parcel'}}</h3><p class="text-xs text-gray-500 dark:text-gray-400 mt-1 break-all">{{task.external_tracking_number || task.tracking_number}}</p></div><span class="text-xs bg-gray-100 dark:bg-[#292929] px-3 py-1 rounded-full">{{task.transport_method === 'air' ? 'Air Freight' : 'Sea Freight'}}</span></div>
+            <div class="flex justify-between gap-3 text-xs mt-4 mb-1"><span class="font-semibold" [ngClass]="statusColor(task.status)">{{statusLabel(task.status, task.transport_method)}}</span><span class="text-gray-500 shrink-0">{{progress(task.status)}}%</span></div>
+            <div class="h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden"><div class="h-full rounded-full" [ngClass]="progressColor(task.status)" [style.width.%]="progress(task.status)"></div></div>
+            <div class="flex flex-wrap gap-x-5 gap-y-1 text-sm text-gray-500 dark:text-gray-400 mt-4"><p>Expected: <strong class="text-gray-900 dark:text-white">{{task.expected_quantity}}</strong></p><p>Received: <strong class="text-gray-900 dark:text-white">{{task.received_quantity || 0}}</strong></p><p>Loaded: <strong class="text-gray-900 dark:text-white">{{task.loaded_quantity}}</strong></p></div>
+            <div class="flex flex-wrap gap-2 mt-5">@for (action of task.actions; track action) { <button type="button" (click)="open(task, action)" class="rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium px-4 py-2">{{actionLabels[action] || action}}</button> }<button type="button" (click)="expanded.set(expanded() === task.id ? null : task.id)" class="rounded-lg bg-gray-100 dark:bg-[#292929] text-sm px-4 py-2">{{expanded() === task.id ? 'Hide Details' : 'Parcel Details'}}</button></div>
+            @if (expanded() === task.id) {
+              <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                @if (task.customer) { <p><strong>Client:</strong> {{task.customer.firstname}} {{task.customer.lastname}} @if (task.customer.phone) { ? <a [href]="'tel:' + task.customer.phone" class="text-orange-600 dark:text-orange-400">{{task.customer.phone}}</a> }</p> }
+                @if (task.agent_address) { <p class="whitespace-pre-line"><strong>Agency address:</strong> {{task.agent_address}}</p> }
+                <p class="whitespace-pre-line"><strong>Pickup:</strong> {{task.pickup_address}}</p><p class="whitespace-pre-line"><strong>Destination:</strong> {{task.destination_address}}</p>
+                @for (product of task.products; track $index) { <p>{{product.product_name || product.name || 'Product'}} ? {{product.quantity || task.expected_quantity}} units</p> }
+                @if (task.status === 'partially_received' && !task.client_confirmed_at && !task.quantity_adjusted) { <p class="text-amber-700 dark:text-amber-400">Loading is awaiting client confirmation or receipt of the remaining units.</p> }
+                <p class="text-xs text-gray-400">Last updated {{task.updated_at | date:'medium'}}</p>
+              </div>
+            }
+          </article>
+        } @empty { <div class="text-center bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-200 dark:border-gray-800 p-10"><i class="fa-solid fa-list-check text-4xl text-orange-500 mb-4" aria-hidden="true"></i><h3 class="text-lg font-bold">No tasks waiting here</h3><p class="text-sm text-gray-500 mt-2">Check another assigned status or refresh when more parcels arrive.</p></div> }
+      </div>
+      @if (workspace.pagination.last_page > 1) { <div class="flex items-center justify-center gap-5 mt-7 text-sm"><button type="button" (click)="load(workspace.pagination.current_page - 1)" [disabled]="workspace.pagination.current_page <= 1" class="px-4 py-2 rounded-lg bg-white dark:bg-[#222] disabled:opacity-40">Previous</button><span>{{workspace.pagination.current_page}} / {{workspace.pagination.last_page}}</span><button type="button" (click)="load(workspace.pagination.current_page + 1)" [disabled]="workspace.pagination.current_page >= workspace.pagination.last_page" class="px-4 py-2 rounded-lg bg-white dark:bg-[#222] disabled:opacity-40">Next</button></div> }
+    }
+  </main>
+</div>
+@if (selectedTask(); as task) {
+  <div class="fixed inset-0 z-[150] bg-black/60 p-4 flex items-center justify-center text-gray-900 dark:text-white">
+    <form (ngSubmit)="submit()" class="max-w-lg w-full max-h-[90vh] overflow-y-auto bg-white dark:bg-[#1a1a1a] rounded-2xl p-6">
+      <div class="flex items-start justify-between gap-3"><h2 class="font-bold text-xl">{{actionLabels[operation()]}}</h2><button type="button" (click)="close()" [disabled]="saving()" aria-label="Close task action"><i class="fa-solid fa-times"></i></button></div>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-5">{{task.title || task.tracking_number}}</p>
+      <fieldset [disabled]="saving()" class="space-y-4">
+        @if (needsContainer()) {
+          <label class="block text-sm">{{task.transport_method === 'air' ? 'Air batch' : 'Container'}}<select name="container" [(ngModel)]="containerId" required class="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#222] px-3 py-3"><option value="">Choose one</option>@for (container of containerOptions(); track container.id) { <option [value]="container.id">{{container.reference_number}}</option> }</select></label>
+          @if (!containerOptions().length) { <p class="text-sm text-amber-700 dark:text-amber-400">No matching {{task.transport_method === 'air' ? 'air batch' : 'container'}} is ready. Ask your agency owner to prepare one.</p> }
+        }
+        @if (needsQuantity()) {
+          <p class="text-sm text-gray-500">Maximum available: <strong>{{maxQuantity()}} units</strong></p>
+          <label class="block text-sm">{{operation() === 'load' ? 'Quantity to load' : operation() === 'add_received' ? 'Additional quantity received' : 'Quantity actually received'}}<input name="quantity" type="number" [(ngModel)]="quantity" min="1" [max]="maxQuantity()" step="1" required class="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#222] px-3 py-3" /></label>
+          @if (operation() === 'receive' && quantity !== null && quantity > 0 && quantity < task.expected_quantity) { <p class="text-sm rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 p-3">You are recording a partial receipt: {{quantity}} of {{task.expected_quantity}} units. The client will be notified, and loading will wait for confirmation or the remaining units.</p> }
+        }
+        @if (operation() === 'advance_container' && nextLabel()) { <p class="text-sm">Next status: <strong>{{nextLabel()}}</strong></p> }
+        @if (operation() === 'close_container' || operation() === 'advance_container') { <p class="text-sm text-gray-500">This updates the parcels in the selected {{task.transport_method === 'air' ? 'batch' : 'container'}}. Your responsibilities must cover their current statuses.</p> }
+        @if (operation() === 'advance_parcel') { <p class="text-sm">Next status: <strong>{{nextParcelLabel()}}</strong></p> }
+        @if (operation() === 'reject') { <p class="text-sm">Confirm that this booking should be rejected. The client will be notified.</p> }
+        @if (operation() === 'deliver') { <p class="text-sm">Confirm that these parcels have been handed to the client.</p> }
+        @if (operationError()) { <p role="alert" class="text-sm text-red-500">{{operationError()}}</p> }
+        <div class="flex justify-end gap-3 pt-3"><button type="button" (click)="close()" class="rounded-lg bg-gray-100 dark:bg-[#333] px-4 py-2">Cancel</button><button type="submit" [disabled]="needsContainer() && !containerOptions().length" class="rounded-lg bg-orange-500 text-white px-5 py-2 disabled:opacity-50">{{saving() ? 'Updating...' : 'Confirm'}}</button></div>
+      </fieldset>
+    </form>
+  </div>
+}
+@if (showPassword()) {
+  <div class="fixed inset-0 z-[160] bg-black/60 p-4 flex items-center justify-center text-gray-900 dark:text-white"><form (ngSubmit)="changePassword()" class="max-w-md w-full bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 space-y-4"><h2 class="text-xl font-bold">Change Password</h2>
+    <label class="block text-sm">Current password<input name="current_password" type="password" [(ngModel)]="currentPassword" required autocomplete="current-password" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#222] px-3 py-2" /></label>
+    <label class="block text-sm">New password<input name="new_password" type="password" [(ngModel)]="newPassword" required minlength="8" autocomplete="new-password" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#222] px-3 py-2" /></label>
+    <label class="block text-sm">Confirm new password<input name="confirmation" type="password" [(ngModel)]="passwordConfirmation" required minlength="8" autocomplete="new-password" class="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#222] px-3 py-2" /></label>
+    @if (passwordError()) { <p role="alert" class="text-sm text-red-500">{{passwordError()}}</p> }
+    <div class="flex justify-end gap-3"><button type="button" (click)="showPassword.set(false)" [disabled]="passwordBusy()" class="px-4 py-2 bg-gray-100 dark:bg-[#333] rounded-lg">Cancel</button><button type="submit" [disabled]="passwordBusy()" class="px-4 py-2 bg-orange-500 text-white rounded-lg disabled:opacity-50">{{passwordBusy() ? 'Saving...' : 'Save Password'}}</button></div>
+  </form></div>
+}
+
+@if (cameraOpen()) {
+  <div class="fixed inset-0 z-[170] bg-black/70 p-4 flex items-center justify-center text-gray-900 dark:text-white"><section class="max-w-lg w-full bg-white dark:bg-[#1a1a1a] rounded-2xl p-5">
+    <div class="flex justify-between gap-3 mb-4"><h2 class="text-xl font-bold">Find an assigned parcel</h2><button type="button" (click)="closeScanner()" aria-label="Close scanner"><i class="fa-solid fa-times"></i></button></div>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Scan the parcel QR code to find it in your assigned tasks.</p><div id="staff-task-scanner" class="w-full overflow-hidden rounded-xl"></div>
+    @if (cameraError()) { <p role="alert" class="text-sm text-red-500 mt-4">{{cameraError()}}</p> }
+    <button type="button" (click)="closeScanner()" class="mt-5 w-full rounded-lg bg-gray-100 dark:bg-[#333] py-2">Close Scanner</button>
+  </section></div>
+}

@@ -38,15 +38,18 @@
   </div>
 
   <!-- Address Form (Add/Edit) -->
-  <div *ngIf="showAddressForm" class="bg-white dark:bg-[#222] rounded-xl p-4 mb-4 shadow">
+  <div *ngIf="showAddressForm" #addressEditor class="bg-white dark:bg-[#222] rounded-xl p-4 mb-4 shadow scroll-mt-6" role="region" aria-labelledby="agent-address-editor-heading">
+    <h3 id="agent-address-editor-heading" class="font-semibold dark:text-white mb-4">{{ isEditingAddress ? 'Edit receiving address' : 'Add receiving address' }}</h3>
     <div [formGroup]="addressForm">
       <div class="space-y-4">
         <!-- Warehouse or receiving point name (optional) -->
         <div>
-          <label class="text-sm text-gray-500 dark:text-gray-400"
+          <label for="agent-address-label" class="text-sm text-gray-500 dark:text-gray-400"
             >Warehouse or receiving point name (optional)</label
           >
           <input
+            #addressLabel
+            id="agent-address-label"
             type="text"
             formControlName="label"
             class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"

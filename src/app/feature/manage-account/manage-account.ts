@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild } from '@an
 import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -69,6 +69,7 @@ export class ManageAccount implements OnInit {
     private cdr: ChangeDetectorRef,
     private toastService: ToastService,
     private route: ActivatedRoute,
+    private router: Router,
   ) {
     this.profileForm = this.fb.group({
       firstname: ['', [Validators.required, Validators.maxLength(255)]],
@@ -313,6 +314,11 @@ export class ManageAccount implements OnInit {
         }
         this.toastService.success('Profile updated successfully!');
         this.cdr.detectChanges();
+        const basicComplete = ['firstname', 'lastname', 'phone', 'region', 'district'].every(field => !!(response.data as unknown as Record<string, unknown>)[field]);
+        if (basicComplete && !this.missingAgentAddresses) {
+          const returnUrl = this.authService.takeReturnUrl();
+          if (returnUrl) this.router.navigateByUrl(returnUrl);
+        }
       },
       error: (err: any) => {
         this.isSaving = false;

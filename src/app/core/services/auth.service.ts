@@ -65,6 +65,19 @@ export class AuthService {
     localStorage.removeItem('profile_completion');
   }
 
+  rememberReturnUrl(url: string | null): void {
+    if (this.isBrowser && url && url.startsWith('/') && !url.startsWith('//') && !url.includes('\\')) {
+      sessionStorage.setItem('auth_return_url', url);
+    }
+  }
+
+  takeReturnUrl(): string | null {
+    if (!this.isBrowser) return null;
+    const url = sessionStorage.getItem('auth_return_url');
+    sessionStorage.removeItem('auth_return_url');
+    return url && url.startsWith('/') && !url.startsWith('//') && !url.includes('\\') ? url : null;
+  }
+
   // ========== Token & User Storage ==========
 
   saveToken(token: string): void {

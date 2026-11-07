@@ -1,3 +1,5 @@
+import { AgentShare } from '../../shared/components/agent-share/agent-share';
+import { AgentFollowService } from '../../core/services/agent-follow.service';
 import { Component, OnInit, ChangeDetectorRef, inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { timeout } from 'rxjs';
@@ -13,7 +15,7 @@ import { resolveImageUrl } from '../../core/utils/image-url.util';
 @Component({
   selector: 'app-agent-page',
   standalone: true,
-  imports: [ CommonModule, Footer ],
+  imports: [ CommonModule, Footer, AgentShare ],
   templateUrl: './agent-page.html',
   styleUrl: './agent-page.css',
 })
@@ -24,6 +26,42 @@ export class AgentPage implements OnInit {
   isLoading = true;
   error: string | null = null;
   profileImageFailed = false;
+  following = false;
+  followBusy = false;
+  private readonly follows = inject(AgentFollowService);
+  get canFollow(): boolean { return this.agent?.uuid !== this.authService.getUser()?.uuid; }
+
+  private loadFollowing(): void {
+    if (!this.isBrowser || !this.agent || !this.authService.isAuthenticated() || !this.canFollow) return;
+    this.follows.status(this.agent.uuid).subscribe({
+      next: response => {
+        this.following = response.data.following;
+        if (this.route.snapshot.queryParamMap.get('follow') === '1') {
+          this.router.navigate([], { relativeTo: this.route, queryParams: { follow: null }, queryParamsHandling: 'merge', replaceUrl: true });
+          if (!this.following) this.toggleFollow();
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => { this.following = false; this.cdr.detectChanges(); },
+    });
+  }
+
+  toggleFollow(): void {
+    if (!this.agent || this.followBusy || !this.canFollow) return;
+    if (!this.authService.isAuthenticated()) {
+      const returnUrl = this.router.createUrlTree(['/agent', this.agent.uuid], { queryParams: { follow: 1 } }).toString();
+      this.authService.rememberReturnUrl(returnUrl);
+      this.router.navigate(['/sign-in'], { queryParams: { returnUrl } });
+      return;
+    }
+    this.followBusy = true;
+    const request = this.following ? this.follows.unfollow(this.agent.uuid) : this.follows.follow(this.agent.uuid);
+    request.subscribe({
+      next: response => { this.following = response.data.following; this.followBusy = false; this.toastService.success(this.following ? 'Agent followed. You will see them first on your homepage.' : 'Agent unfollowed.'); this.cdr.detectChanges(); },
+      error: error => { this.followBusy = false; this.toastService.error(error.error?.message || 'Unable to update your followed agents.'); this.cdr.detectChanges(); },
+    });
+  }
+
 
   // Transport method icons mapping
   transportIcons: { [key: string]: string } = {
@@ -71,6 +109,7 @@ export class AgentPage implements OnInit {
         next: (agent: Agent) => {
           this.agent = agent;
           this.updateSeo(agent);
+          this.loadFollowing();
           this.isLoading = false;
           this.cdr.detectChanges();
         },
@@ -93,6 +132,7 @@ export class AgentPage implements OnInit {
         next: (agent: Agent) => {
           this.agent = agent;
           this.updateSeo(agent);
+          this.loadFollowing();
           this.isLoading = false;
           this.cdr.detectChanges();
         },
@@ -132,10 +172,14 @@ export class AgentPage implements OnInit {
   private updateSeo(agent: Agent): void {
     const name = this.getFullName();
     const location = [agent.district, agent.region].filter(Boolean).join(', ') || 'Tanzania';
+    const bio = (agent.bio || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const description = `${name} in ${location}. ${bio || 'View our shipping services, follow our agency and book your shipment directly on Pilikapilika.'}`;
     this.seo.update({
       title: `${name} | Logistics Agent in ${location} | Pilikapilika`,
-      description: `View ${name}'s logistics services in ${location}. Check available services and delivery information on Pilikapilika.`,
+      description: description.length > 200 ? `${description.slice(0, 197).trimEnd()}...` : description,
       path: `/agent/${encodeURIComponent(agent.uuid || String(agent.id))}`,
+      image: resolveImageUrl(agent.profile_photo || agent.image, ''),
+      imageAlt: `${name} on Pilikapilika`,
       index: true,
     });
   }
@@ -159,15 +203,16 @@ export class AgentPage implements OnInit {
       return;
     }
 
-    // Check if user is authenticated
-    if (!this.authService.isAuthenticated()) {
-      this.toastService.error('Please login to book a shipment');
-      this.router.navigate(['/sign-in'], { 
-        queryParams: { returnUrl: this.router.url } 
-      });
+    if (this.agent.availability_status !== 'available') {
+      this.toastService.info('This agent is currently unavailable for new bookings. Follow them to keep their profile close.');
       return;
     }
-
-    this.router.navigate(['/qr-generator']);
+    const returnUrl = this.router.createUrlTree(['/qr-generator'], { queryParams: { agent: this.agent.uuid } }).toString();
+    if (!this.authService.isAuthenticated()) {
+      this.authService.rememberReturnUrl(returnUrl);
+      this.router.navigate(['/sign-in'], { queryParams: { returnUrl } });
+      return;
+    }
+    this.router.navigateByUrl(returnUrl);
   }
 }

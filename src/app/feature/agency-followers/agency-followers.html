@@ -1,0 +1,55 @@
+<main class="min-h-screen bg-[#f5f5f5] dark:bg-[#0a0a0a] text-gray-900 dark:text-white px-4 py-6 pb-28 sm:px-6">
+  <div class="max-w-3xl mx-auto">
+    <div class="flex items-center gap-3 mb-6">
+      <a routerLink="/account/agent" aria-label="Back to manage agent profile" class="w-9 h-9 shrink-0 rounded-full bg-white dark:bg-[#222] flex items-center justify-center text-orange-500">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+      </a>
+      <h1 class="text-xl font-bold flex-1">Followers</h1>
+      <button type="button" (click)="load(data()?.pagination?.current_page ?? 1)" [disabled]="loading()" class="text-sm text-orange-600 dark:text-orange-400 disabled:opacity-50 px-2 py-2">
+        <i class="fa-solid fa-rotate-right mr-1" aria-hidden="true"></i> Refresh
+      </button>
+    </div>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-5">People following your agency see you first on their homepage. Your newest followers appear first.</p>
+
+    <form (ngSubmit)="searchFollowers()" class="flex gap-2 mb-5" role="search" aria-label="Search followers">
+      <input name="search" [(ngModel)]="search" maxlength="100" placeholder="Search by name" aria-label="Follower name" class="flex-1 min-w-0 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#222] px-3 py-2 text-sm" />
+      <button type="submit" [disabled]="loading()" class="rounded-xl bg-orange-500 text-white px-4 py-2 text-sm disabled:opacity-50">Search</button>
+    </form>
+
+    @if (loading()) {
+      <p role="status" class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">Loading followers...</p>
+    }
+    @if (error()) {
+      <div role="alert" class="rounded-xl bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 p-4 text-sm">
+        <p>{{ error() }}</p>
+        <button type="button" (click)="load()" class="mt-2 underline">Try again</button>
+      </div>
+    }
+    @if (data(); as result) {
+      <p class="mb-3 text-sm text-gray-600 dark:text-gray-400" aria-live="polite">{{ result.pagination.total }} {{ result.pagination.total === 1 ? 'person' : 'people' }}{{ appliedSearch() ? ' found' : ' following your agency' }}</p>
+      <div class="rounded-2xl bg-white dark:bg-[#191919] divide-y divide-gray-100 dark:divide-gray-800" [attr.aria-busy]="loading()">
+        @for (follower of result.followers; track follower.uuid) {
+          <article class="flex items-start gap-3 p-4">
+            <img [src]="photo(follower)" (error)="onPhotoError($event)" alt="" loading="lazy" class="w-12 h-12 rounded-full object-cover shrink-0" />
+            <div class="min-w-0 flex-1">
+              <h2 class="font-semibold wrap-break-word">{{ name(follower) }}</h2>
+              @if (location(follower)) {
+                <p class="text-sm text-gray-500 dark:text-gray-400 wrap-break-word">{{ location(follower) }}</p>
+              }
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Followed {{ follower.followed_at | date:'mediumDate' }}</p>
+            </div>
+          </article>
+        } @empty {
+          <p class="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">{{ appliedSearch() ? 'No followers match that name.' : 'No followers yet. Share your agency profile to help customers find and follow you.' }}</p>
+        }
+      </div>
+      @if (result.pagination.last_page > 1) {
+        <nav aria-label="Follower pages" class="flex items-center justify-between gap-3 mt-5 text-sm">
+          <button type="button" (click)="load(result.pagination.current_page - 1)" [disabled]="loading() || result.pagination.current_page <= 1" class="rounded-xl border border-gray-300 dark:border-gray-700 px-3 py-2 disabled:opacity-40">Previous</button>
+          <span>Page {{ result.pagination.current_page }} of {{ result.pagination.last_page }}</span>
+          <button type="button" (click)="load(result.pagination.current_page + 1)" [disabled]="loading() || !result.pagination.has_more" class="rounded-xl border border-gray-300 dark:border-gray-700 px-3 py-2 disabled:opacity-40">Next</button>
+        </nav>
+      }
+    }
+  </div>
+</main>

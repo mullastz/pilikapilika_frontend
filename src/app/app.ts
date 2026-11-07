@@ -27,9 +27,9 @@ export class App {
   }
 
   ngOnInit() {
-    this.showMenuBar.set(!this.router.url.startsWith('/admin'));
+    this.showMenuBar.set(!/^\/(admin|staff)(?:\/|$)/.test(this.router.url));
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((e: any) => {
-      this.showMenuBar.set(!e.url.startsWith('/admin'));
+      this.showMenuBar.set(!/^\/(admin|staff)(?:\/|$)/.test(e.url));
       // Reset menu-bar visibility on every route change — prevents stale modal state
       this.menuBarService.reset();
     });

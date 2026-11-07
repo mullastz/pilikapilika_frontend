@@ -24,6 +24,7 @@ export class ProfileManagement implements OnInit {
   }
   
   tabs = [
+    { id: 'team', title: 'Agency Staff', icon: 'fa-users-gear', bgColor: 'bg-orange-200', darkBgColor: 'dark:bg-[#111]', iconBgColor: 'bg-orange-500', agentOnly: true },
     {
       id: 'details',
       title: 'Manage Account',

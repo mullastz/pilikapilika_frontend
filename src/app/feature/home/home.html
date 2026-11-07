@@ -39,6 +39,27 @@
         </div>
     </section>
 
+    @if (followedLoading || followedAgents.length || followedError) {
+      <section class="px-4 sm:px-6 py-5" aria-labelledby="followed-agents-title">
+        <h2 id="followed-agents-title" class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4"><i class="fa-solid fa-user-check text-orange-500 mr-2" aria-hidden="true"></i>Agents You Follow</h2>
+        @if (followedLoading) { <p role="status" class="text-sm text-gray-500">Loading your followed agents...</p> }
+        @else {
+          <div class="flex gap-4 overflow-x-auto pb-3">
+            @for (agent of followedAgents; track agent.uuid) {
+              <a [routerLink]="['/agent', agent.uuid]" class="w-52 shrink-0 rounded-2xl bg-white dark:bg-[#1a1a1a] border border-orange-200 dark:border-orange-900 p-4 hover:shadow-lg transition">
+                <img [src]="agentPhoto(agent)" [alt]="agent.firstname + ' ' + agent.lastname" class="w-20 h-20 rounded-full mx-auto object-cover" />
+                <h3 class="font-semibold text-center dark:text-white truncate mt-3">{{agent.firstname}} {{agent.lastname}}</h3>
+                <p class="text-xs text-center text-gray-500 dark:text-gray-400 mt-1 truncate">{{agent.district || agent.region}}</p>
+                <p class="text-xs text-center mt-2" [ngClass]="agent.availability_status === 'available' ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'">{{agent.availability_status === 'available' ? 'Available for bookings' : 'Currently ' + agent.availability_status}}</p>
+                <p class="text-sm text-orange-500 text-center mt-4">Visit Agent <i class="fa-solid fa-arrow-right ml-1" aria-hidden="true"></i></p>
+              </a>
+            }
+            @if (followedHasMore) { <button type="button" (click)="loadFollowedAgents(true)" [disabled]="followedLoadingMore" class="w-40 shrink-0 rounded-2xl border border-dashed border-orange-300 dark:border-orange-800 text-orange-500 p-4 disabled:opacity-50">{{followedLoadingMore ? 'Loading...' : 'More Followed Agents'}}</button> }
+          </div>
+        }
+        @if (followedError) { <p role="alert" class="text-sm text-red-500 mt-2">{{followedError}} <button type="button" (click)="loadFollowedAgents()" class="underline ml-2">Retry</button></p> }
+      </section>
+    }
     <!-- ACTIVITIES -->
     <section class="px-4 sm:px-6 py-4 sm:py-6">
     <div class="flex justify-between items-center mb-4 sm:mb-6">

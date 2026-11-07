@@ -454,7 +454,8 @@ export class ProfileOnboardingWizard implements OnInit {
 
     // Redirect to home after a brief moment so the toast is visible
     setTimeout(() => {
-      this.router.navigate([needsAddresses ? '/account/agent' : '/home']);
+      const returnUrl = needsAddresses ? null : this.authService.takeReturnUrl();
+      this.router.navigateByUrl(returnUrl || (needsAddresses ? '/account/agent' : '/home'));
     }, 800);
   }
 

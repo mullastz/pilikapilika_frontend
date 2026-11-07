@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, Router, UrlTree } from '@angular/router';
+import { CanActivate, Router, UrlTree, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { ProfileCompletionService } from '../services/profile-completion.service';
 
@@ -26,7 +26,7 @@ export class ProfileCompletionGuard implements CanActivate {
     private router: Router
   ) {}
 
-  canActivate(): boolean | UrlTree {
+  canActivate(_route?: ActivatedRouteSnapshot, state?: RouterStateSnapshot): boolean | UrlTree {
     const user = this.authService.getUser();
 
     // If not authenticated, let other guards/auth interceptors handle it
@@ -43,6 +43,7 @@ export class ProfileCompletionGuard implements CanActivate {
     });
 
     if (missingBasicFields.length > 0) {
+      if (state) this.authService.rememberReturnUrl(state.url);
       // Redirect to profile completion page
       return this.router.createUrlTree(['/account/details'], {
         queryParams: { reason: 'incomplete_profile' }

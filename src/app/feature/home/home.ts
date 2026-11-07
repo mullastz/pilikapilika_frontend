@@ -1,4 +1,6 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AgentFollowService } from '../../core/services/agent-follow.service';
+import { Component, OnInit, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AgentService } from '../../core/services/agent.service';
@@ -50,6 +52,29 @@ export class Home implements OnInit {
   // Services exposed for template
   protected toastService: ToastService;
 
+  private readonly followService = inject(AgentFollowService);
+  private readonly destroyRef = inject(DestroyRef);
+  followedAgents: Agent[] = [];
+  followedLoading = false;
+  followedLoadingMore = false;
+  followedHasMore = false;
+  followedError = '';
+  private followedPage = 1;
+
+  loadFollowedAgents(loadMore = false): void {
+    if (!this.authService.isAuthenticated() || (loadMore && (this.followedLoadingMore || !this.followedHasMore))) return;
+    this.followedLoading = !loadMore; this.followedLoadingMore = loadMore; this.followedError = '';
+    const page = loadMore ? this.followedPage + 1 : 1;
+    this.followService.list(page).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: response => {
+        this.followedAgents = loadMore ? [...this.followedAgents, ...response.data.agents] : response.data.agents;
+        this.followedPage = page; this.followedHasMore = response.data.pagination.has_more;
+        this.followedLoading = false; this.followedLoadingMore = false; this.categorizeAgents(); this.cdr.detectChanges();
+      },
+      error: () => { this.followedError = 'Unable to load followed agents.'; this.followedLoading = false; this.followedLoadingMore = false; this.cdr.detectChanges(); },
+    });
+  }
+
   // All agents from API
   allAgents: Agent[] = [];
 
@@ -94,6 +119,7 @@ export class Home implements OnInit {
   ngOnInit(): void {
     this.loadCurrentUser();
     this.checkProfileCompletion();
+    this.loadFollowedAgents();
     this.loadAgents();
     this.loadProducts();
   }
@@ -186,6 +212,7 @@ export class Home implements OnInit {
 
     // Reset displayed agents tracking
     this.displayedAgentIds.clear();
+    this.followedAgents.forEach(agent => this.displayedAgentIds.add(agent.id));
 
     // Helper function to get agents not yet displayed
     const getUndisplayedAgents = (filterFn: (agent: Agent) => boolean, limit: number): Agent[] => {

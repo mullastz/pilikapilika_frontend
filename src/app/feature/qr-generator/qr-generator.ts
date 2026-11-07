@@ -52,6 +52,8 @@ export class QrGenerator implements OnInit {
     this.checkEditMode();
     this.loadAgents();
     this.loadAddresses();
+    const preferred = this.route.snapshot.queryParamMap.get('agent');
+    if (preferred && !this.route.snapshot.queryParamMap.get('edit')) this.loadPreferredAgent(preferred);
   }
 
   product: ProductDetails = {
@@ -161,11 +163,27 @@ export class QrGenerator implements OnInit {
     this.cdr.detectChanges();
   }
 
+  preferredAgentError = '';
+
+  private loadPreferredAgent(uuid: string): void {
+    this.agentService.getPublicAgentProfile(uuid).subscribe({
+      next: agent => {
+        if (!this.agents.some(item => item.uuid === agent.uuid)) this.agents = [agent, ...this.agents];
+        if (agent.availability_status !== 'available') { this.preferredAgentError = 'This agent is currently unavailable for new bookings.'; this.cdr.detectChanges(); return; }
+        const methods = agent.transport_methods || [];
+        if (methods.length === 1) this.selectedTransportMethod = methods[0];
+        this.selectAgent(agent);
+        this.cdr.detectChanges();
+      },
+      error: () => { this.preferredAgentError = 'Unable to load the agent from your link. Please return to their profile and try again.'; this.cdr.detectChanges(); },
+    });
+  }
+
   loadAgents(): void {
     this.isLoadingAgents = true;
     this.agentService.getAvailableAgents(1, 100).subscribe({
       next: (response) => {
-        this.agents = response.agents;
+        this.agents = this.selectedAgent && !response.agents.some(agent => agent.uuid === this.selectedAgent!.uuid) ? [this.selectedAgent, ...response.agents] : response.agents;
         this.isLoadingAgents = false;
         if (this.pendingEditAgentUuid) {
           const found = this.agents.find((a) => a.uuid === this.pendingEditAgentUuid);

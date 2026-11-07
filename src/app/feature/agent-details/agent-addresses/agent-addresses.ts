@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import {
@@ -24,6 +24,9 @@ export class AgentAddresses implements OnInit {
   @Input() transportMethods: readonly string[] = [];
 
   @Output() addressesChanged = new EventEmitter<Address[]>();
+
+  @ViewChild('addressEditor') private addressEditor?: ElementRef<HTMLDivElement>;
+  @ViewChild('addressLabel') private addressLabel?: ElementRef<HTMLInputElement>;
 
   private readonly addressService = inject(AddressService);
   private readonly toastService = inject(ToastService);
@@ -121,6 +124,7 @@ export class AgentAddresses implements OnInit {
     this.addressForm.reset({ address_type: type });
     this.isTransportDropdownOpen = false;
     this.showAddressForm = true;
+    this.focusAddressForm();
   }
 
   editAddress(address: Address): void {
@@ -135,6 +139,13 @@ export class AgentAddresses implements OnInit {
     });
     this.isTransportDropdownOpen = false;
     this.showAddressForm = true;
+    this.focusAddressForm();
+  }
+
+  private focusAddressForm(): void {
+    this.cdr.detectChanges();
+    this.addressEditor?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    this.addressLabel?.nativeElement.focus({ preventScroll: true });
   }
 
   cancelAddressForm(): void {

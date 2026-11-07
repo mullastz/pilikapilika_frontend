@@ -10,6 +10,7 @@ export interface PageSeo {
   path?: string;
   index?: boolean;
   image?: string;
+  imageAlt?: string;
 }
 
 export const SITE_URL = 'https://pilikapilika.com';
@@ -74,7 +75,13 @@ export class SeoService {
 
   update(page: PageSeo): void {
     const canonical = this.document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-    const image = page.image || `${SITE_URL}/assets/landingpage_images/logistics.webp`;
+    const fallbackImage = `${SITE_URL}/assets/landingpage_images/logistics.webp`;
+    let image = fallbackImage;
+    try {
+      const candidate = new URL(page.image || fallbackImage, `${SITE_URL}/`);
+      if (candidate.protocol === 'https:' || candidate.protocol === 'http:') image = candidate.href;
+    } catch { /* Keep the public fallback for invalid image URLs. */ }
+    const imageAlt = page.imageAlt || page.title;
     const url = page.path ? `${SITE_URL}${page.path === '/' ? '/' : `${page.path.replace(/\/+$/, '')}/`}` : undefined;
     this.title.setTitle(page.title);
     this.meta.updateTag({ name: 'description', content: page.description });
@@ -84,10 +91,17 @@ export class SeoService {
     this.meta.updateTag({ property: 'og:title', content: page.title });
     this.meta.updateTag({ property: 'og:description', content: page.description });
     this.meta.updateTag({ property: 'og:image', content: image });
+    this.meta.updateTag({ property: 'og:image:alt', content: imageAlt });
+    if (image.startsWith('https:')) {
+      this.meta.updateTag({ property: 'og:image:secure_url', content: image });
+    } else {
+      this.meta.removeTag('property="og:image:secure_url"');
+    }
     this.meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
     this.meta.updateTag({ name: 'twitter:title', content: page.title });
     this.meta.updateTag({ name: 'twitter:description', content: page.description });
     this.meta.updateTag({ name: 'twitter:image', content: image });
+    this.meta.updateTag({ name: 'twitter:image:alt', content: imageAlt });
 
     if (url && page.index) {
       const link = canonical || this.document.createElement('link');
@@ -95,9 +109,11 @@ export class SeoService {
       link.href = url;
       if (!canonical) this.document.head.appendChild(link);
       this.meta.updateTag({ property: 'og:url', content: url });
+      this.meta.updateTag({ name: 'twitter:url', content: url });
     } else {
       canonical?.remove();
       this.meta.removeTag('property="og:url"');
+      this.meta.removeTag('name="twitter:url"');
     }
 
     this.document.getElementById('site-schema')?.remove();

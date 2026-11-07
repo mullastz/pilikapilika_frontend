@@ -1,3 +1,4 @@
+import { AgentShare } from '../../shared/components/agent-share/agent-share';
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -12,7 +13,7 @@ import { AgentAddresses } from './agent-addresses/agent-addresses';
 
 @Component({
   selector: 'app-agent-details',
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, AgentAddresses],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, AgentAddresses, AgentShare],
   templateUrl: './agent-details.html',
   styleUrl: './agent-details.css',
 })

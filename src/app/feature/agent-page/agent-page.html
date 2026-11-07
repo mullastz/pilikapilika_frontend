@@ -10,24 +10,26 @@
           <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-[#333] animate-pulse"></div>
           <div class="h-5 w-32 bg-gray-200 dark:bg-[#333] rounded animate-pulse"></div>
         </div>
-        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div class="w-20 h-20 rounded-full bg-gray-200 dark:bg-[#333] animate-pulse"></div>
-          <div class="flex-1 space-y-2">
-            <div class="h-5 w-48 bg-gray-200 dark:bg-[#333] rounded animate-pulse"></div>
-            <div class="h-4 w-32 bg-gray-200 dark:bg-[#333] rounded animate-pulse"></div>
-            <div class="h-3 w-24 bg-gray-200 dark:bg-[#333] rounded animate-pulse"></div>
+        <div class="grid grid-cols-[4rem_minmax(0,1fr)] sm:grid-cols-[5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-4">
+          <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-200 dark:bg-[#333] animate-pulse"></div>
+          <div class="min-w-0 space-y-2">
+            <div class="h-5 w-full max-w-48 bg-gray-200 dark:bg-[#333] rounded animate-pulse"></div>
+            <div class="h-4 w-full max-w-32 bg-gray-200 dark:bg-[#333] rounded animate-pulse"></div>
+            <div class="h-3 w-full max-w-24 bg-gray-200 dark:bg-[#333] rounded animate-pulse"></div>
           </div>
-          <div class="h-10 w-28 bg-gray-200 dark:bg-[#333] rounded-full animate-pulse"></div>
+          <div class="col-span-2 grid grid-cols-3 gap-1.5 sm:gap-3">
+            <div *ngFor="let i of [1,2,3]" class="h-10 rounded-full bg-gray-200 dark:bg-[#333] animate-pulse"></div>
+          </div>
         </div>
       </div>
       <!-- Skeleton Body -->
       <div class="p-4 sm:p-6 space-y-6">
         <div class="h-4 w-full bg-gray-200 dark:bg-[#333] rounded animate-pulse"></div>
         <div class="h-4 w-3/4 bg-gray-200 dark:bg-[#333] rounded animate-pulse"></div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div *ngFor="let i of [1,2,3,4]" class="h-20 bg-gray-200 dark:bg-[#333] rounded-xl animate-pulse"></div>
+        <div class="grid grid-cols-3 gap-2 sm:gap-4">
+          <div *ngFor="let i of [1,2,3]" class="h-20 bg-gray-200 dark:bg-[#333] rounded-xl animate-pulse"></div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 gap-4">
           <div class="h-16 bg-gray-200 dark:bg-[#333] rounded-xl animate-pulse"></div>
           <div class="h-16 bg-gray-200 dark:bg-[#333] rounded-xl animate-pulse"></div>
         </div>
@@ -67,46 +69,42 @@
           </h1>
         </div>
 
-        <!-- PROFILE -->
-        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-
+        <!-- Photo and agent details stay side by side on every screen. -->
+        <div class="grid grid-cols-[4rem_minmax(0,1fr)] sm:grid-cols-[5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-4">
           <img [src]="getProfileImage()" [alt]="getFullName()" width="80" height="80"
                (error)="profileImageFailed = true"
-               class="w-20 h-20 rounded-full border-2 border-orange-500 object-cover"/>
+               class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-orange-500 object-cover" />
 
-          <div class="flex-1">
-
-            <h2 class="text-lg sm:text-xl font-semibold dark:text-white">
-              {{getFullName()}}
-            </h2>
-
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-              {{getLocation()}}
-            </p>
-
-            <!-- RATING -->
-            <div class="flex items-center gap-1 mt-1 text-yellow-500 text-sm">
-              <i class="fa-solid fa-star"></i>
-              <span class="text-gray-700 dark:text-gray-300 ml-1">
-                {{agent.rating || '0.0'}} ({{agent.total_reviews || 0}} reviews)
-              </span>
+          <div class="min-w-0">
+            <h2 class="text-base sm:text-xl font-semibold dark:text-white wrap-break-word">{{getFullName()}}</h2>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 wrap-break-word">{{getLocation()}}</p>
+            <div class="flex items-center gap-1 mt-1 text-yellow-500 text-xs sm:text-sm">
+              <i class="fa-solid fa-star shrink-0" aria-hidden="true"></i>
+              <span class="text-gray-700 dark:text-gray-300">{{agent.rating || '0.0'}} ({{agent.total_reviews || 0}} reviews)</span>
             </div>
-
-            <!-- VERIFIED BADGE -->
-            <div *ngIf="agent.is_verified" class="flex items-center gap-1 mt-1 text-green-500 text-xs">
-              <i class="fa-solid fa-check-circle"></i>
-              <span>Verified Agent</span>
-            </div>
-
           </div>
 
-          <!-- CTA -->
-          <div class="flex gap-3">
-            <button (click)="bookShipment()" class="bg-orange-500 text-white px-5 py-2 rounded-full hover:scale-105 transition shadow">
-              Book Shipment
+          <!-- Full-width action row keeps every action reachable on mobile. -->
+          <div class="col-span-2 grid grid-cols-3 gap-1.5 sm:gap-3 min-w-0">
+            <app-agent-share [agentUuid]="agent.uuid" [agentName]="getFullName()" [compact]="true" />
+            <button type="button" (click)="toggleFollow()" [disabled]="followBusy || !canFollow"
+                    [attr.title]="!canFollow ? 'This is your own profile. Customers can follow you here.' : following ? 'Unfollow this agent' : 'Follow this agent'"
+                    [attr.aria-pressed]="following" [attr.aria-busy]="followBusy"
+                    class="min-w-0 min-h-10 inline-flex items-center justify-center gap-1 sm:gap-2 px-1.5 sm:px-3 py-2 text-[11px] sm:text-sm whitespace-nowrap rounded-full border border-orange-500 text-orange-600 dark:text-orange-400 disabled:opacity-50">
+              <i class="fa-solid" [ngClass]="following ? 'fa-user-check' : 'fa-user-plus'" aria-hidden="true"></i>
+              <span>{{followBusy ? 'Wait...' : following ? 'Following' : 'Follow'}}</span>
+            </button>
+            <button type="button" (click)="bookShipment()" [disabled]="agent.availability_status !== 'available'"
+                    [attr.aria-label]="agent.availability_status === 'available' ? 'Book shipment with ' + getFullName() : 'Agent currently unavailable for bookings'"
+                    class="min-w-0 min-h-10 inline-flex items-center justify-center gap-1 sm:gap-2 bg-orange-500 text-white px-1.5 sm:px-3 py-2 text-[11px] sm:text-sm whitespace-nowrap rounded-full hover:bg-orange-600 transition shadow disabled:opacity-50">
+              <i *ngIf="agent.availability_status === 'available'" class="fa-solid fa-box" aria-hidden="true"></i>
+              <span class="sm:hidden">{{agent.availability_status === 'available' ? 'Book' : 'Unavailable'}}</span>
+              <span class="hidden sm:inline">{{agent.availability_status === 'available' ? 'Book Shipment' : 'Unavailable'}}</span>
             </button>
           </div>
-
+          <p *ngIf="!canFollow" class="col-span-2 text-xs text-gray-500 dark:text-gray-400">
+            You are viewing your own profile. Customers can follow you here.
+          </p>
         </div>
 
       </div>
@@ -123,51 +121,34 @@
         </div>
 
         <!-- STATS -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+        <div class="grid grid-cols-3 gap-2 sm:gap-4 text-center">
 
-          <div class="bg-orange-100 dark:bg-[#333] p-3 rounded-xl">
+          <div class="min-w-0 bg-orange-100 dark:bg-[#333] p-2 sm:p-3 rounded-xl wrap-break-word">
             <p class="text-sm text-gray-500">Deliveries</p>
             <p class="font-semibold dark:text-white">{{agent.total_deliveries || 0}}</p>
           </div>
 
-          <div class="bg-orange-100 dark:bg-[#333] p-3 rounded-xl">
+          <div class="min-w-0 bg-orange-100 dark:bg-[#333] p-2 sm:p-3 rounded-xl wrap-break-word">
             <p class="text-sm text-gray-500">Avg Time</p>
             <p class="font-semibold dark:text-white">{{agent.avg_delivery_time || 'N/A'}}</p>
           </div>
 
-          <div class="bg-orange-100 dark:bg-[#333] p-3 rounded-xl">
+          <div class="min-w-0 bg-orange-100 dark:bg-[#333] p-2 sm:p-3 rounded-xl wrap-break-word">
             <p class="text-sm text-gray-500">Base Price</p>
             <p class="font-semibold text-orange-500">{{ formatPrice(agent.base_price, agent.currency) }}</p>
           </div>
 
-          <div class="bg-orange-100 dark:bg-[#333] p-3 rounded-xl">
-            <p class="text-sm text-gray-500">Success Rate</p>
-            <p class="font-semibold dark:text-white">{{agent.success_rate || 0}}%</p>
-          </div>
+
 
         </div>
 
         <!-- PRICING DETAILS -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 gap-4">
           <div class="bg-gray-50 dark:bg-[#333] p-3 rounded-xl">
             <p class="text-sm text-gray-500">Price per km</p>
             <p class="font-semibold dark:text-white">{{ formatPrice(agent.price_per_km, agent.currency) }}</p>
           </div>
-          <div class="bg-gray-50 dark:bg-[#333] p-3 rounded-xl">
-            <p class="text-sm text-gray-500">Max Distance</p>
-            <p class="font-semibold dark:text-white">{{agent.max_delivery_distance ? agent.max_delivery_distance + ' km' : 'Contact'}}</p>
-          </div>
-        </div>
 
-        <!-- AVAILABILITY STATUS -->
-        <div class="flex items-center gap-2">
-          <span class="text-sm text-gray-500">Availability:</span>
-          <span class="px-3 py-1 rounded-full text-xs font-medium"
-                [class]="agent.availability_status === 'available' ? 'bg-green-100 text-green-700' : 
-                         agent.availability_status === 'busy' ? 'bg-yellow-100 text-yellow-700' : 
-                         'bg-gray-100 text-gray-700'">
-            {{agent.availability_status | titlecase}}
-          </span>
         </div>
 
         <!-- SPECIALIZATIONS -->

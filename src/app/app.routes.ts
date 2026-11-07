@@ -1,10 +1,15 @@
+import { staffGuard, staffBoundaryGuard } from './core/guards/staff.guard';
 import { Routes } from '@angular/router';
 import { ProfileCompletionGuard } from './core/guards/profile-completion.guard';
 import { AdminGuard } from './core/guards/admin.guard';
 import { AgentGuard } from './core/guards/agent.guard';
 
 
-export const routes: Routes = [
+const appRoutes: Routes = [
+  { path: 'staff/tasks', loadComponent: () => import('./feature/staff-workspace/staff-workspace').then(m => m.StaffWorkspace), canActivate: [staffGuard] },
+  { path: 'staff/invitation/:id', loadComponent: () => import('./feature/staff-invitation/staff-invitation').then(m => m.StaffInvitation) },
+  { path: 'account/team', loadComponent: () => import('./feature/agency-team/agency-team').then(m => m.AgencyTeam), canActivate: [AgentGuard] },
+  { path: 'account/followers', loadComponent: () => import('./feature/agency-followers/agency-followers').then(m => m.AgencyFollowers), canActivate: [AgentGuard] },
   { path: 'sign-up', loadComponent: () => import('./feature/auth/sign-up/sign-up').then(m => m.SignUp) },
   { path: 'sign-in', loadComponent: () => import('./feature/auth/sign-in/sign-in').then(m => m.SignIn) },
   { path: 'verify-email/:uuid', loadComponent: () => import('./feature/auth/verify-email/verify-email').then(m => m.VerifyEmail) },
@@ -23,7 +28,7 @@ export const routes: Routes = [
   { path: 'account/agent', loadComponent: () => import('./feature/agent-details/agent-details').then(m => m.AgentDetails), canActivate: [AgentGuard] },
   { path: 'account/shipping', loadComponent: () => import('./feature/shipping/shipping').then(m => m.Shipping), canActivate: [ProfileCompletionGuard] },
   { path: 'account/help', loadComponent: () => import('./feature/help-center/help-center').then(m => m.HelpCenter), canActivate: [ProfileCompletionGuard] },
-  { path: 'agent/:id', loadComponent: () => import('./feature/agent-page/agent-page').then(m => m.AgentPage), canActivate: [ProfileCompletionGuard] },
+  { path: 'agent/:id', loadComponent: () => import('./feature/agent-page/agent-page').then(m => m.AgentPage) },
   { path: 'track-shipping/:id', loadComponent: () => import('./feature/track-shipping/track-shipping').then(m => m.TrackShipping), canActivate: [ProfileCompletionGuard] },
   { path: 'messages', loadComponent: () => import('./feature/messages/messages').then(m => m.Messages), canActivate: [ProfileCompletionGuard] },
   { path: 'search', loadComponent: () => import('./feature/search/search').then(m => m.Search) },
@@ -65,3 +70,5 @@ export const routes: Routes = [
   },
 
 ];
+
+export const routes: Routes = [{ path: '', canActivateChild: [staffBoundaryGuard], children: appRoutes }];

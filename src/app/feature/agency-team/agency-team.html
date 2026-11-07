@@ -1,0 +1,96 @@
+<div class="min-h-screen bg-[#f5f5f5] dark:bg-[#0a0a0a] pb-28 text-gray-900 dark:text-white">
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+    <div class="flex items-center gap-3 mb-6">
+      <a routerLink="/account/agent" aria-label="Back to manage agent profile" class="w-8 h-8 shrink-0 rounded-full bg-white/10 dark:bg-[#333] flex items-center justify-center shadow hover:scale-110 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">
+        <i class="fa-solid fa-arrow-left text-orange-500" aria-hidden="true"></i>
+      </a>
+      <h1 class="min-w-0 flex-1 text-lg sm:text-xl font-bold dark:text-white">Agency Staff</h1>
+      <button type="button" (click)="add()" [disabled]="loading() || saving()" class="inline-flex items-center justify-center gap-1 sm:gap-2 shrink-0 ml-auto min-h-10 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium px-3 sm:px-4 py-2 rounded-full shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0a0a0a] disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-solid fa-user-plus" aria-hidden="true"></i>Add Staff</button>
+    </div>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Invite your team by email and choose which shipment statuses each person handles.</p>
+    @if (invitationLink()) {
+      <section class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 p-5 rounded-xl mb-6" aria-label="Staff invitation">
+        <div class="flex items-start justify-between gap-3">
+          <h2 class="font-semibold">{{invitationMessage()}}</h2>
+          <button type="button" (click)="invitationLink.set('')" aria-label="Close invitation" class="w-8 h-8 shrink-0 rounded-full bg-gray-100 dark:bg-[#333] text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#444] flex items-center justify-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
+        </div>
+        @if (invitationEmailQueued()) {
+          <p role="status" class="text-sm text-gray-600 dark:text-gray-300 my-3">The invitation email has been sent to <strong>{{invitationEmail()}}</strong>. They can open the link in their email to set a password. The invitation expires in seven days. You can also copy the link below.</p>
+        } @else {
+          <p role="alert" class="text-sm text-red-600 dark:text-red-400 my-3">The invitation email could not be sent. Use Resend Invitation on the staff card to try again, or copy this private link for the intended staff member. It expires in seven days.</p>
+        }
+        <div class="flex gap-2">
+          <input aria-label="Backup invitation link" readonly [value]="invitationLink()" (focus)="$any($event.target).select()" class="min-w-0 flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#222] px-3 py-2 text-sm" />
+          <button type="button" (click)="copyInvitation()" class="inline-flex items-center justify-center gap-2 shrink-0 min-h-10 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium px-4 py-2 shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0a0a0a]"><i class="fa-solid fa-copy" aria-hidden="true"></i>Copy</button>
+        </div>
+      </section>
+    }
+    @if (loading()) { <p role="status" class="py-10 text-gray-500">Loading staff...</p> }
+    @else if (error()) {
+      <div role="alert" class="flex flex-wrap items-center gap-3 py-6">
+        <p class="text-red-500">{{error()}}</p>
+        <button type="button" (click)="load()" class="inline-flex items-center justify-center gap-2 min-h-10 px-4 py-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0a0a0a]"><i class="fa-solid fa-rotate-right" aria-hidden="true"></i>Retry</button>
+      </div>
+    }
+    @else {
+      <div class="space-y-4">
+        @for (member of members(); track member.id) {
+          <article class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div><h2 class="font-bold text-lg">{{member.user.firstname}} {{member.user.lastname}}</h2><p class="text-sm text-gray-500 dark:text-gray-400 break-all">{{member.user.email}}</p><p class="text-sm mt-1">{{member.job_title || 'Staff member'}}</p></div>
+              <span class="rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="!member.active ? 'bg-gray-100 text-gray-600' : member.accepted_at ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'">{{!member.active ? 'Access disabled' : member.accepted_at ? 'Active' : 'Invitation pending'}}</span>
+            </div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 mt-4 mb-2">Assigned shipment statuses</p>
+            <div class="flex flex-wrap gap-2">@for (status of member.statuses; track status) { <span class="text-xs px-2 py-1 rounded-lg bg-gray-100 dark:bg-[#292929]">{{stageLabel(status)}}</span> }</div>
+            <div class="flex flex-wrap gap-2 sm:gap-3 border-t border-gray-100 dark:border-gray-800 pt-4 mt-4">
+              <button type="button" (click)="edit(member)" [disabled]="saving()" class="inline-flex items-center justify-center gap-2 min-h-10 px-4 py-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#1a1a1a] disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-solid fa-pen" aria-hidden="true"></i>Edit Responsibilities</button>
+              @if (!member.accepted_at && member.active) {
+                <button type="button" (click)="resend(member)" [disabled]="saving()" class="inline-flex items-center justify-center gap-2 min-h-10 px-4 py-2 rounded-full border border-orange-500 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#1a1a1a] disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-solid fa-envelope" aria-hidden="true"></i>Resend Invitation</button>
+              }
+              <button type="button" (click)="setActive(member)" [disabled]="saving()" class="inline-flex items-center justify-center gap-2 min-h-10 px-4 py-2 rounded-full text-white text-sm font-medium shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#1a1a1a] disabled:opacity-50 disabled:cursor-not-allowed" [ngClass]="member.active ? 'bg-red-500 hover:bg-red-600 focus-visible:ring-red-500' : 'bg-green-500 hover:bg-green-600 focus-visible:ring-green-500'"><i class="fa-solid" [ngClass]="member.active ? 'fa-user-lock' : 'fa-user-check'" aria-hidden="true"></i>{{member.active ? 'Disable Access' : 'Enable Access'}}</button>
+            </div>
+          </article>
+        } @empty {
+          <div class="text-center bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-200 dark:border-gray-800 p-10"><i class="fa-solid fa-users text-4xl text-orange-500 mb-4" aria-hidden="true"></i><h2 class="font-bold text-xl">Build your team</h2><p class="mt-2 text-gray-500">Add a staff member and choose their shipment statuses. Their invitation will be emailed automatically.</p></div>
+        }
+      </div>
+      @if (activity().length) {
+        <section class="mt-8"><h2 class="text-lg font-bold mb-4">Recent team activity</h2><div class="space-y-3">
+          @for (entry of activity(); track entry.id) { <div class="text-sm rounded-xl bg-white dark:bg-[#1a1a1a] p-4 border border-gray-100 dark:border-gray-800"><p><strong>{{entry.firstname}} {{entry.lastname}}</strong> ? <span class="capitalize">{{activityLabel(entry.action)}}</span></p>@if (entry.from_status) { <p class="text-gray-500 mt-1">{{stageLabel(entry.from_status)}} ? {{stageLabel(entry.to_status || '')}}</p> }<p class="text-xs text-gray-400 mt-1">{{entry.created_at | date:'medium'}}</p></div> }
+        </div></section>
+      }
+    }
+  </main>
+</div>
+@if (editor(); as form) {
+  <div class="fixed inset-0 z-[150] bg-black/60 p-4 flex items-center justify-center">
+    <form (ngSubmit)="save()" class="bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-7">
+      <div class="flex items-center justify-between gap-3 mb-5">
+        <h2 class="text-xl font-bold">{{editingId() ? 'Edit staff responsibilities' : 'Invite staff member'}}</h2>
+        <button type="button" (click)="editor.set(null)" [disabled]="saving()" aria-label="Close staff form" class="w-8 h-8 shrink-0 rounded-full bg-gray-100 dark:bg-[#333] text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#444] flex items-center justify-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
+      </div>
+      <fieldset [disabled]="saving()" class="space-y-4">
+        <div class="grid sm:grid-cols-2 gap-4">
+          <label class="block text-sm">First name<input name="firstname" [(ngModel)]="form.firstname" required maxlength="100" class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#222]" /></label>
+          <label class="block text-sm">Last name<input name="lastname" [(ngModel)]="form.lastname" required maxlength="100" class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#222]" /></label>
+        </div>
+        @if (!editingId()) { <label class="block text-sm">Staff email<input name="email" type="email" [(ngModel)]="form.email" required maxlength="255" class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#222]" /><span class="text-xs text-gray-500">Use a dedicated staff email that is not already registered.</span></label> }
+        <label class="block text-sm">Job title (optional)<input name="job_title" [(ngModel)]="form.job_title" maxlength="120" placeholder="For example, warehouse coordinator" class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#222]" /></label>
+        <div><div class="flex flex-wrap items-center justify-between gap-3 mb-2"><h3 class="font-semibold">Shipment statuses this person handles</h3><button type="button" (click)="selectAll()" class="inline-flex items-center justify-center gap-2 shrink-0 min-h-10 px-4 py-2 rounded-full border border-orange-500 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#1a1a1a] disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-solid fa-check-double" aria-hidden="true"></i>Select all</button></div><p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Choose any combination. Staff see agency parcels currently at these statuses and can perform the available next actions. You can change this at any time.</p>
+          <div class="grid sm:grid-cols-2 gap-2">
+            @for (stage of stages(); track stage.status) { <label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer" [ngClass]="form.statuses.includes(stage.status) ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' : 'border-gray-200 dark:border-gray-700'"><input type="checkbox" [checked]="form.statuses.includes(stage.status)" (change)="toggleStatus(stage.status)" class="mt-1 accent-orange-500" /><span class="text-sm">{{stage.label}}</span></label> }
+          </div>
+        </div>
+        @if (editingId()) { <label class="flex items-center gap-2 text-sm"><input name="active" type="checkbox" [(ngModel)]="form.active" class="accent-orange-500" /> Staff access enabled</label> }
+        @if (formError()) { <p role="alert" class="text-sm text-red-500">{{formError()}}</p> }
+        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-3">
+          <button type="button" (click)="editor.set(null)" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-[#444] text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#1a1a1a] disabled:opacity-50 disabled:cursor-not-allowed">Cancel</button>
+          <button type="submit" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium shadow transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#1a1a1a] disabled:opacity-50 disabled:cursor-not-allowed">
+            @if (saving()) { <span class="animate-spin rounded-full h-4 w-4 border-b-2 border-white" aria-hidden="true"></span> }
+            {{saving() ? 'Saving...' : editingId() ? 'Save Responsibilities' : 'Send Invitation'}}
+          </button>
+        </div>
+      </fieldset>
+    </form>
+  </div>
+}

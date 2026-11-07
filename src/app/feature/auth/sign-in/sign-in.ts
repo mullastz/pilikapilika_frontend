@@ -1,7 +1,7 @@
 import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -17,12 +17,14 @@ export class SignIn {
   isLoading = signal(false);
   showPassword = signal(false);
 
+  private readonly route = inject(ActivatedRoute);
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private authService = inject(AuthService);
   private toastService = inject(ToastService);
 
   constructor() {
+    this.authService.rememberReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
     this.signInForm = this.fb.group({
       login: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8)]]
@@ -55,10 +57,13 @@ export class SignIn {
         this.isLoading.set(false);
         this.toastService.success('Welcome back! Login successful.');
         // Redirect admins to dashboard, others to home
-        if (response.data?.is_admin) {
+        if (response.data?.is_agency_staff) {
+          this.authService.takeReturnUrl();
+          this.router.navigate(['/staff/tasks']);
+        } else if (response.data?.is_admin) {
           this.router.navigate(['/admin/dashboard']);
         } else {
-          this.router.navigate(['/home']);
+          this.router.navigateByUrl(this.authService.takeReturnUrl() || '/home');
         }
       },
       error: (err: HttpErrorResponse) => {
