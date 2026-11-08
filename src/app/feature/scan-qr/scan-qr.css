@@ -7,6 +7,14 @@
   justify-content: center;
 }
 
+/* Leave room for the staff mobile navigation. */
+@media (max-width: 767px) {
+  .staff-scanner {
+    height: calc(100dvh - 5rem - env(safe-area-inset-bottom, 0px));
+    min-height: calc(100dvh - 5rem - env(safe-area-inset-bottom, 0px));
+  }
+}
+
 /* Camera feed fills the whole screen */
 .camera-feed {
   position: absolute;

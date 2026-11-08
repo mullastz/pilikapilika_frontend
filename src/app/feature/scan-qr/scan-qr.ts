@@ -1,6 +1,6 @@
-import { Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, OnDestroy, signal, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Html5Qrcode } from 'html5-qrcode';
 import { ShipmentService } from '../../core/services/shipment.service';
@@ -8,6 +8,11 @@ import { ContainerService, Container } from '../../core/services/container.servi
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { localizeShipmentLabel } from '../../core/helpers/shipment-progress.helper';
+import { StaffScannerService } from '../../core/services/staff-scanner.service';
+import { StaffContainerService } from '../../core/services/staff-container.service';
+import { StaffContainers } from '../../shared/components/staff-containers/staff-containers';
+import { MenuBarService } from '../../core/services/menu-bar.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 type ScanState = 'idle' | 'scanning' | 'quantity_input' | 'partial_confirm' | 'add_remaining' | 'container_picker' | 'load_quantity_input' | 'container_detail' | 'processing' | 'success' | 'info' | 'error';
 
@@ -20,18 +25,32 @@ interface ShipmentDistributionState {
 @Component({
   selector: 'app-scan-qr',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, StaffContainers],
+  providers: [StaffScannerService],
   templateUrl: './scan-qr.html',
   styleUrl: './scan-qr.css'
 })
 export class ScanQr implements OnInit, OnDestroy {
   private router = inject(Router);
-  private shipmentService = inject(ShipmentService);
-  private containerService = inject(ContainerService);
-  private toastService = inject(ToastService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly menuBar = inject(MenuBarService);
+  private readonly staffContainers = inject(StaffContainerService);
+  readonly staffCanCreateContainers = this.staffContainers.canCreate;
+  readonly staffCanBrowseContainers = this.staffContainers.canBrowse;
+  readonly staffManagerOpen = signal(false);
+  readonly staffLinkedShipmentId = signal<string | null>(null);
   private authService = inject(AuthService);
+  readonly staffMode = !!this.authService.getUser()?.is_agency_staff;
+  private readonly staffScanner = inject(StaffScannerService);
+  private shipmentService: Pick<ShipmentService, 'approveByQrCode' | 'addReceivedQuantity' | 'getContainerStatus'> = this.staffMode ? this.staffScanner : inject(ShipmentService);
+  private containerService: Pick<ContainerService, 'getContainers' | 'getContainer' | 'createContainer' | 'addShipment' | 'closeContainer' | 'updateContainerStatus'> = this.staffMode ? this.staffScanner : inject(ContainerService);
+  private toastService = inject(ToastService);
+  readonly staffConfirmOnly = signal(false);
 
   html5QrCode: Html5Qrcode | null = null;
+  private scannerStartTimer?: ReturnType<typeof setTimeout>;
+  private destroyed = false;
   private scanHandled = false;
   private lastScanTime = 0;
   state = signal<ScanState>('idle');
@@ -84,22 +103,51 @@ export class ScanQr implements OnInit, OnDestroy {
   /** True when the detail sheet was opened from the picker — closing returns there */
   detailFromPicker = signal<boolean>(false);
 
+  constructor() {
+    effect(onCleanup => {
+      if (this.staffMode && (this.staffManagerOpen() || ['container_picker', 'load_quantity_input', 'container_detail'].includes(this.state()))) {
+        this.menuBar.hide(); onCleanup(() => this.menuBar.show());
+      }
+    });
+  }
+
   ngOnInit(): void {
     const user = this.authService.getUser();
     const role = user?.role?.toLowerCase();
-    if (role !== 'agent' && role !== 'seller') {
+    if (!this.staffMode && role !== 'agent' && role !== 'seller') {
       this.toastService.error('Only agents can access the QR scanner');
       this.router.navigate(['/home']);
       return;
     }
+    if (this.staffMode) {
+      this.staffContainers.getContainers(undefined, false, true).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        error: () => { this.staffContainers.canBrowse.set(false); this.staffContainers.canCreate.set(false); },
+      });
+      const containerId = this.route.snapshot.queryParamMap.get('container');
+      if (containerId) this.containerService.getContainer(containerId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: response => {
+          const container = response.data.container;
+          if (container.staff_can_load) this.scanToLoadInto(container);
+          else this.openContainerDetail(container);
+        },
+        error: error => this.toastService.error(error?.error?.message || 'Unable to open this container.'),
+      });
+    }
   }
 
+  scanFromStaffManager(container: Container): void { this.staffManagerOpen.set(false); this.scanToLoadInto(container); }
+  openStaffContainers(): void { this.staffLinkedShipmentId.set(null); this.staffManagerOpen.set(true); }
+  viewStaffShipment(id: string): void { this.router.navigate(['/staff/parcels'], { queryParams: { shipment: id } }); }
+
   ngOnDestroy(): void {
+    this.destroyed = true;
+    if (this.scannerStartTimer) clearTimeout(this.scannerStartTimer);
     this.stopScanner();
   }
 
   async beginScanning(): Promise<void> {
     await this.stopScanner();
+    if (this.destroyed) return;
     this.scanHandled = false;
     this.lastScanTime = 0;
     this.state.set('scanning');
@@ -107,10 +155,11 @@ export class ScanQr implements OnInit, OnDestroy {
     this.cameraErrorDetail.set(null);
 
     // Defer slightly so DOM is ready
-    setTimeout(() => this.startScanner(), 100);
+    this.scannerStartTimer = setTimeout(() => this.startScanner(), 100);
   }
 
   async startScanner(): Promise<void> {
+    if (this.destroyed) return;
     const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     if (!isSecure) {
       this.state.set('error');
@@ -144,6 +193,7 @@ export class ScanQr implements OnInit, OnDestroy {
       }
       // Stop all tracks so html5-qrcode can take over the camera cleanly
       stream.getTracks().forEach(track => track.stop());
+      if (this.destroyed) return;
     } catch (err: any) {
       const name = err?.name || '';
       const msg = err?.message || '';
@@ -165,10 +215,11 @@ export class ScanQr implements OnInit, OnDestroy {
       return;
     }
 
-    this.html5QrCode = new Html5Qrcode('reader');
+    const scanner = new Html5Qrcode('reader');
+    this.html5QrCode = scanner;
 
     try {
-      await this.html5QrCode.start(
+      await scanner.start(
         { facingMode: 'environment' },
         { fps: 10 },
         (decodedText: string) => {
@@ -184,6 +235,9 @@ export class ScanQr implements OnInit, OnDestroy {
           // ignore scan failures (no QR in frame)
         }
       );
+      if (this.destroyed || this.html5QrCode !== scanner) {
+        try { await scanner.stop(); await scanner.clear(); } catch { /* Already stopped during navigation. */ }
+      }
     } catch (err: any) {
       const name = err?.name || '';
       const msg = err?.message || '';
@@ -235,6 +289,13 @@ export class ScanQr implements OnInit, OnDestroy {
           const shipment = response.data?.shipment ?? null;
           // Check if shipment is in a state where we can receive it
           const status = shipment?.status;
+          if (this.staffMode && !this.canContinueStaffScan(shipment)) {
+            this.resultShipment.set(shipment);
+            this.staffConfirmOnly.set(status === 'pending_confirmation' && this.staffCan(shipment, 'confirm'));
+            this.infoMessage.set(this.staffConfirmOnly() ? 'Confirm this booking within your assigned work.' : 'This parcel has reached the end of your assigned work.');
+            this.state.set('info');
+            return;
+          }
           if (status === 'pending_confirmation' || status === 'confirmed') {
             // Show quantity input before approving
             const data = (response as any).data;
@@ -249,10 +310,10 @@ export class ScanQr implements OnInit, OnDestroy {
               data?.received_quantity ?? shipment?.received_quantity ?? 0,
               data?.remaining_quantity ?? 0
             );
-          } else if (status === 'at_warehouse' || status === 'half_loaded') {
+          } else if (status === 'at_warehouse' || (status === 'half_loaded' && (!this.staffMode || this.staffCan(shipment, 'load')))) {
             // Load flow — pick a container/batch and load (fully or partially)
             this.startLoadFlow(shipment);
-          } else if (shipment?.container_id) {
+          } else if (shipment?.container_id || (this.staffMode && this.hasLinkedContainers(shipment))) {
             // Already inside a container/batch — show that container's detail
             this.openContainerDetailFromScan(shipment);
           } else {
@@ -303,6 +364,28 @@ export class ScanQr implements OnInit, OnDestroy {
     return match ? match[0] : null;
   }
 
+  private staffCan(shipment: any, action: string): boolean { return Array.isArray(shipment?.actions) && shipment.actions.includes(action); }
+  private hasLinkedContainers(shipment: any): boolean { return !!shipment?.container_id || (Array.isArray(shipment?.containers) && shipment.containers.length > 0); }
+
+  private canContinueStaffScan(shipment: any): boolean {
+    if (['pending_confirmation', 'confirmed'].includes(shipment?.status)) return !!shipment?.scan_receive_allowed;
+    if (shipment?.status === 'partially_received') return this.staffCan(shipment, 'add_received');
+    if (shipment?.status === 'at_warehouse') return this.staffCan(shipment, 'load');
+    const containerManaged = !!shipment?.container_managed || this.hasLinkedContainers(shipment);
+    if (shipment?.status === 'half_loaded' && this.staffCan(shipment, 'load')) return true;
+    return containerManaged && this.staffCanBrowseContainers();
+  }
+
+  confirmStaffBooking(): void {
+    const shipment = this.resultShipment();
+    if (!this.staffMode || !this.staffConfirmOnly() || !shipment || this.state() === 'processing') return;
+    this.state.set('processing');
+    this.staffScanner.confirmBooking(shipment.id).subscribe({
+      next: response => { this.resultShipment.set(response.data.shipment); this.staffConfirmOnly.set(false); this.state.set('success'); this.toastService.success(response.message); },
+      error: error => { this.errorMessage.set(error.error?.message || 'Unable to confirm this booking. Scan again to refresh your tasks.'); this.state.set('error'); },
+    });
+  }
+
   getStatusMessage(status: string): string {
     const messages: Record<string, string> = {
       'at_warehouse': 'Shipment is already at warehouse abroad',
@@ -349,6 +432,10 @@ export class ScanQr implements OnInit, OnDestroy {
     const expected = this.expectedQuantity();
     if (expected !== null && qty > expected) {
       this.quantityError.set(`Quantity cannot exceed the expected quantity of ${expected}.`);
+      return;
+    }
+    if (this.staffMode && expected !== null && !this.staffScanner.canReach(qty < expected ? 'partially_received' : 'at_warehouse')) {
+      this.quantityError.set('This receipt would move the parcel outside your assigned statuses. Ask your agency owner to update your assignment.');
       return;
     }
     if (expected !== null && qty < expected) {
@@ -518,6 +605,10 @@ export class ScanQr implements OnInit, OnDestroy {
     if (qty > data.remaining) {
       this.addRemainingError.set(`Cannot exceed remaining quantity (${data.remaining})`);
       return;
+    }
+    if (!Number.isInteger(qty)) { this.addRemainingError.set('Enter a whole number of units.'); return; }
+    if (this.staffMode && !this.staffScanner.canReach(qty < data.remaining ? 'partially_received' : 'at_warehouse')) {
+      this.addRemainingError.set('This receipt is outside your assigned shipment stages.'); return;
     }
 
     this.addRemainingError.set('');
@@ -776,6 +867,12 @@ export class ScanQr implements OnInit, OnDestroy {
   }
 
   private doLoadShipment(containerId: string, shipmentId: string, qty: number): void {
+    if (this.staffMode) {
+      const remaining = this.getMaxLoadQuantity();
+      if (!this.staffScanner.canReach(qty < remaining ? 'half_loaded' : 'loading_container')) {
+        this.loadQuantityError.set('This loading step is outside your assigned shipment stages.'); return;
+      }
+    }
     this.loadQuantityError.set('');
     this.loadingShipment.set(true);
     this.containerService.addShipment(containerId, shipmentId, qty).subscribe({
@@ -931,6 +1028,12 @@ export class ScanQr implements OnInit, OnDestroy {
   /** Scan of a shipment already inside a container/batch → show that container's detail */
   openContainerDetailFromScan(shipment: any): void {
     this.resultShipment.set(shipment);
+    if (this.staffMode) {
+      this.staffLinkedShipmentId.set(shipment.id);
+      this.staffManagerOpen.set(true);
+      this.state.set('idle');
+      return;
+    }
     this.openContainerDetail({ id: shipment.container_id } as Container);
   }
 
@@ -1049,6 +1152,7 @@ export class ScanQr implements OnInit, OnDestroy {
   }
 
   resetToIdle(): void {
+    this.staffConfirmOnly.set(false);
     this.scanHandled = false;
     this.resultShipment.set(null);
     this.infoMessage.set('');
@@ -1086,10 +1190,10 @@ export class ScanQr implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    this.router.navigate(['/home']);
+    this.router.navigate([this.staffMode ? '/staff/tasks' : '/home']);
   }
 
   goToShipping(): void {
-    this.router.navigate(['/account/shipping']);
+    this.router.navigate([this.staffMode ? '/staff/tasks' : '/account/shipping']);
   }
 }

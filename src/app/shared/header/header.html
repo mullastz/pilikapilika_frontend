@@ -1,12 +1,14 @@
 <!-- Navbar -->
-<div class="absolute top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 flex items-center justify-between bg-white/10 backdrop-blur-lg px-3 sm:px-6 py-2 sm:py-3 rounded-full border border-white/20 z-50">
+<div class="flex items-center justify-between gap-3 backdrop-blur-lg px-3 sm:px-6 py-2 sm:py-3 rounded-full border z-50"
+     [ngClass]="appearance() === 'page' ? 'relative bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-800 shadow-sm' : 'absolute top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 bg-white/10 border-white/20'">
 
-    <a class="text-orange-400 font-lobster font-bold text-base sm:text-xl cursor-pointer" routerLink="/">Pilikapilika</a>
+    <a class="text-orange-400 font-lobster font-bold text-base sm:text-xl cursor-pointer" [routerLink]="isStaff() ? '/staff/tasks' : '/'">Pilikapilika</a>
 
     <div class="flex items-center gap-1 sm:gap-4">
         <!-- Theme Toggle -->
         <button (click)="toggleTheme()"
-                class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition"
+                class="w-8 h-8 sm:w-9 sm:h-9 rounded-full backdrop-blur-md flex items-center justify-center transition"
+                [ngClass]="appearance() === 'page' ? 'bg-gray-100 dark:bg-[#333] text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#444]' : 'bg-white/20 text-white hover:bg-white/30'"
                 [attr.aria-label]="isDark ? 'Switch to light mode' : 'Switch to dark mode'">
             <i class="fa-solid" [class.fa-sun]="isDark" [class.fa-moon]="!isDark"></i>
         </button>
@@ -17,17 +19,38 @@
               Get Started
           </button>
         } @else {
-          <!-- Profile Icon with Dropdown (Logged In) - Desktop Only -->
-          <div class="relative profile-dropdown-container hidden sm:block">
+          <!-- Staff also use this menu on mobile, where the main menu is restricted. -->
+          <div class="relative profile-dropdown-container" [ngClass]="isStaff() ? 'block' : 'hidden sm:block'">
             <button (click)="toggleProfileDropdown()"
-                    class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition">
-              <i class="fa-solid fa-user"></i>
+                    aria-label="Open profile menu" [attr.aria-expanded]="isProfileDropdownOpen()"
+                    class="rounded-full backdrop-blur-md flex items-center justify-center transition"
+                    [ngClass]="isStaff() ? 'gap-2 pl-1 pr-2 sm:pr-3 py-1 bg-gray-100 dark:bg-[#333] text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-[#444]' : 'w-8 h-8 sm:w-9 sm:h-9 bg-white/20 text-white hover:bg-white/30'">
+              @if (isStaff()) {
+                <img [src]="profilePhoto" (error)="onPhotoError($event)" alt="" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover" />
+                <span class="text-xs sm:text-sm font-medium truncate max-w-20 sm:max-w-40">{{ currentUser()?.firstname }} {{ currentUser()?.lastname }}</span>
+                <i class="fa-solid fa-chevron-down text-xs" aria-hidden="true"></i>
+              } @else {
+                <i class="fa-solid fa-user" aria-hidden="true"></i>
+              }
             </button>
 
             <!-- Dropdown Menu -->
             @if (isProfileDropdownOpen()) {
-              <div class="fixed sm:absolute right-2 sm:right-0 top-16 sm:top-auto sm:mt-2 w-[calc(100vw-1rem)] sm:w-56 max-w-xs bg-white dark:bg-[#1a1a1a] rounded-xl shadow-2xl border border-gray-200 dark:border-[#2a2a2a] py-2 max-h-[80vh] overflow-y-auto">
+              <div class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-2xl border border-gray-200 dark:border-[#2a2a2a] py-2 max-h-[80vh] overflow-y-auto"
+                   [ngClass]="appearance() === 'page' ? 'absolute right-0 top-full mt-2 w-64 max-w-[calc(100vw-2rem)]' : 'fixed sm:absolute right-2 sm:right-0 top-16 sm:top-auto sm:mt-2 w-[calc(100vw-1rem)] sm:w-56 max-w-xs'">
 
+                @if (isStaff()) {
+                  <div class="px-4 py-3 border-b border-gray-100 dark:border-[#2a2a2a]">
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white wrap-anywhere">{{ currentUser()?.firstname }} {{ currentUser()?.lastname }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 wrap-anywhere">{{ currentUser()?.email }}</p>
+                  </div>
+                  <a routerLink="/staff/tasks" (click)="closeProfileDropdown()" class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-[#2a2a2a] transition">
+                    <i class="fa-solid fa-list-check text-orange-500 w-5" aria-hidden="true"></i> My Tasks
+                  </a>
+                  <button type="button" (click)="requestPasswordChange()" class="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-[#2a2a2a] transition">
+                    <i class="fa-solid fa-lock text-orange-500 w-5" aria-hidden="true"></i> Change Password
+                  </button>
+                } @else {
                 <!-- Account Section -->
                 <div class="px-4 py-2 border-b border-gray-100 dark:border-[#2a2a2a]">
                   <p class="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase">Account</p>
@@ -75,6 +98,7 @@
                   <span class="whitespace-nowrap">Help</span>
                 </a>
 
+                }
                 <!-- Logout -->
                 <div class="border-t border-gray-100 dark:border-[#2a2a2a] mt-1 pt-1">
                   <button (click)="logout()"

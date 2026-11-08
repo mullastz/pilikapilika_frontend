@@ -1,8 +1,10 @@
-import { Component, signal, inject, HostListener, afterNextRender, ChangeDetectorRef } from '@angular/core';
+import { Component, signal, inject, input, output, HostListener, afterNextRender, ChangeDetectorRef } from '@angular/core';
 import { RouterLink, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
+import { User } from '../../core/interfaces/auth.interface';
+import { resolveImageUrl } from '../../core/utils/image-url.util';
 
 @Component({
   selector: 'app-header',
@@ -11,6 +13,11 @@ import { ToastService } from '../../core/services/toast.service';
   styleUrl: './header.css',
 })
 export class Header {
+  readonly appearance = input<'hero' | 'page'>('hero');
+  readonly passwordChangeRequested = output<void>();
+  readonly isStaff = signal(false);
+  readonly currentUser = signal<User | null>(null);
+  readonly fallbackPhoto = 'assets/landingpage_images/defaultprofile.jfif';
   isDark = false;
   isLoggedIn = signal(false);
   isProfileDropdownOpen = signal(false);
@@ -32,6 +39,8 @@ export class Header {
   checkAuthStatus(): void {
     this.isLoggedIn.set(this.authService.isAuthenticated());
     const user = this.authService.getUser();
+    this.currentUser.set(user);
+    this.isStaff.set(!!user?.is_agency_staff);
     const role = user?.role?.toLowerCase();
     this.isAgent.set(role === 'agent' || role === 'seller');
   }
@@ -60,6 +69,20 @@ export class Header {
 
   closeProfileDropdown(): void {
     this.isProfileDropdownOpen.set(false);
+  }
+
+  requestPasswordChange(): void {
+    this.closeProfileDropdown();
+    this.passwordChangeRequested.emit();
+  }
+
+  get profilePhoto(): string {
+    return resolveImageUrl(this.currentUser()?.profile_photo, this.fallbackPhoto);
+  }
+
+  onPhotoError(event: Event): void {
+    const image = event.target as HTMLImageElement;
+    if (!image.src.endsWith(this.fallbackPhoto)) image.src = this.fallbackPhoto;
   }
 
   @HostListener('document:keydown.escape')

@@ -78,39 +78,11 @@
                 </div>
             </div>
 
-            <!-- AGENT TABS -->
-            <div *ngIf="isAgent()" class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm mb-6">
-                <div class="status-tabs flex w-full max-w-full overflow-x-auto scrollbar-hide">
-                    <button
-                        *ngFor="let tab of agentTabs"
-                        (click)="switchTab(tab.id)"
-                        class="flex-none min-w-max px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
-                        [class]="activeTab() === tab.id ?
-                            'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20' :
-                            'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#333]'"
-                    >
-                        <i class="fa-solid {{tab.icon}}"></i>
-                        <span>{{agentTabLabel(tab)}}</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- USER TABS -->
-            <div *ngIf="!isAgent()" class="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm mb-6">
-                <div class="status-tabs flex w-full max-w-full overflow-x-auto scrollbar-hide">
-                    <button
-                        *ngFor="let tab of userTabs"
-                        (click)="switchTab(tab.id)"
-                        class="flex-none min-w-max px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
-                        [class]="activeTab() === tab.id ?
-                            'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20' :
-                            'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#333]'"
-                    >
-                        <i class="fa-solid {{tab.icon}}"></i>
-                        <span>{{agentTabLabel(tab)}}</span>
-                    </button>
-                </div>
-            </div>
+            <app-shipment-status-tabs
+                [tabs]="statusTabs"
+                [activeTab]="activeTab()"
+                (tabChange)="switchTab($event)"
+            />
 
             <!-- LOADING STATE -->
             <div *ngIf="loading()" class="text-center py-20">

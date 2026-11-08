@@ -41,6 +41,12 @@ export class MenuBar implements OnInit, OnDestroy {
 
   get menuItems(): MenuItem[] {
     const user = this.authService.getUser();
+    if (user?.is_agency_staff) return [
+      { label: 'My Tasks', icon: 'fa-solid fa-list-check', route: '/staff/tasks' },
+      { label: 'All Parcels', icon: 'fa-solid fa-box', route: '/staff/parcels' },
+      { label: 'Search', icon: 'fa-solid fa-magnifying-glass', route: '/staff/search' },
+      { label: 'Scan QR', icon: 'fa-solid fa-camera', route: '/staff/scan-qr' },
+    ];
     const role = user?.role?.toLowerCase();
     const isAgent = role === 'agent' || role === 'seller';
 
@@ -99,6 +105,7 @@ export class MenuBar implements OnInit, OnDestroy {
 
   updateCurrentRoute(url: string): void {
     this.currentRoute.set(url);
+    this.isVisible.set(true);
   }
 
   shouldShowMenuBar(): boolean {
@@ -112,6 +119,9 @@ export class MenuBar implements OnInit, OnDestroy {
     }
 
     const currentRoute = this.currentRoute();
+    if (/^\/staff(?:\/|$)/.test(currentRoute)) {
+      return !!this.authService.getUser()?.is_agency_staff && /^\/staff\/(tasks|parcels|search|scan-qr)(?:[/?#]|$)/.test(currentRoute);
+    }
     return !this.hiddenRoutes.some(route => {
       if (route.endsWith('/')) {
         return currentRoute.startsWith(route);
@@ -122,6 +132,7 @@ export class MenuBar implements OnInit, OnDestroy {
 
   @HostListener('window:scroll')
   onScroll(): void {
+    if (this.authService.getUser()?.is_agency_staff) { this.isVisible.set(true); return; }
     const currentScrollY = window.scrollY;
     const previousScrollY = this.lastScrollY();
 
@@ -135,7 +146,7 @@ export class MenuBar implements OnInit, OnDestroy {
   }
 
   isActive(route: string): boolean {
-    const current = this.currentRoute();
+    const current = this.currentRoute().split(/[?#]/)[0];
     if (route === '/') {
       return current === '/' || current === '';
     }

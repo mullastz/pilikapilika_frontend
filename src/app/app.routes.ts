@@ -7,6 +7,9 @@ import { AgentGuard } from './core/guards/agent.guard';
 
 const appRoutes: Routes = [
   { path: 'staff/tasks', loadComponent: () => import('./feature/staff-workspace/staff-workspace').then(m => m.StaffWorkspace), canActivate: [staffGuard] },
+  { path: 'staff/parcels', loadComponent: () => import('./feature/staff-workspace/staff-workspace').then(m => m.StaffWorkspace), data: { parcelMode: true }, canActivate: [staffGuard] },
+  { path: 'staff/search', loadComponent: () => import('./feature/staff-workspace/staff-workspace').then(m => m.StaffWorkspace), data: { searchMode: true }, canActivate: [staffGuard] },
+  { path: 'staff/scan-qr', loadComponent: () => import('./feature/scan-qr/scan-qr').then(m => m.ScanQr), canActivate: [staffGuard] },
   { path: 'staff/invitation/:id', loadComponent: () => import('./feature/staff-invitation/staff-invitation').then(m => m.StaffInvitation) },
   { path: 'account/team', loadComponent: () => import('./feature/agency-team/agency-team').then(m => m.AgencyTeam), canActivate: [AgentGuard] },
   { path: 'account/followers', loadComponent: () => import('./feature/agency-followers/agency-followers').then(m => m.AgencyFollowers), canActivate: [AgentGuard] },

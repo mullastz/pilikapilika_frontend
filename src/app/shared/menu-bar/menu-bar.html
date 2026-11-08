@@ -8,6 +8,8 @@
       <div class="flex items-center justify-around px-2 py-2">
         @for (item of menuItems; track item.route) {
           <button
+            type="button"
+            [attr.aria-current]="isActive(item.route) ? 'page' : null"
             (click)="navigateTo(item.route)"
             class="flex flex-col items-center justify-center min-w-15 py-1 px-2 rounded-lg transition-all duration-200"
             [class.text-[#FF7800]]="isActive(item.route)"

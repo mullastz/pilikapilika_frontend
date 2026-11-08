@@ -1,0 +1,69 @@
+<div [ngClass]="embedded ? 'text-gray-900 dark:text-white' : 'fixed inset-0 z-[140] flex items-end sm:items-center justify-center text-gray-900 dark:text-white'" (click)="!embedded && close()">
+  @if (!embedded) { <div class="absolute inset-0 bg-black/50 sheet-backdrop" [class.closing]="closing()"></div> }
+  <section [attr.role]="embedded ? null : 'dialog'" [attr.aria-modal]="embedded ? null : 'true'" aria-labelledby="staff-containers-heading" class="relative w-full" [ngClass]="embedded ? '' : 'bg-white dark:bg-[#1a1a1a] rounded-2xl max-w-2xl shadow-2xl max-h-[90dvh] overflow-y-auto sheet-modal-desktop sheet-modal-mobile'" [class.closing]="closing()" (click)="$event.stopPropagation()">
+    @if (!embedded) { <div class="sheet-handle hidden pt-2 pb-1"><div class="sheet-handle-bar"></div></div> }
+    <header class="flex items-center gap-3 sticky top-0 z-10" [ngClass]="embedded ? 'py-3 mb-5 bg-[#f5f5f5] dark:bg-[#0a0a0a]' : 'sheet-header p-5 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-[#1a1a1a]'">
+      @if (selected()) { <button type="button" (click)="selected.set(null)" class="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-[#333]" aria-label="Back to container list"><i class="fa-solid fa-arrow-left text-orange-500"></i></button> }
+      <h2 id="staff-containers-heading" class="text-lg font-semibold flex-1 min-w-0 wrap-anywhere"><i class="fa-solid fa-box-open text-indigo-500 mr-2"></i>{{selected()?.reference_number || term() + ' Management'}}</h2>
+      @if (!embedded) { <button type="button" (click)="close()" [disabled]="creating() || updating()" class="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-[#333] disabled:opacity-50" aria-label="Close container management"><i class="fa-solid fa-times text-gray-400"></i></button> }
+    </header>
+    @if (!selected()) {
+      <div class="space-y-5" [class.p-5]="!embedded">
+        @if (shipmentId) { <div class="flex items-center justify-between gap-3 rounded-xl bg-orange-50 dark:bg-orange-900/20 p-3 text-sm text-orange-700 dark:text-orange-300"><p>Showing this parcel's {{term().toLowerCase()}}s. Each follows its own transport status.</p>@if (embedded) { <button type="button" (click)="filterCleared.emit()" class="shrink-0 px-3 py-1.5 rounded-lg bg-white dark:bg-[#222] text-xs">Show all</button> }</div> }
+        <div class="flex items-center flex-wrap gap-2" [ngClass]="embedded ? 'bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm' : ''" role="group" aria-label="Transport">
+          <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 mr-1">Transport</span>
+          @for (method of methods(); track method) {
+            <button type="button" (click)="setMode(method)" [disabled]="loading() || creating() || updating()" [attr.aria-pressed]="mode() === method" class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition flex items-center gap-2 disabled:opacity-50" [ngClass]="mode() === method ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 dark:bg-[#222] text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#333]'"><i class="fa-solid" [ngClass]="method === 'air' ? 'fa-plane' : 'fa-ship'"></i>{{method === 'air' ? 'Air Freight' : 'Sea Freight'}}</button>
+          }
+        </div>
+        @if (canCreate()) {
+          <form (ngSubmit)="create()" class="space-y-3" [ngClass]="embedded ? 'bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm' : 'border-b border-gray-100 dark:border-gray-700 pb-5'">
+            <label for="staff-container-reference" class="block text-sm font-semibold">Create New {{term()}}</label>
+            <div class="flex gap-3"><input id="staff-container-reference" name="reference" [(ngModel)]="reference" maxlength="255" required [disabled]="creating()" [placeholder]="'Enter ' + term().toLowerCase() + ' reference number'" class="min-w-0 flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#222] outline-none focus:ring-2 focus:ring-orange-500" /><button type="submit" [disabled]="creating() || !reference.trim()" class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50 transition flex items-center gap-2"><i class="fa-solid" [ngClass]="creating() ? 'fa-circle-notch fa-spin' : 'fa-plus'"></i>Create</button></div>
+          </form>
+        }
+        <div><label for="staff-container-search" class="sr-only">Search {{term()}}s</label><div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i><input id="staff-container-search" type="search" [ngModel]="search()" (ngModelChange)="search.set($event)" [placeholder]="'Search ' + term().toLowerCase() + 's by name or status'" class="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-100 dark:bg-[#222] outline-none focus:ring-2 focus:ring-orange-500" /></div><p class="text-xs text-gray-500 mt-3">Ordered from loading to the final delivery stage.</p></div>
+        @if (error()) { <p role="alert" class="text-sm text-red-500">{{error()}} <button type="button" (click)="load()" class="underline ml-2">Retry</button></p> }
+        @if (loading()) { <div role="status" class="text-center py-8"><i class="fa-solid fa-circle-notch fa-spin text-orange-500 text-xl"></i><span class="sr-only">Loading containers</span></div> }
+        @else {
+          @for (container of filtered(); track container.id) {
+            <article class="border border-gray-200 dark:border-gray-700 rounded-xl p-4" [ngClass]="embedded ? 'bg-white dark:bg-[#1a1a1a] shadow-sm' : ''">
+              <div class="flex items-start justify-between gap-3 mb-3"><div class="min-w-0"><h3 class="font-semibold wrap-anywhere">{{container.reference_number}}</h3><p class="text-xs text-gray-500 mt-1">{{label(container.status, container.transport_method)}} &middot; {{container.shipments_count || 0}} parcel shipment(s)</p></div><button type="button" (click)="open(container)" class="px-3 py-2 text-xs bg-gray-100 dark:bg-[#222] text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-[#333] shrink-0"><i class="fa-solid fa-eye mr-1 text-orange-500"></i>View</button></div>
+              <div class="flex flex-wrap gap-2">
+                @if (container.staff_can_load) { <button type="button" (click)="scan(container)" class="px-3 py-2 text-xs bg-purple-500 text-white rounded-lg hover:bg-purple-600"><i class="fa-solid fa-camera mr-1"></i>Scan to Load</button> }
+                @if (container.staff_can_close) { <button type="button" (click)="confirm(container)" [disabled]="updating()" class="px-3 py-2 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">Close {{term()}}</button> }
+                @if (container.staff_can_advance) { <button type="button" (click)="confirm(container, next(container.status))" [disabled]="updating()" class="px-3 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">Update to {{label(next(container.status) || '', container.transport_method)}}</button> }
+              </div>
+              @if (container.staff_status_message) { <p class="text-xs text-gray-500 dark:text-gray-400 mt-3">{{container.staff_status_message}}</p> }
+            </article>
+          } @empty { <div class="text-center py-8 text-gray-500"><i class="fa-solid fa-box-open text-3xl mb-3"></i><p class="text-sm">No matching {{term().toLowerCase()}}s in your assigned work.</p></div> }
+        }
+      </div>
+    } @else if (selected(); as container) {
+      <div class="p-5 space-y-4" [ngClass]="embedded ? 'bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm' : ''">
+        <div class="flex flex-wrap items-center gap-2"><span class="text-xs px-3 py-1 rounded-full bg-gray-100 dark:bg-[#222]">{{label(container.status, container.transport_method)}}</span>
+          @if (!detailLoading() && !detailError()) {
+            @if (container.staff_can_load) { <button type="button" (click)="scan(container)" class="px-3 py-2 text-xs bg-purple-500 text-white rounded-lg hover:bg-purple-600"><i class="fa-solid fa-camera mr-1"></i>Scan to Load</button> }
+            @if (container.staff_can_close) { <button type="button" (click)="confirm(container)" [disabled]="updating()" class="px-3 py-2 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">Close {{term()}}</button> }
+            @if (container.staff_can_advance) { <button type="button" (click)="confirm(container, next(container.status))" [disabled]="updating()" class="px-3 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">{{label(next(container.status) || '', container.transport_method)}}</button> }
+          }
+        </div>
+        @if (detailLoading()) { <p role="status" class="text-sm text-gray-500 py-8 text-center"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Loading shipments...</p> }
+        @else if (detailError()) { <p role="alert" class="text-sm text-red-500">{{detailError()}} <button type="button" (click)="open(container)" class="underline ml-2">Retry</button></p> }
+        @else {
+          @if (container.staff_status_message) { <p class="text-sm text-gray-500 dark:text-gray-400">{{container.staff_status_message}}</p> }
+          <h3 class="text-sm font-semibold">Shipments in {{term()}}</h3>
+          @for (shipment of shipments(container); track shipment.id) {
+            <article class="bg-gray-50 dark:bg-[#222] rounded-lg p-3 text-sm space-y-2">
+              <div class="flex justify-between items-start gap-3"><div class="min-w-0"><h4 class="font-medium wrap-anywhere">{{shipment.title || 'Untitled'}}</h4><p class="text-xs text-gray-500 mt-1">Status: {{label(shipment.status, shipment.transport_method)}} &middot; Qty in this {{term().toLowerCase()}}: {{shipment.pivot_quantity || 0}}</p></div><button type="button" (click)="viewShipment.emit(shipment.id)" class="px-3 py-1.5 bg-white dark:bg-[#333] border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-lg hover:border-orange-300 shrink-0"><i class="fa-solid fa-eye text-orange-500 mr-1"></i>View</button></div>
+              <div class="border-t border-gray-200 dark:border-gray-700 pt-2 text-xs space-y-1"><p class="text-orange-600 dark:text-orange-400">Total Quantity: <strong>{{shipment.distribution.expected_quantity}}</strong></p><p class="text-green-600 dark:text-green-400">Distributed across <strong>{{shipment.distribution.containers.length}}</strong> {{term().toLowerCase()}}(s):</p>@for (item of shipment.distribution.containers; track item.id) { <p class="flex justify-between gap-2"><span class="text-gray-500">{{item.reference_number}}</span><strong class="text-orange-500">{{item.quantity}} unit(s)</strong></p> }<p class="text-orange-600 dark:text-orange-400">Remaining (not loaded): <strong>{{shipment.distribution.remaining_quantity}}</strong> unit(s)</p></div>
+            </article>
+          } @empty { <p class="text-sm text-center text-gray-500 py-6">No parcels from your work queues in this {{term().toLowerCase()}}.</p> }
+        }
+      </div>
+    }
+  </section>
+</div>
+@if (confirmation(); as operation) {
+  <div class="fixed inset-0 z-[170] bg-black/50 p-4 flex items-center justify-center text-gray-900 dark:text-white" (click)="!updating() && confirmation.set(null)"><section role="dialog" aria-modal="true" aria-labelledby="staff-container-confirm" class="bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 max-w-sm w-full shadow-2xl" (click)="$event.stopPropagation()"><h3 id="staff-container-confirm" class="text-lg font-semibold mb-4">{{operation.next ? 'Update to ' + label(operation.next, operation.container.transport_method) : 'Close ' + term()}}</h3><p class="text-sm text-gray-600 dark:text-gray-300 mb-6">{{operation.next ? 'Update ' + operation.container.reference_number + '? This also updates the shipping status of its parcels.' : 'Close ' + operation.container.reference_number + '? This ends loading and updates the status of the parcels inside.'}}</p><div class="flex gap-3"><button type="button" (click)="confirmation.set(null)" [disabled]="updating()" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-[#333] text-gray-700 dark:text-gray-300 rounded-lg disabled:opacity-50">Cancel</button><button type="button" (click)="perform()" [disabled]="updating()" class="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg disabled:opacity-50">{{updating() ? 'Updating...' : 'Confirm'}}</button></div></section></div>
+}

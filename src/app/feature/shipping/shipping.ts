@@ -25,12 +25,13 @@ import { MenuBarService } from '../../core/services/menu-bar.service';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { finalize, Subscription } from 'rxjs';
 import { resolveImageUrl } from '../../core/utils/image-url.util';
+import { ShipmentStatusTabs, ShipmentStatusTab } from '../../shared/components/shipment-status-tabs/shipment-status-tabs';
 
 type QrScanPurpose = 'agent_load_container' | 'user_confirm_delivery';
 
 @Component({
   selector: 'app-shipping',
-  imports: [ CommonModule, FormsModule, QRCodeComponent ],
+  imports: [ CommonModule, FormsModule, QRCodeComponent, ShipmentStatusTabs ],
   templateUrl: './shipping.html',
   styleUrl: './shipping.css',
 })
@@ -602,6 +603,10 @@ export class Shipping implements OnInit, OnDestroy {
 
   agentTabLabel(tab: { id: string; label: string }): string {
     return localizeShipmentLabel(tab.label, this.transportMode());
+  }
+
+  get statusTabs(): ShipmentStatusTab[] {
+    return (this.isAgent() ? this.agentTabs : this.userTabs).map(tab => ({ ...tab, label: this.agentTabLabel(tab) }));
   }
 
   // Pagination pages array with smart ellipsis

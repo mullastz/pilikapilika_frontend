@@ -3,6 +3,10 @@ import { ApiService } from './api.service';
 import { Observable } from 'rxjs';
 
 export interface Container {
+  staff_status_message?: string | null;
+  staff_can_load?: boolean;
+  staff_can_close?: boolean;
+  staff_can_advance?: boolean;
   id: string;
   agent_id: string;
   reference_number: string;
