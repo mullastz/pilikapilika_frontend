@@ -373,9 +373,11 @@
         <!-- INNER CONTENT (same padding as others) -->
         <div class="px-4 sm:px-6 max-w-6xl mx-auto">
 
+        <h2 class="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6">Sample reviews</h2>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <div *ngFor="let t of testimonials"
-                class="bg-white dark:bg-[#1a1a1a] text-black dark:text-white rounded-2xl p-4 sm:p-5 shadow-lg hover:-translate-y-1 transition-colors">
+                class="flex flex-col bg-white dark:bg-[#1a1a1a] text-black dark:text-white rounded-2xl p-4 sm:p-5 shadow-lg hover:-translate-y-1 transition-colors">
 
             <div class="text-orange-500 mb-2 text-sm">
                 <i class="fa-solid fa-star"></i>
@@ -387,8 +389,9 @@
 
             <p class="text-xs sm:text-sm mb-4 dark:text-gray-300">{{t.message}}</p>
 
-            <div class="flex items-center gap-3">
-                <img [src]="t.avatar" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full"/>
+            <div class="flex items-center gap-3 mt-auto">
+                <span class="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold"
+                    [ngClass]="t.avatarClass" aria-hidden="true">{{t.initials}}</span>
                 <div>
                 <p class="font-medium text-sm sm:text-base">{{t.name}}</p>
                 <p class="text-xs text-gray-500">{{t.city}}</p>

@@ -127,40 +127,46 @@ activities = [
 
 testimonials = [
   {
-    name: 'Andra',
-    city: 'Dar-es-salaam',
-    message: 'The tracking updates gave me full confidence.',
-    avatar: 'assets/landingpage_images/defaultprofile.jfif'
+    name: 'Asha M.',
+    city: 'Dar es Salaam',
+    message: 'I could check where my parcels were without calling the agent every time. The updates made things much easier.',
+    initials: 'AM',
+    avatarClass: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200'
   },
   {
-    name: 'Andra',
-    city: 'Dar-es-salaam',
-    message: 'The tracking updates gave me full confidence.',
-    avatar: 'assets/landingpage_images/defaultprofile.jfif'
-  },  
+    name: 'Kelvin J.',
+    city: 'Arusha',
+    message: 'Finding an agent for my first shipment was straightforward. I liked having the booking details in one place.',
+    initials: 'KJ',
+    avatarClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200'
+  },
   {
-    name: 'Andra',
-    city: 'Dar-es-salaam',
-    message: 'The tracking updates gave me full confidence.',
-    avatar: 'assets/landingpage_images/defaultprofile.jfif'
-  },  
+    name: 'Neema S.',
+    city: 'Mwanza',
+    message: 'Nilipenda kuona hatua za mzigo wangu kwenye simu. Sasa ni rahisi kufuatilia bila kuuliza kila mara.',
+    initials: 'NS',
+    avatarClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200'
+  },
   {
-    name: 'Andra',
-    city: 'Dar-es-salaam',
-    message: 'The tracking updates gave me full confidence.',
-    avatar: 'assets/landingpage_images/defaultprofile.jfif'
-  },  
+    name: 'Hassan A.',
+    city: 'Dodoma',
+    message: 'I ship stock for my shop, so keeping sea and air parcels separate helps me plan what is coming next.',
+    initials: 'HA',
+    avatarClass: 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200'
+  },
   {
-    name: 'Andra',
-    city: 'Dar-es-salaam',
-    message: 'The tracking updates gave me full confidence.',
-    avatar: 'assets/landingpage_images/defaultprofile.jfif'
-  },  
+    name: 'Grace P.',
+    city: 'Mbeya',
+    message: 'Following my agent saves me the search when I need to book again. A small feature that makes a difference.',
+    initials: 'GP',
+    avatarClass: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200'
+  },
   {
-    name: 'Andra',
-    city: 'Dar-es-salaam',
-    message: 'The tracking updates gave me full confidence.',
-    avatar: 'assets/landingpage_images/defaultprofile.jfif'
+    name: 'Baraka R.',
+    city: 'Morogoro',
+    message: 'Kuona idadi ya vifurushi vilivyopokelewa kulinisaidia kujua kilichofika na kile ambacho bado nasubiri.',
+    initials: 'BR',
+    avatarClass: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
   },
 ];
 
