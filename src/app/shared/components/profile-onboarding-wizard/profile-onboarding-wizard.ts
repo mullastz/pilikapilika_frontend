@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -50,7 +50,7 @@ export interface WizardField {
   templateUrl: './profile-onboarding-wizard.html',
   styleUrl: './profile-onboarding-wizard.css'
 })
-export class ProfileOnboardingWizard implements OnInit {
+export class ProfileOnboardingWizard implements OnChanges {
   @Input() analysis: ProfileAnalysis | null = null;
   @Input() show = false;
   @Output() close = new EventEmitter<void>();
@@ -80,7 +80,16 @@ export class ProfileOnboardingWizard implements OnInit {
   userName = '';
   userRole: 'customer' | 'agent' = 'customer';
 
-  ngOnInit(): void {
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!this.show || (!changes['show'] && !changes['analysis'])) return;
+
+    this.currentStepIndex = 0;
+    this.showWelcome = true;
+    this.showCompletion = false;
+    this.fieldValues = {};
+    this.fieldErrors = {};
+    this.fieldTouched = {};
+
     const user = this.authService.getUser();
     if (user) {
       this.userName = user.firstname || 'there';
@@ -90,7 +99,7 @@ export class ProfileOnboardingWizard implements OnInit {
   }
 
   get isVisible(): boolean {
-    return this.show && !!this.analysis && !this.analysis.isComplete;
+    return this.show && !!this.analysis && !this.analysis.isComplete && this.totalSteps > 0;
   }
 
   get steps(): WizardStep[] {
@@ -275,6 +284,10 @@ export class ProfileOnboardingWizard implements OnInit {
   }
 
   startWizard(): void {
+    if (this.totalSteps === 0) {
+      this.close.emit();
+      return;
+    }
     this.showWelcome = false;
     this.currentStepIndex = 0;
   }

@@ -2,12 +2,12 @@ import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild } from '@an
 import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink, Router } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ProfileCompletionService, ProfileAnalysis } from '../../core/services/profile-completion.service';
-import { User, UpdateProfileRequest, UpdateProfileResponse } from '../../core/interfaces/auth.interface';
+import { User, UpdateProfileRequest } from '../../core/interfaces/auth.interface';
 import { ProfileOnboardingWizard } from '../../shared/components/profile-onboarding-wizard/profile-onboarding-wizard';
 import { resolveImageUrl } from '../../core/utils/image-url.util';
 
@@ -32,7 +32,6 @@ export class ManageAccount implements OnInit {
   // Onboarding wizard state
   profileAnalysis: ProfileAnalysis | null = null;
   showOnboarding = false;
-  isFirstTime = false;
 
   // Photo upload state
   photoPreview: string | null = null;
@@ -68,7 +67,6 @@ export class ManageAccount implements OnInit {
     private profileCompletionService: ProfileCompletionService,
     private cdr: ChangeDetectorRef,
     private toastService: ToastService,
-    private route: ActivatedRoute,
     private router: Router,
   ) {
     this.profileForm = this.fb.group({
@@ -87,11 +85,11 @@ export class ManageAccount implements OnInit {
 
   ngOnInit(): void {
     this.loadUserProfile();
-    this.checkForOnboarding();
   }
 
-  loadUserProfile(): void {
+  loadUserProfile(openOnboarding = true): void {
     this.isLoading = true;
+    this.showOnboarding = false;
     this.user = this.authService.getUser();
 
     if (this.user) {
@@ -103,7 +101,7 @@ export class ManageAccount implements OnInit {
       next: (response) => {
         this.user = response.data;
         this.authService.saveUser(response.data);
-        this.missingAgentAddresses = !!response.profile?.missing_fields.some(field => ['local_address', 'abroad_address'].includes(field));
+        this.missingAgentAddresses = !!response.profile?.missing_fields?.some(field => ['local_address', 'abroad_address'].includes(field));
         this.populateForm(response.data);
 
         // Verify profile completion status from backend (prevents abuse)
@@ -119,11 +117,13 @@ export class ManageAccount implements OnInit {
         }
 
         this.isLoading = false;
+        this.checkForOnboarding(openOnboarding);
         this.cdr.detectChanges();
       },
       error: (err: any) => {
         this.toastService.error('Failed to load profile. Please try again.');
         this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -146,29 +146,13 @@ export class ManageAccount implements OnInit {
   // ── Onboarding Wizard ────────────────────────────────────────────
 
   /**
-   * Check if user was redirected here for profile completion
-   * and show the onboarding wizard
+   * Open guided setup only for basic fields missing from the refreshed profile.
    */
-  checkForOnboarding(): void {
-    // Check URL query param for incomplete profile redirect
-    const reason = this.route.snapshot.queryParamMap.get('reason');
-    const isIncomplete = this.authService.needsProfileCompletion();
-
-    if (reason === 'incomplete_profile' || isIncomplete) {
-      this.isFirstTime = reason === 'incomplete_profile';
-
-      // Build profile analysis for the wizard
-      const user = this.authService.getUser();
-      if (user) {
-        this.profileAnalysis = this.profileCompletionService.analyzeProfile(user, null);
-
-        // Show onboarding after a short delay for the page to settle
-        setTimeout(() => {
-          this.showOnboarding = true;
-          this.cdr.detectChanges();
-        }, 600);
-      }
-    }
+  checkForOnboarding(openOnboarding = true): void {
+    this.profileAnalysis = this.user
+      ? this.profileCompletionService.analyzeBasicProfile(this.user)
+      : null;
+    this.showOnboarding = openOnboarding && !!this.profileAnalysis && !this.profileAnalysis.isComplete;
   }
 
   /**
@@ -176,7 +160,7 @@ export class ManageAccount implements OnInit {
    */
   onProfileUpdated(): void {
     // Refresh user profile data
-    this.loadUserProfile();
+    this.loadUserProfile(false);
     this.showOnboarding = false;
   }
 
@@ -302,7 +286,7 @@ export class ManageAccount implements OnInit {
         this.isSaving = false;
         this.user = response.data;
         this.authService.saveUser(response.data);
-        this.missingAgentAddresses = !!response.profile?.missing_fields.some(field => ['local_address', 'abroad_address'].includes(field));
+        this.missingAgentAddresses = !!response.profile?.missing_fields?.some(field => ['local_address', 'abroad_address'].includes(field));
         if (response.profile?.is_complete) {
           this.authService.setProfileComplete();
         } else if (response.profile) {
@@ -312,6 +296,7 @@ export class ManageAccount implements OnInit {
             missing_fields: response.profile.missing_fields || []
           }));
         }
+        this.checkForOnboarding(false);
         this.toastService.success('Profile updated successfully!');
         this.cdr.detectChanges();
         const basicComplete = ['firstname', 'lastname', 'phone', 'region', 'district'].every(field => !!(response.data as unknown as Record<string, unknown>)[field]);
@@ -375,13 +360,6 @@ export class ManageAccount implements OnInit {
    * (Only checks essential fields, not agent-specific ones)
    */
   needsProfileCompletion(): boolean {
-    const user = this.authService.getUser();
-    if (!user) return false;
-
-    const basicFields = ['firstname', 'lastname', 'phone', 'region', 'district'];
-    return basicFields.some(field => {
-      const value = (user as any)[field];
-      return !value || value === '' || value === null;
-    });
+    return !this.isLoading && !!this.profileAnalysis && !this.profileAnalysis.isComplete;
   }
 }

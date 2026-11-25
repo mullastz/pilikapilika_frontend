@@ -186,6 +186,21 @@ export class ProfileCompletionService {
     return this.isAgent(user) ? 'agent' : 'customer';
   }
 
+  /** Account setup collects only the basic fields, for customers and agents alike. */
+  analyzeBasicProfile(user: User | null): ProfileAnalysis {
+    const missingFields = this.getMissingFields(user, null, 'customer');
+
+    return {
+      isComplete: !!user && missingFields.length === 0,
+      missingFields,
+      completionPercentage: user
+        ? Math.round(((this.baseRequirements.length - missingFields.length) / this.baseRequirements.length) * 100)
+        : 0,
+      role: this.getRole(user),
+      nextRecommendedField: missingFields[0]?.field ?? null
+    };
+  }
+
   /**
    * Analyze a user's profile and return detailed completion information
    */
