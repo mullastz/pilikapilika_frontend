@@ -129,6 +129,41 @@
             ></textarea>
           </div>
 
+          <!-- CONTACT CHANNELS (shown as Call / WhatsApp / social buttons on your public profile) -->
+          <fieldset class="sm:col-span-2">
+            <legend class="text-sm font-medium text-gray-700 dark:text-gray-300">Contact &amp; Social Links</legend>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-3">Customers can call you, message you on WhatsApp and open your pages directly from your agent profile. Leave a field empty to hide it.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="contact_phone" class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-phone text-orange-500 mr-1" aria-hidden="true"></i>Phone number for calls</label>
+                <input id="contact_phone" type="tel" inputmode="tel" autocomplete="tel" formControlName="contact_phone" maxlength="30"
+                  [placeholder]="user?.phone || '+255 712 345 678'"
+                  class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500" />
+                <p class="text-xs text-gray-400 mt-1">If empty, your account phone number is used.</p>
+                @if (contactError('contact_phone'); as message) { <p role="alert" class="text-red-500 text-xs mt-1">{{ message }}</p> }
+              </div>
+              <div>
+                <label for="whatsapp" class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-brands fa-whatsapp text-green-500 mr-1" aria-hidden="true"></i>WhatsApp number</label>
+                <input id="whatsapp" type="tel" inputmode="tel" formControlName="whatsapp" maxlength="30" placeholder="+255 712 345 678"
+                  class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500" />
+                <p class="text-xs text-gray-400 mt-1">Include the country code, e.g. +255.</p>
+                @if (contactError('whatsapp'); as message) { <p role="alert" class="text-red-500 text-xs mt-1">{{ message }}</p> }
+              </div>
+              <div>
+                <label for="instagram" class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-brands fa-instagram text-pink-500 mr-1" aria-hidden="true"></i>Instagram (optional)</label>
+                <input id="instagram" type="text" formControlName="instagram" maxlength="255" placeholder="@youragency or https://instagram.com/youragency"
+                  class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500" />
+                @if (contactError('instagram'); as message) { <p role="alert" class="text-red-500 text-xs mt-1">{{ message }}</p> }
+              </div>
+              <div>
+                <label for="facebook" class="text-sm text-gray-500 dark:text-gray-400"><i class="fa-brands fa-facebook text-blue-600 mr-1" aria-hidden="true"></i>Facebook (optional)</label>
+                <input id="facebook" type="text" formControlName="facebook" maxlength="255" placeholder="https://facebook.com/youragency"
+                  class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500" />
+                @if (contactError('facebook'); as message) { <p role="alert" class="text-red-500 text-xs mt-1">{{ message }}</p> }
+              </div>
+            </div>
+          </fieldset>
+
           <!-- SPECIALIZATIONS -->
           <div class="sm:col-span-2">
             <label class="text-sm text-gray-500 dark:text-gray-400">Specializations</label>

@@ -135,6 +135,11 @@ export interface Agent extends User {
   rating: number;
   total_reviews: number;
   success_rate: number;
+  // Public contact channels shown on the agent profile
+  contact_phone?: string | null;
+  whatsapp?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
 }
 
 export interface Region {
@@ -187,6 +192,10 @@ export interface UpdateAgentProfileRequest {
   max_delivery_distance?: number | null;
   avg_delivery_time?: string | null;
   bio?: string | null;
+  contact_phone?: string | null;
+  whatsapp?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
   id_number?: string | null;
   specializations?: string[];
   transport_methods?: string[];

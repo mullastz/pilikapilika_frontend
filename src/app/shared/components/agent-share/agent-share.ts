@@ -31,7 +31,8 @@ export class AgentShare {
   private readonly toast = inject(ToastService);
   get profileUrl(): string {
     const origin = this.browser ? this.document.location.origin : SITE_URL;
-    return `${origin}/agent/${encodeURIComponent(this.agentUuid())}`;
+    // ref=invite makes customers who open the link follow the agent automatically.
+    return `${origin}/agent/${encodeURIComponent(this.agentUuid())}?ref=invite`;
   }
   async share(): Promise<void> {
     if (!this.browser || !this.agentUuid() || this.busy()) return;

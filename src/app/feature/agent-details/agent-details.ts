@@ -1,7 +1,7 @@
 import { AgentShare } from '../../shared/components/agent-share/agent-share';
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { AgentService } from '../../core/services/agent.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -10,6 +10,26 @@ import { Agent, AgentProfileResponse, User, UpdateAgentProfileRequest } from '..
 import { ToastService } from '../../core/services/toast.service';
 import { Address } from '../../core/services/address.service';
 import { AgentAddresses } from './agent-addresses/agent-addresses';
+
+const PHONE_PATTERN = /^\+?[0-9][0-9\s\-()]{6,19}$/;
+const INSTAGRAM_URL = /^https:\/\/(www\.)?instagram\.com\/[A-Za-z0-9._\-\/]+\/?$/i;
+const FACEBOOK_URL = /^https:\/\/((www|m|web)\.)?(facebook|fb)\.com\/[A-Za-z0-9.\-_\/?=&%]+$/i;
+
+/** Accepts a full link, a link without https://, or a bare username/@handle, and returns an https link. */
+export function normalizeSocialLink(value: string | null | undefined, domain: string): string | null {
+  const input = (value || '').trim();
+  if (!input) return null;
+  if (/^https?:\/\//i.test(input)) return input.replace(/^http:\/\//i, 'https://');
+  if (/^((www|m|web)\.)?(instagram|facebook|fb)\.com\//i.test(input)) return `https://${input}`;
+  return `https://${domain}/${input.replace(/^@/, '')}`;
+}
+
+function socialLinkValidator(domain: string, pattern: RegExp): ValidatorFn {
+  return (control: AbstractControl) => {
+    const link = normalizeSocialLink(control.value, domain);
+    return !link || pattern.test(link) ? null : { socialLink: true };
+  };
+}
 
 @Component({
   selector: 'app-agent-details',
@@ -71,8 +91,24 @@ export class AgentDetails implements OnInit {
       currency:             ['TZS'],
       avg_delivery_time:    ['',   Validators.maxLength(50)],
       bio:                  ['',   Validators.maxLength(1000)],
+      contact_phone:        ['',   Validators.pattern(PHONE_PATTERN)],
+      whatsapp:             ['',   Validators.pattern(PHONE_PATTERN)],
+      instagram:            ['',   socialLinkValidator('instagram.com', INSTAGRAM_URL)],
+      facebook:             ['',   socialLinkValidator('facebook.com', FACEBOOK_URL)],
       id_number:            ['',   Validators.maxLength(50)],
     });
+  }
+
+  /** Shows the contact-field error under an input once it has been touched. */
+  contactError(field: 'contact_phone' | 'whatsapp' | 'instagram' | 'facebook'): string {
+    const control = this.agentForm.get(field);
+    if (!control?.invalid || !control.touched) return '';
+    return {
+      contact_phone: 'Enter a valid phone number, for example +255 712 345 678.',
+      whatsapp: 'Enter a valid WhatsApp number including the country code, for example +255 712 345 678.',
+      instagram: 'Enter your Instagram username or a link such as https://instagram.com/youragency.',
+      facebook: 'Enter your Facebook page link, for example https://facebook.com/youragency.',
+    }[field];
   }
 
   ngOnInit(): void {
@@ -186,6 +222,10 @@ export class AgentDetails implements OnInit {
       currency: agent.currency || 'TZS',
       avg_delivery_time: agent.avg_delivery_time || '',
       bio: agent.bio || '',
+      contact_phone: agent.contact_phone || '',
+      whatsapp: agent.whatsapp || '',
+      instagram: agent.instagram || '',
+      facebook: agent.facebook || '',
       id_number: agent.id_number || '',
     });
 
@@ -220,6 +260,10 @@ export class AgentDetails implements OnInit {
       currency: formValue.currency,
       avg_delivery_time: formValue.avg_delivery_time || null,
       bio: formValue.bio || null,
+      contact_phone: formValue.contact_phone?.trim() || null,
+      whatsapp: formValue.whatsapp?.trim() || null,
+      instagram: normalizeSocialLink(formValue.instagram, 'instagram.com'),
+      facebook: normalizeSocialLink(formValue.facebook, 'facebook.com'),
       id_number: formValue.id_number || null,
       specializations: this.selectedSpecializations,
       transport_methods: this.selectedTransport,
@@ -230,6 +274,7 @@ export class AgentDetails implements OnInit {
         this.isSaving = false;
         this.agent = response.data;
         this.user  = response.data;
+        this.populateForm(response.data);
         this.toastService.success('Agent profile updated successfully!');
         // Refresh profile completion status after agent profile update
         this.refreshProfileCompletion();

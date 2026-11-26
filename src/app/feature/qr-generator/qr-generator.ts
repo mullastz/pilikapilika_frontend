@@ -4,6 +4,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { QRCodeComponent } from 'angularx-qrcode';
+import { Subscription, retry } from 'rxjs';
 import { QrCodeService, QrCodeResponse } from '../../core/services/qr-code.service';
 import { AgentService } from '../../core/services/agent.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -50,11 +51,19 @@ export class QrGenerator implements OnInit {
 
   ngOnInit() {
     this.checkEditMode();
-    this.loadAgents();
-    this.loadAddresses();
     const preferred = this.route.snapshot.queryParamMap.get('agent');
-    if (preferred && !this.route.snapshot.queryParamMap.get('edit')) this.loadPreferredAgent(preferred);
+    if (preferred && !this.route.snapshot.queryParamMap.get('edit')) {
+      // Booking started from an agent's profile: the agent is fixed and other agents are never loaded.
+      this.lockedAgentUuid = preferred;
+      this.loadPreferredAgent(preferred);
+    } else {
+      this.loadAgents();
+    }
   }
+
+  /** Set when the booking was started with the Book button on an agent profile; that agent cannot be changed. */
+  lockedAgentUuid: string | null = null;
+  get isAgentLocked(): boolean { return this.lockedAgentUuid !== null; }
 
   product: ProductDetails = {
     name: '',
@@ -165,17 +174,27 @@ export class QrGenerator implements OnInit {
 
   preferredAgentError = '';
 
-  private loadPreferredAgent(uuid: string): void {
-    this.agentService.getPublicAgentProfile(uuid).subscribe({
+  lockedAgent: Agent | null = null;
+
+  loadPreferredAgent(uuid: string): void {
+    this.preferredAgentError = '';
+    this.isLoadingAgents = true;
+    this.agentService.getPublicAgentProfile(uuid).pipe(retry({ count: 2, delay: 800 })).subscribe({
       next: agent => {
-        if (!this.agents.some(item => item.uuid === agent.uuid)) this.agents = [agent, ...this.agents];
+        this.isLoadingAgents = false;
+        this.agents = [agent];
+        this.lockedAgent = agent;
         if (agent.availability_status !== 'available') { this.preferredAgentError = 'This agent is currently unavailable for new bookings.'; this.cdr.detectChanges(); return; }
         const methods = agent.transport_methods || [];
         if (methods.length === 1) this.selectedTransportMethod = methods[0];
         this.selectAgent(agent);
         this.cdr.detectChanges();
       },
-      error: () => { this.preferredAgentError = 'Unable to load the agent from your link. Please return to their profile and try again.'; this.cdr.detectChanges(); },
+      error: () => {
+        this.isLoadingAgents = false;
+        this.preferredAgentError = 'Unable to load the agent from your link. Check your connection and try again.';
+        this.cdr.detectChanges();
+      },
     });
   }
 
@@ -204,6 +223,7 @@ export class QrGenerator implements OnInit {
   }
 
   selectAgent(agent: any): void {
+    if (this.isAgentLocked && agent?.uuid !== this.lockedAgentUuid) return;
     this.selectedAgent = agent;
     this.agentSearchQuery = '';
     this.clearAddress();
@@ -211,6 +231,7 @@ export class QrGenerator implements OnInit {
   }
 
   clearAgent(): void {
+    if (this.isAgentLocked) return;
     this.selectedAgent = null;
     this.selectedAddress = null;
     this.agentSearchQuery = '';
@@ -255,21 +276,40 @@ export class QrGenerator implements OnInit {
     return parts.length ? parts.join(', ') : 'Location not set';
   }
 
+  addressesError = '';
+  private addressRequest: Subscription | null = null;
+
+  /**
+   * Loads the selected agent's receiving addresses. Only the latest request may update the list,
+   * so a slow response for a previously selected agent can never replace the current agent's addresses.
+   * Transient failures are retried before showing a retry button.
+   */
   loadAgentAddresses(agentUuid: string): void {
+    this.addressRequest?.unsubscribe();
     this.isLoadingAddresses = true;
+    this.addressesError = '';
     this.addresses = [];
-    this.addressService.getAddressesByUserUuid(agentUuid).subscribe({
-      next: (response) => {
-        this.addresses = response.data || [];
-        this.isLoadingAddresses = false;
-        this.autoSelectSingleAddress();
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.isLoadingAddresses = false;
-        this.cdr.detectChanges();
-      },
-    });
+    this.addressRequest = this.addressService.getAddressesByUserUuid(agentUuid)
+      .pipe(retry({ count: 2, delay: 800 }))
+      .subscribe({
+        next: (response) => {
+          if (this.selectedAgent?.uuid !== agentUuid) return;
+          this.addresses = response.data || [];
+          this.isLoadingAddresses = false;
+          this.autoSelectSingleAddress();
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          if (this.selectedAgent?.uuid !== agentUuid) return;
+          this.isLoadingAddresses = false;
+          this.addressesError = "Couldn't load this agent's addresses.";
+          this.cdr.detectChanges();
+        },
+      });
+  }
+
+  retryAgentAddresses(): void {
+    if (this.selectedAgent) this.loadAgentAddresses(this.selectedAgent.uuid);
   }
 
   onAgentSearchFocus(): void {
@@ -349,23 +389,6 @@ export class QrGenerator implements OnInit {
       this.showAddressDropdown = false;
       this.cdr.detectChanges();
     }, 200);
-  }
-
-  // ── Address loading ───────────────────────────────────────────────
-
-  loadAddresses(): void {
-    this.isLoadingAddresses = true;
-    this.addressService.getAddresses().subscribe({
-      next: (response) => {
-        this.addresses = response.data || [];
-        this.isLoadingAddresses = false;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.isLoadingAddresses = false;
-        this.cdr.detectChanges();
-      },
-    });
   }
 
   selectAddress(address: Address): void {
@@ -862,6 +885,12 @@ export class QrGenerator implements OnInit {
     this.selectedAgent = null;
     this.selectedAddress = null;
     this.agentSearchQuery = '';
+    // A booking started from an agent profile keeps that agent for the next parcel too.
+    if (this.lockedAgent && this.lockedAgent.availability_status === 'available') {
+      const methods = this.lockedAgent.transport_methods || [];
+      if (methods.length === 1) this.selectedTransportMethod = methods[0];
+      this.selectAgent(this.lockedAgent);
+    }
   }
 
   formatWithCommas(value: string | number | null): string {

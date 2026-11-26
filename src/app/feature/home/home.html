@@ -39,10 +39,19 @@
         </div>
     </section>
 
-    @if (followedLoading || followedAgents.length || followedError) {
+    <!-- Agents You Follow: after Activities for customers; at the very end for agents, who rarely need it. -->
+    <ng-template #followedAgentsSection>
+    @if (isLoggedIn) {
       <section class="px-4 sm:px-6 py-5" aria-labelledby="followed-agents-title">
         <h2 id="followed-agents-title" class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4"><i class="fa-solid fa-user-check text-orange-500 mr-2" aria-hidden="true"></i>Agents You Follow</h2>
         @if (followedLoading) { <p role="status" class="text-sm text-gray-500">Loading your followed agents...</p> }
+        @else if (!followedAgents.length && !followedError) {
+          <div class="rounded-2xl bg-white dark:bg-[#1a1a1a] border border-dashed border-orange-200 dark:border-orange-900 p-5 text-center">
+            <i class="fa-solid fa-user-plus text-2xl text-orange-500" aria-hidden="true"></i>
+            <p class="font-semibold text-gray-900 dark:text-white mt-2">You are not following any agents yet</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Open the link your agent shared with you and tap <strong>Follow</strong> to see them here.</p>
+          </div>
+        }
         @else {
           <div class="flex gap-4 overflow-x-auto pb-3">
             @for (agent of followedAgents; track agent.uuid) {
@@ -60,6 +69,7 @@
         @if (followedError) { <p role="alert" class="text-sm text-red-500 mt-2">{{followedError}} <button type="button" (click)="loadFollowedAgents()" class="underline ml-2">Retry</button></p> }
       </section>
     }
+    </ng-template>
     <!-- ACTIVITIES -->
     <section class="px-4 sm:px-6 py-4 sm:py-6">
     <div class="flex justify-between items-center mb-4 sm:mb-6">
@@ -82,6 +92,8 @@
         </div>
     </div>
     </section>
+
+  @if (!isAgent) { <ng-container [ngTemplateOutlet]="followedAgentsSection"></ng-container> }
 
   <app-shipping [dashboardOnly]="true"></app-shipping>
 
@@ -374,6 +386,8 @@
     </div>
   </div>
   }
+
+  @if (isAgent) { <ng-container [ngTemplateOutlet]="followedAgentsSection"></ng-container> }
 
 </div>
 

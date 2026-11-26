@@ -17,9 +17,23 @@ export interface AgencyFollowersData {
   pagination: { current_page: number; last_page: number; has_more: boolean; total: number };
 }
 
+/** Agent whose invite link was opened before the visitor signed in; followed once they are signed in. */
+const PENDING_INVITE_KEY = 'pending_invite_agent';
+
 @Injectable({ providedIn: 'root' })
 export class AgentFollowService {
   private readonly api = inject(ApiService);
+  rememberInvite(uuid: string): void {
+    try { localStorage.setItem(PENDING_INVITE_KEY, uuid); } catch { /* storage unavailable */ }
+  }
+  /** Returns and clears the agent from a pending invite link, if any. */
+  takePendingInvite(): string | null {
+    try {
+      const uuid = localStorage.getItem(PENDING_INVITE_KEY);
+      localStorage.removeItem(PENDING_INVITE_KEY);
+      return uuid;
+    } catch { return null; }
+  }
   followers(page = 1, query = '') {
     return this.api.get<{ data: AgencyFollowersData }>('agency/followers', { page: String(page), per_page: '20', q: query });
   }

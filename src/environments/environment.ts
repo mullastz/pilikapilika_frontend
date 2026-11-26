@@ -1,8 +1,8 @@
 export const environment = {
   // Shared by local development and production builds. Edit connection settings here.
-  apiUrl: 'https://api.pilikapilika.com/api/v1',
+  apiUrl: 'https://192.168.100.153:8443/api/v1',
   appName: 'Pilikapilika',
   // Public client key: this must match REVERB_APP_KEY on the VPS.
   reverbAppKey: 'vnzvzl',
-  reverbUrl: 'wss://api.pilikapilika.com',
+  reverbUrl: 'wss:////192.168.100.153:8443',
 };

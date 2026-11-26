@@ -77,6 +77,17 @@ export class ProfileManagement implements OnInit {
     }
   ];
 
+  /** Agents work mostly from their shipments, so Shipments comes before My Parcels for them. */
+  get orderedTabs() {
+    if (!this.isAgent) return this.tabs;
+    const shipments = this.tabs.find(tab => tab.id === 'shipping');
+    const parcelsIndex = this.tabs.findIndex(tab => tab.id === 'my-products');
+    if (!shipments || parcelsIndex < 0) return this.tabs;
+    const rest = this.tabs.filter(tab => tab !== shipments);
+    rest.splice(rest.findIndex(tab => tab.id === 'my-products'), 0, shipments);
+    return rest;
+  }
+
   constructor(
     private location: Location,
     private router: Router,

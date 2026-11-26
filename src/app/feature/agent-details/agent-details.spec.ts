@@ -28,7 +28,6 @@ const agent: Agent = {
   is_agent_verified: false,
   is_verified: false,
   gender: 'Male',
-  username: 'agent-example',
   email: 'agent@example.test',
   phone: '123456789',
   region: 'Arusha',

@@ -35,29 +35,152 @@
     @else {
       <div class="space-y-4">
         @for (member of members(); track member.id) {
-          <article class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+          <article class="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sm:p-5">
             <div class="flex flex-wrap items-start justify-between gap-4">
               <div><h2 class="font-bold text-lg">{{member.user.firstname}} {{member.user.lastname}}</h2><p class="text-sm text-gray-500 dark:text-gray-400 break-all">{{member.user.email}}</p><p class="text-sm mt-1">{{member.job_title || 'Staff member'}}</p></div>
               <span class="rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="!member.active ? 'bg-gray-100 text-gray-600' : member.accepted_at ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'">{{!member.active ? 'Access disabled' : member.accepted_at ? 'Active' : 'Invitation pending'}}</span>
             </div>
             <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 mt-4 mb-2">Assigned shipment statuses</p>
             <div class="flex flex-wrap gap-2">@for (status of member.statuses; track status) { <span class="text-xs px-2 py-1 rounded-lg bg-gray-100 dark:bg-[#292929]">{{stageLabel(status)}}</span> }</div>
+            <!-- Mobile: Edit + Disable share one row (compact sizing); Resend wraps to its own row when shown. -->
             <div class="flex flex-wrap gap-2 sm:gap-3 border-t border-gray-100 dark:border-gray-800 pt-4 mt-4">
-              <button type="button" (click)="edit(member)" [disabled]="saving()" class="inline-flex items-center justify-center gap-2 min-h-10 px-4 py-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#1a1a1a] disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-solid fa-pen" aria-hidden="true"></i>Edit Responsibilities</button>
+              <button type="button" (click)="edit(member)" [disabled]="saving()" class="flex-1 sm:flex-none min-w-0 inline-flex items-center justify-center gap-1.5 sm:gap-2 min-h-9 sm:min-h-10 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-[11px] sm:text-sm font-medium whitespace-nowrap shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#1a1a1a] disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-solid fa-pen shrink-0" aria-hidden="true"></i><span class="truncate">Edit Responsibilities</span></button>
+              <button type="button" (click)="setActive(member)" [disabled]="saving()" class="order-none sm:order-last flex-1 sm:flex-none min-w-0 inline-flex items-center justify-center gap-1.5 sm:gap-2 min-h-9 sm:min-h-10 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-white text-[11px] sm:text-sm font-medium whitespace-nowrap shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#1a1a1a] disabled:opacity-50 disabled:cursor-not-allowed" [ngClass]="member.active ? 'bg-red-500 hover:bg-red-600 focus-visible:ring-red-500' : 'bg-green-500 hover:bg-green-600 focus-visible:ring-green-500'"><i class="fa-solid shrink-0" [ngClass]="member.active ? 'fa-user-lock' : 'fa-user-check'" aria-hidden="true"></i><span class="truncate">{{member.active ? 'Disable Access' : 'Enable Access'}}</span></button>
               @if (!member.accepted_at && member.active) {
-                <button type="button" (click)="resend(member)" [disabled]="saving()" class="inline-flex items-center justify-center gap-2 min-h-10 px-4 py-2 rounded-full border border-orange-500 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#1a1a1a] disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-solid fa-envelope" aria-hidden="true"></i>Resend Invitation</button>
+                <button type="button" (click)="resend(member)" [disabled]="saving()" class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 sm:gap-2 min-h-9 sm:min-h-10 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full border border-orange-500 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 text-xs sm:text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#1a1a1a] disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-solid fa-envelope" aria-hidden="true"></i>Resend Invitation</button>
               }
-              <button type="button" (click)="setActive(member)" [disabled]="saving()" class="inline-flex items-center justify-center gap-2 min-h-10 px-4 py-2 rounded-full text-white text-sm font-medium shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#1a1a1a] disabled:opacity-50 disabled:cursor-not-allowed" [ngClass]="member.active ? 'bg-red-500 hover:bg-red-600 focus-visible:ring-red-500' : 'bg-green-500 hover:bg-green-600 focus-visible:ring-green-500'"><i class="fa-solid" [ngClass]="member.active ? 'fa-user-lock' : 'fa-user-check'" aria-hidden="true"></i>{{member.active ? 'Disable Access' : 'Enable Access'}}</button>
             </div>
           </article>
         } @empty {
           <div class="text-center bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-200 dark:border-gray-800 p-10"><i class="fa-solid fa-users text-4xl text-orange-500 mb-4" aria-hidden="true"></i><h2 class="font-bold text-xl">Build your team</h2><p class="mt-2 text-gray-500">Add a staff member and choose their shipment statuses. Their invitation will be emailed automatically.</p></div>
         }
       </div>
-      @if (activity().length) {
-        <section class="mt-8"><h2 class="text-lg font-bold mb-4">Recent team activity</h2><div class="space-y-3">
-          @for (entry of activity(); track entry.id) { <div class="text-sm rounded-xl bg-white dark:bg-[#1a1a1a] p-4 border border-gray-100 dark:border-gray-800"><p><strong>{{entry.firstname}} {{entry.lastname}}</strong> ? <span class="capitalize">{{activityLabel(entry.action)}}</span></p>@if (entry.from_status) { <p class="text-gray-500 mt-1">{{stageLabel(entry.from_status)}} ? {{stageLabel(entry.to_status || '')}}</p> }<p class="text-xs text-gray-400 mt-1">{{entry.created_at | date:'medium'}}</p></div> }
-        </div></section>
+      @if (members().length) {
+        <section class="mt-8" aria-labelledby="team-activity-title">
+          <div class="flex flex-wrap items-end justify-between gap-2 mb-4">
+            <div>
+              <h2 id="team-activity-title" class="text-lg font-bold">Team activity</h2>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Every action your staff take, with the parcel, status change and exact time.</p>
+            </div>
+            <span class="text-xs font-semibold rounded-full px-3 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300" role="status">{{ activityTotal() }} {{ activityTotal() === 1 ? 'record' : 'records' }}</span>
+          </div>
+
+          <!-- FILTERS -->
+          <form class="rounded-2xl bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 p-4 mb-4" (ngSubmit)="applyFilters()" aria-label="Filter team activity">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">Team member
+                <select name="staff_id" [(ngModel)]="filters.staff_id" (ngModelChange)="applyFilters()" class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm">
+                  <option value="">All members</option>
+                  @for (member of members(); track member.id) { <option [value]="member.id">{{member.user.firstname}} {{member.user.lastname}}{{member.job_title ? ' · ' + member.job_title : ''}}</option> }
+                </select>
+              </label>
+              <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">Responsibility (shipment status)
+                <select name="status" [(ngModel)]="filters.status" (ngModelChange)="applyFilters()" class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm">
+                  <option value="">All responsibilities</option>
+                  @for (stage of stages(); track stage.status) { <option [value]="stage.status">{{stage.label}}</option> }
+                </select>
+              </label>
+              <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">Activity type
+                <select name="action" [(ngModel)]="filters.action" (ngModelChange)="applyFilters()" class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm">
+                  <option value="">All activity</option>
+                  @for (action of activityActions(); track action) { <option [value]="action">{{activityMeta(action).label}}</option> }
+                </select>
+              </label>
+              <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">From (date &amp; time)
+                <input name="from" type="datetime-local" [(ngModel)]="filters.from" (change)="applyFilters(true)" class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm" />
+              </label>
+              <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">To (date &amp; time)
+                <input name="to" type="datetime-local" [(ngModel)]="filters.to" [min]="filters.from" (change)="applyFilters(true)" class="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm" />
+              </label>
+              <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">Parcel
+                <span class="relative block mt-1">
+                  <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" aria-hidden="true"></i>
+                  <input name="q" type="search" [(ngModel)]="filters.q" (change)="applyFilters()" maxlength="100" placeholder="Tracking number or parcel name" class="w-full pl-8 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#222] text-sm" />
+                </span>
+              </label>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 mt-3">
+              <span class="text-xs text-gray-500 dark:text-gray-400 mr-1">Quick range:</span>
+              @for (range of quickRanges; track range.id) {
+                <button type="button" (click)="setQuickRange(range.id)" [attr.aria-pressed]="quickRange() === range.id"
+                  class="px-3 py-1 rounded-full text-xs font-medium border transition"
+                  [ngClass]="quickRange() === range.id ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-orange-400'">{{range.label}}</button>
+              }
+              @if (activeFilterCount) {
+                <button type="button" (click)="clearFilters()" class="ml-auto inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                  <i class="fa-solid fa-xmark" aria-hidden="true"></i>Clear filters ({{activeFilterCount}})
+                </button>
+              }
+            </div>
+          </form>
+
+          <!-- RESULTS -->
+          @if (activityError()) {
+            <p role="alert" class="text-sm text-red-500 mb-3">{{activityError()}} <button type="button" (click)="loadActivity()" class="underline ml-1">Retry</button></p>
+          }
+          @if (activityLoading()) {
+            <p role="status" class="py-6 text-sm text-gray-500"><i class="fa-solid fa-circle-notch fa-spin text-orange-500 mr-2" aria-hidden="true"></i>Loading activity...</p>
+          } @else {
+            @for (group of activityGroups(); track group.label) {
+              <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mt-5 mb-2">{{group.label}}</h3>
+              <ol class="space-y-2">
+                @for (entry of group.entries; track entry.id) {
+                  <li class="rounded-xl bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-gray-800 p-3 sm:p-4">
+                    <div class="flex items-start gap-3">
+                      <div class="w-9 h-9 shrink-0 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center" aria-hidden="true">{{initials(entry)}}</div>
+                      <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          @if (entry.staff) {
+                            <button type="button" (click)="filterByMember(entry.staff.id)" class="font-semibold text-sm hover:text-orange-500 text-left" [attr.aria-label]="'Show only activity by ' + entry.staff.firstname + ' ' + entry.staff.lastname">{{entry.staff.firstname}} {{entry.staff.lastname}}</button>
+                            @if (entry.staff.job_title) { <span class="text-xs text-gray-500 dark:text-gray-400">· {{entry.staff.job_title}}</span> }
+                          } @else { <span class="font-semibold text-sm text-gray-500">Removed staff member</span> }
+                          <time class="ml-auto text-xs text-gray-400 whitespace-nowrap" [attr.datetime]="entry.created_at" [attr.title]="entry.created_at | date:'full'">{{entry.created_at | date:'shortTime'}}</time>
+                        </div>
+                        <span class="inline-flex items-center gap-1.5 mt-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium" [ngClass]="activityMeta(entry.action).tone">
+                          <i class="fa-solid {{activityMeta(entry.action).icon}}" aria-hidden="true"></i>{{activityMeta(entry.action).label}}
+                        </span>
+                        @if (entry.from_status || entry.to_status) {
+                          <p class="flex flex-wrap items-center gap-1.5 mt-2 text-xs">
+                            @if (entry.from_status) { <span class="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-[#292929]">{{stageLabel(entry.from_status)}}</span> }
+                            @if (entry.from_status && entry.to_status) { <i class="fa-solid fa-arrow-right text-gray-400" aria-label="to"></i> }
+                            @if (entry.to_status) { <span class="px-2 py-0.5 rounded-md bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300">{{stageLabel(entry.to_status)}}</span> }
+                          </p>
+                        }
+                        <dl class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-300">
+                          @if (entry.shipment) {
+                            <div class="min-w-0"><dt class="inline text-gray-400">Parcel: </dt><dd class="inline break-words">{{entry.shipment.title || 'Untitled parcel'}}@if (entry.shipment.tracking_number) { <span class="font-mono text-gray-500"> · {{entry.shipment.tracking_number}}</span> }</dd></div>
+                          }
+                          @if (entry.details.quantity !== null) {
+                            <div><dt class="inline text-gray-400">Quantity: </dt><dd class="inline">{{entry.details.quantity}}</dd></div>
+                          }
+                          @if (entry.details.container_reference) {
+                            <div><dt class="inline text-gray-400">Container/batch: </dt><dd class="inline font-mono">{{entry.details.container_reference}}</dd></div>
+                          }
+                          @if (entry.details.statuses?.length && !entry.shipment) {
+                            <div class="sm:col-span-2"><dt class="inline text-gray-400">Responsibilities: </dt><dd class="inline">{{stageList(entry.details.statuses)}}</dd></div>
+                          }
+                        </dl>
+                      </div>
+                    </div>
+                  </li>
+                }
+              </ol>
+            } @empty {
+              <div class="text-center rounded-2xl bg-white dark:bg-[#1a1a1a] border border-dashed border-gray-300 dark:border-gray-700 p-8">
+                <i class="fa-solid fa-clock-rotate-left text-2xl text-orange-500" aria-hidden="true"></i>
+                <p class="font-semibold mt-2">{{ activeFilterCount ? 'No activity matches these filters' : 'No team activity yet' }}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ activeFilterCount ? 'Try another member, responsibility or date range.' : 'Actions your staff take on parcels and containers will appear here.' }}</p>
+              </div>
+            }
+            @if (activityHasMore()) {
+              <div class="text-center mt-4">
+                <button type="button" (click)="loadActivity(true)" [disabled]="activityLoadingMore()" class="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-orange-500 text-orange-600 dark:text-orange-400 text-sm font-medium hover:bg-orange-50 dark:hover:bg-orange-900/20 disabled:opacity-50">
+                  @if (activityLoadingMore()) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>Loading... } @else { <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>Show more ({{activityTotal() - activityEntries().length}} left) }
+                </button>
+              </div>
+            }
+          }
+        </section>
       }
     }
   </main>

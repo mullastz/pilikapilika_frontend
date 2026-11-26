@@ -31,7 +31,7 @@ describe('Personal account profile', () => {
         address: '',
         profile_photo: null,
         is_profile_complete: true,
-      } as User;
+      } as unknown as User;
       const addressService = { getAddresses: vi.fn(), createAddress: vi.fn() };
       await TestBed.configureTestingModule({
         imports: [ManageAccount],

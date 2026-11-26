@@ -1,5 +1,10 @@
 <div class="bg-[#f5f5f5] dark:bg-[#0a0a0a] min-h-screen transition-colors duration-300">
-  @if (preferredAgentError) { <p role="alert" class="max-w-5xl mx-auto px-4 py-4 text-red-600 dark:text-red-400">{{preferredAgentError}}</p> }
+  @if (preferredAgentError) {
+    <p role="alert" class="max-w-5xl mx-auto px-4 py-4 text-red-600 dark:text-red-400">
+      {{preferredAgentError}}
+      @if (lockedAgentUuid && !lockedAgent) { <button type="button" (click)="loadPreferredAgent(lockedAgentUuid)" class="ml-2 underline font-medium">Try again</button> }
+    </p>
+  }
   <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-6xl mx-auto">
 
     <!-- Header -->
@@ -285,15 +290,24 @@
                 </ng-container>
               </p>
             </div>
-            <button
-              type="button"
-              (click)="clearAgent()"
-              class="text-gray-400 hover:text-red-500 transition shrink-0"
-              aria-label="Remove agent"
-            >
-              <i class="fa-solid fa-xmark"></i>
-            </button>
+            @if (isAgentLocked) {
+              <span class="text-orange-500 shrink-0" title="Booking with this agent">
+                <i class="fa-solid fa-lock" aria-hidden="true"></i><span class="sr-only">Agent fixed for this booking</span>
+              </span>
+            } @else {
+              <button
+                type="button"
+                (click)="clearAgent()"
+                class="text-gray-400 hover:text-red-500 transition shrink-0"
+                aria-label="Remove agent"
+              >
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            }
           </div>
+          <p *ngIf="isAgentLocked && selectedAgent" class="text-xs text-gray-500 dark:text-gray-400 -mt-1 mb-3">
+            You are booking directly with this agent.
+          </p>
 
           <!-- Agent address selection (shown when agent is selected) -->
           <div *ngIf="selectedAgent" class="mt-4">
@@ -398,13 +412,18 @@
             <p *ngIf="selectedAgent && !selectedAddress && transportFilteredAddresses.length > 0" class="text-xs text-red-500 mt-2">
               <i class="fa-solid fa-circle-exclamation mr-1"></i>Please select a pickup address for this agent
             </p>
-            <p *ngIf="selectedAgent && !isLoadingAddresses && transportFilteredAddresses.length === 0 && !selectedAddress" class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              No {{ selectedTransportMethod ? transportLabel(selectedTransportMethod) : '' }} addresses found for this agent.
+            <p *ngIf="addressesError" role="alert" class="text-xs text-red-500 mt-2">
+              <i class="fa-solid fa-circle-exclamation mr-1" aria-hidden="true"></i>{{ addressesError }}
+              <button type="button" (click)="retryAgentAddresses()" class="ml-1 underline font-medium">Try again</button>
+            </p>
+            <p *ngIf="selectedAgent && !isLoadingAddresses && !addressesError && transportFilteredAddresses.length === 0 && !selectedAddress" class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              <ng-container *ngIf="selectedTransportMethod; else chooseTransport">No {{ transportLabel(selectedTransportMethod) }} addresses found for this agent.</ng-container>
+              <ng-template #chooseTransport>Choose a transport method above to see this agent's addresses.</ng-template>
             </p>
           </div>
 
-          <!-- Search input -->
-          <div *ngIf="!selectedAgent" class="relative">
+          <!-- Search input (never shown when the booking is fixed to one agent) -->
+          <div *ngIf="!selectedAgent && !isAgentLocked" class="relative">
             <div class="relative">
               <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
               <input

@@ -27,6 +27,19 @@ export interface StaffInvitationResponse {
   data: { staff: StaffMember; invitation_url: string; email_queued: boolean };
 }
 export interface AgencyActivity { id: number; action: string; from_status: string | null; to_status: string | null; created_at: string; firstname: string; lastname: string; }
+export interface TeamActivityEntry {
+  id: number; action: string; from_status: string | null; to_status: string | null; created_at: string | null;
+  staff: { id: string; firstname: string | null; lastname: string | null; email: string | null; job_title: string | null } | null;
+  shipment: { id: string; title: string | null; tracking_number: string | null } | null;
+  details: { quantity: number | null; container_reference: string | null; statuses: string[] | null; active: boolean | null };
+}
+export interface TeamActivityFilters {
+  staff_id?: string; status?: string; action?: string; from?: string; to?: string; q?: string;
+}
+export interface TeamActivityPage {
+  activity: TeamActivityEntry[]; actions: string[];
+  pagination: { current_page: number; last_page: number; has_more: boolean; total: number };
+}
 export interface TaskContainer { id: string; reference_number: string; status: string; transport_method: string | null; quantity?: number; }
 export interface StaffTask {
   container_managed: boolean;
@@ -53,6 +66,11 @@ export interface StaffAction {
 export class AgencyService {
   private readonly api = inject(ApiService);
   team() { return this.api.get<{ data: { staff: StaffMember[]; stages: AgencyStage[]; activity: AgencyActivity[] } }>('agency/staff'); }
+  teamActivity(filters: TeamActivityFilters, page = 1) {
+    const params: Record<string, string> = { page: String(page), per_page: '20' };
+    for (const [key, value] of Object.entries(filters)) if (value) params[key] = value;
+    return this.api.get<{ data: TeamActivityPage }>('agency/staff/activity', params);
+  }
   invite(data: StaffEditor) { return this.api.post<StaffInvitationResponse>('agency/staff', data); }
   update(id: string, data: StaffEditor) { return this.api.put<{ message: string }>(`agency/staff/${id}`, data); }
   resend(id: string) { return this.api.post<StaffInvitationResponse>(`agency/staff/${id}/invitation`, {}); }

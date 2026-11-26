@@ -182,16 +182,33 @@
         </div>
 
         <!-- CONTACT INFO -->
-        <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
-          <h3 class="font-semibold mb-2 dark:text-white">Contact Information</h3>
-          <div class="space-y-2 text-sm">
-            <p *ngIf="agent.phone" class="dark:text-gray-300">
-              <i class="fa-solid fa-phone mr-2 text-orange-500"></i>
-              {{agent.phone}}
-            </p>
-            <p *ngIf="agent.address" class="dark:text-gray-300">
-              <i class="fa-solid fa-location-dot mr-2 text-orange-500"></i>
-              {{agent.address}}
+        <div *ngIf="hasContactChannels" class="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <h3 class="font-semibold mb-3 dark:text-white">Contact {{ agent.firstname || 'Agent' }}</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+            <a *ngIf="callHref" [href]="callHref"
+               [attr.aria-label]="'Call ' + getFullName() + ' on ' + callNumber"
+               class="min-w-0 min-h-11 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium shadow transition">
+              <i class="fa-solid fa-phone" aria-hidden="true"></i><span class="truncate">Call</span>
+            </a>
+            <a *ngIf="whatsappHref" [href]="whatsappHref" target="_blank" rel="noopener noreferrer"
+               [attr.aria-label]="'Chat with ' + getFullName() + ' on WhatsApp'"
+               class="min-w-0 min-h-11 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full bg-[#25D366] hover:bg-[#1ebe5a] text-white text-sm font-medium shadow transition">
+              <i class="fa-brands fa-whatsapp text-base" aria-hidden="true"></i><span class="truncate">WhatsApp</span>
+            </a>
+            <a *ngIf="instagramHref" [href]="instagramHref" target="_blank" rel="noopener noreferrer"
+               [attr.aria-label]="getFullName() + ' on Instagram'"
+               class="min-w-0 min-h-11 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full bg-linear-to-r from-[#f58529] via-[#dd2a7b] to-[#8134af] text-white text-sm font-medium shadow transition hover:opacity-90">
+              <i class="fa-brands fa-instagram text-base" aria-hidden="true"></i><span class="truncate">Instagram</span>
+            </a>
+            <a *ngIf="facebookHref" [href]="facebookHref" target="_blank" rel="noopener noreferrer"
+               [attr.aria-label]="getFullName() + ' on Facebook'"
+               class="min-w-0 min-h-11 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full bg-[#1877F2] hover:bg-[#166fe0] text-white text-sm font-medium shadow transition">
+              <i class="fa-brands fa-facebook-f" aria-hidden="true"></i><span class="truncate">Facebook</span>
+            </a>
+          </div>
+          <div *ngIf="agent.address" class="space-y-2 text-sm mt-3">
+            <p class="dark:text-gray-300">
+              <i class="fa-solid fa-location-dot mr-2 text-orange-500" aria-hidden="true"></i>{{agent.address}}
             </p>
           </div>
         </div>

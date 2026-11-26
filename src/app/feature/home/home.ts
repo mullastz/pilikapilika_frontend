@@ -38,6 +38,7 @@ import {
 export class Home implements OnInit {
   readonly getAgentPrice = formatAgentPrice;
   currentUser: User | null = null;
+  isLoggedIn = false;
 
   agentPhoto(agent: Agent): string {
     return resolveImageUrl(agent.profile_photo || agent.image, 'assets/landingpage_images/defaultprofile.jfif');
@@ -60,6 +61,17 @@ export class Home implements OnInit {
   followedHasMore = false;
   followedError = '';
   private followedPage = 1;
+
+  /** Completes a follow from an agent invite link opened before sign-in, then loads the followed list. */
+  private followPendingInviteThenLoad(): void {
+    const invitedAgent = this.followService.takePendingInvite();
+    if (!invitedAgent) { this.loadFollowedAgents(); return; }
+    this.followedLoading = true;
+    this.followService.follow(invitedAgent).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => this.loadFollowedAgents(),
+      error: () => this.loadFollowedAgents(),
+    });
+  }
 
   loadFollowedAgents(loadMore = false): void {
     if (!this.authService.isAuthenticated() || (loadMore && (this.followedLoadingMore || !this.followedHasMore))) return;
@@ -119,8 +131,15 @@ export class Home implements OnInit {
   ngOnInit(): void {
     this.loadCurrentUser();
     this.checkProfileCompletion();
-    this.loadFollowedAgents();
-    this.loadAgents();
+    this.isLoggedIn = this.authService.isAuthenticated();
+    if (this.isLoggedIn) {
+      // Signed-in users only see the agents they follow (most arrive via an
+      // agent's invite link), so the marketplace-wide agent lists are never fetched.
+      this.isLoadingAgents = false;
+      this.followPendingInviteThenLoad();
+    } else {
+      this.loadAgents();
+    }
     this.loadProducts();
   }
 

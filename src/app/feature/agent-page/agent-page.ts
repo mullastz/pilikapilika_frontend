@@ -32,18 +32,49 @@ export class AgentPage implements OnInit {
   get canFollow(): boolean { return this.agent?.uuid !== this.authService.getUser()?.uuid; }
 
   private loadFollowing(): void {
-    if (!this.isBrowser || !this.agent || !this.authService.isAuthenticated() || !this.canFollow) return;
+    if (!this.isBrowser || !this.agent || !this.canFollow) return;
+    const params = this.route.snapshot.queryParamMap;
+    const fromInvite = params?.get('ref') === 'invite';
+    if (!this.authService.isAuthenticated()) {
+      // Opened from the agent's invite link before signing in: follow them right after sign-in.
+      if (fromInvite) this.follows.rememberInvite(this.agent.uuid);
+      return;
+    }
+    const followRequested = fromInvite || params?.get('follow') === '1';
     this.follows.status(this.agent.uuid).subscribe({
       next: response => {
         this.following = response.data.following;
-        if (this.route.snapshot.queryParamMap.get('follow') === '1') {
-          this.router.navigate([], { relativeTo: this.route, queryParams: { follow: null }, queryParamsHandling: 'merge', replaceUrl: true });
+        if (followRequested) {
+          this.router.navigate([], { relativeTo: this.route, queryParams: { follow: null, ref: null }, queryParamsHandling: 'merge', replaceUrl: true });
           if (!this.following) this.toggleFollow();
         }
         this.cdr.detectChanges();
       },
       error: () => { this.following = false; this.cdr.detectChanges(); },
     });
+  }
+
+  // ── Contact channels ───────────────────────────────────────────
+  get callNumber(): string { return (this.agent?.contact_phone || this.agent?.phone || '').trim(); }
+  get callHref(): string | null {
+    const digits = this.callNumber.replace(/[^\d+]/g, '');
+    return digits ? `tel:${digits}` : null;
+  }
+  get whatsappHref(): string | null {
+    const digits = (this.agent?.whatsapp || '').replace(/\D/g, '');
+    if (!digits) return null;
+    const text = encodeURIComponent(`Hello ${this.getFullName()}, I found you on Pilikapilika and would like to ship with you.`);
+    return `https://wa.me/${digits}?text=${text}`;
+  }
+  get instagramHref(): string | null { return this.safeSocialUrl(this.agent?.instagram, /^https:\/\/(www\.)?instagram\.com\//i); }
+  get facebookHref(): string | null { return this.safeSocialUrl(this.agent?.facebook, /^https:\/\/((www|m|web)\.)?(facebook|fb)\.com\//i); }
+  get hasContactChannels(): boolean {
+    return !!(this.callHref || this.whatsappHref || this.instagramHref || this.facebookHref || this.agent?.address);
+  }
+  /** Only official https links are rendered, so a stored value can never open another scheme or site. */
+  private safeSocialUrl(value: string | null | undefined, pattern: RegExp): string | null {
+    const url = (value || '').trim();
+    return pattern.test(url) ? url : null;
   }
 
   toggleFollow(): void {
@@ -57,7 +88,7 @@ export class AgentPage implements OnInit {
     this.followBusy = true;
     const request = this.following ? this.follows.unfollow(this.agent.uuid) : this.follows.follow(this.agent.uuid);
     request.subscribe({
-      next: response => { this.following = response.data.following; this.followBusy = false; this.toastService.success(this.following ? 'Agent followed. You will see them first on your homepage.' : 'Agent unfollowed.'); this.cdr.detectChanges(); },
+      next: response => { this.following = response.data.following; this.followBusy = false; this.toastService.success(this.following ? 'Agent followed. You will see them on your homepage.' : 'Agent unfollowed.'); this.cdr.detectChanges(); },
       error: error => { this.followBusy = false; this.toastService.error(error.error?.message || 'Unable to update your followed agents.'); this.cdr.detectChanges(); },
     });
   }

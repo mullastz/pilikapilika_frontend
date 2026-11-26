@@ -63,6 +63,7 @@ describe('Agent receiving addresses', () => {
     await fixture.whenStable();
     component.addressForm.setValue({
       label: ' Air receiving point ',
+      address_type: 'abroad',
       address_line: ' Warehouse 20 ',
       transport_method: 'air',
       is_default: true,
