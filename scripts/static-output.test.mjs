@@ -22,9 +22,10 @@ test('public pages contain indexable HTML and unique production metadata', async
     assert.equal(document.querySelector('meta[property="og:url"]').content, `https://pilikapilika.com${url}`);
     assert.ok(JSON.parse(document.getElementById('site-schema').textContent)['@graph']);
     assert.doesNotMatch(html, /192\.168\.100\.124|localhost:8000/);
-    for (const path of publicPages.filter(path => path !== '/')) {
-      assert.ok(document.querySelector(`footer a[href="${path.slice(0, -1)}"]`), `Missing footer link: ${path}`);
-    }
+    // The footer no longer has Quick Links (public pages are discovered through sitemap.xml);
+    // it keeps Contact Us and must never link customers to the marketplace agent search.
+    assert.ok(document.querySelector('footer a[href="/contact-us"]'), 'Missing footer link: /contact-us/');
+    assert.equal(document.querySelector('footer a[href="/search"]'), null, 'Footer must not link to agent search');
     titles.add(document.title);
   }
   assert.equal(titles.size, publicPages.length);

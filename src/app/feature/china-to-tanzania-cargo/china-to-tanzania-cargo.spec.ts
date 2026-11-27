@@ -20,8 +20,9 @@ describe('China to Tanzania cargo guide', () => {
       expect(page.textContent).toContain(item.question);
       expect(page.textContent).toContain(item.answer);
     }
-    for (const path of ['/search', '/how-it-works', '/contact-us', '/sign-up']) {
+    for (const path of ['/how-it-works', '/contact-us', '/sign-up']) {
       expect(page.querySelector(`main a[href="${path}"]`)).toBeTruthy();
     }
+    expect(page.querySelector('a[href="/search"]')).toBeNull();
   });
 });

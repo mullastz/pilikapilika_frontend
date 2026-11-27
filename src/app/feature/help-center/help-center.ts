@@ -36,7 +36,6 @@ export class HelpCenter implements OnInit {
   }
 
   readonly publicLinks = [
-    { path: '/search', label: 'Search Agents', icon: 'fa-magnifying-glass', description: 'Find an agent for your shipment.' },
     { path: '/how-it-works', label: 'How It Works', icon: 'fa-circle-question', description: 'Learn how to book and follow a shipment.' },
     { path: '/about-us', label: 'About Us', icon: 'fa-circle-info', description: 'Get to know Pilikapilika.' },
     { path: '/contact-us', label: 'Contact Us', icon: 'fa-envelope', description: 'Find our support contact details.' },

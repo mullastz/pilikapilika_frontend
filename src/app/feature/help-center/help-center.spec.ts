@@ -22,11 +22,12 @@ describe('HelpCenter', () => {
     expect(component).toBeTruthy();
   });
 
-  it('links all four public pages above the existing FAQs', () => {
+  it('links the public pages above the existing FAQs, without agent search', () => {
     const page = fixture.nativeElement as HTMLElement;
     const navigation = page.querySelector('nav[aria-label="Pilikapilika pages"]');
+    expect(navigation?.querySelector('a[href="/search"]')).toBeNull();
     for (const [path, label] of [
-      ['/search', 'Search Agents'], ['/how-it-works', 'How It Works'],
+      ['/how-it-works', 'How It Works'],
       ['/about-us', 'About Us'], ['/contact-us', 'Contact Us'],
     ]) {
       expect(navigation?.querySelector(`a[href="${path}"]`)?.textContent).toContain(label);

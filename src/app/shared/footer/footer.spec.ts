@@ -22,10 +22,10 @@ describe('Footer', () => {
     expect(component).toBeTruthy();
   });
 
-  it('links the public pages without placeholder support details', () => {
-    for (const path of ['/search', '/how-it-works', '/about-us', '/contact-us', '/china-to-tanzania-cargo']) {
-      expect(fixture.nativeElement.querySelector(`a[href="${path}"]`)).toBeTruthy();
-    }
+  it('links Contact Us only, with no quick links or agent search, and no placeholder support details', () => {
+    expect(fixture.nativeElement.querySelector('a[href="/contact-us"]')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).not.toContain('Quick Links');
+    expect(fixture.nativeElement.querySelector('a[href="/search"]')).toBeNull();
     expect(fixture.nativeElement.textContent).not.toContain('+255 700 000 000');
     expect(fixture.nativeElement.querySelector('a[href^="mailto:"]')).toBeNull();
   });
