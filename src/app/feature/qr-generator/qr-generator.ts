@@ -7,6 +7,7 @@ import { QRCodeComponent } from 'angularx-qrcode';
 import { Subscription, retry } from 'rxjs';
 import { QrCodeService, QrCodeResponse } from '../../core/services/qr-code.service';
 import { AgentService } from '../../core/services/agent.service';
+import { AgentFollowService } from '../../core/services/agent-follow.service';
 import { AuthService } from '../../core/services/auth.service';
 import { AddressService, Address } from '../../core/services/address.service';
 import { transportLabel, transportIcon, TRANSPORT_CATALOG } from '../../core/utils/transport-methods.util';
@@ -47,6 +48,7 @@ export class QrGenerator implements OnInit {
     private addressService: AddressService,
     private cdr: ChangeDetectorRef,
     private route: ActivatedRoute,
+    private followService: AgentFollowService,
   ) {}
 
   ngOnInit() {
@@ -91,7 +93,6 @@ export class QrGenerator implements OnInit {
   // Agent assignment
   agents: Agent[] = [];
   agentSearchQuery = '';
-  showAgentDropdown = false;
   selectedAgent: Agent | null = null;
   isLoadingAgents = false;
 
@@ -117,20 +118,12 @@ export class QrGenerator implements OnInit {
 
   packageTypes = ['Box', 'Carton', 'Pallet', 'Envelope', 'Crate', 'Bag', 'Container'];
 
-  // ── Agent search ────────────────────────────────────────────────
+  // ── Agent selection (followed agents only, no search) ───────────
 
+  /** Followed agents offering the chosen transport method. */
   get filteredAgents(): Agent[] {
     if (!this.selectedTransportMethod) return [];
-    const base = this.agents.filter(a =>
-      (a.transport_methods || []).includes(this.selectedTransportMethod!),
-    );
-    const q = this.agentSearchQuery.toLowerCase().trim();
-    if (!q) return base;
-    return base.filter(a =>
-      `${a.firstname} ${a.lastname}`.toLowerCase().includes(q) ||
-      (a.region || '').toLowerCase().includes(q) ||
-      (a.district || '').toLowerCase().includes(q),
-    );
+    return this.agents.filter(a => (a.transport_methods || []).includes(this.selectedTransportMethod!));
   }
 
   get filteredCategories(): string[] {
@@ -198,27 +191,52 @@ export class QrGenerator implements OnInit {
     });
   }
 
+  agentsError = '';
+
+  /**
+   * Loads only the agents the user follows, for privacy: other marketplace agents are never requested.
+   */
   loadAgents(): void {
     this.isLoadingAgents = true;
-    this.agentService.getAvailableAgents(1, 100).subscribe({
+    this.agentsError = '';
+    this.followService.list(1, 100).pipe(retry({ count: 2, delay: 800 })).subscribe({
       next: (response) => {
-        this.agents = this.selectedAgent && !response.agents.some(agent => agent.uuid === this.selectedAgent!.uuid) ? [this.selectedAgent, ...response.agents] : response.agents;
+        const followed = response.data.agents;
+        this.agents = this.selectedAgent && !followed.some(agent => agent.uuid === this.selectedAgent!.uuid) ? [this.selectedAgent, ...followed] : followed;
         this.isLoadingAgents = false;
         if (this.pendingEditAgentUuid) {
-          const found = this.agents.find((a) => a.uuid === this.pendingEditAgentUuid);
+          const uuid = this.pendingEditAgentUuid;
           this.pendingEditAgentUuid = null;
+          const found = this.agents.find((a) => a.uuid === uuid);
           if (found) {
             this.selectedAgent = found;
             this.loadAgentAddresses(found.uuid);
+            this.reconcileAssignment();
+          } else {
+            this.loadEditAssignedAgent(uuid);
           }
-          this.reconcileAssignment();
         }
         this.cdr.detectChanges();
       },
       error: () => {
         this.isLoadingAgents = false;
+        this.agentsError = "Couldn't load the agents you follow.";
         this.cdr.detectChanges();
       },
+    });
+  }
+
+  /** A parcel being edited keeps its existing agent even if the user no longer follows them. */
+  private loadEditAssignedAgent(uuid: string): void {
+    this.agentService.getPublicAgentProfile(uuid).subscribe({
+      next: agent => {
+        if (!this.agents.some(item => item.uuid === agent.uuid)) this.agents = [agent, ...this.agents];
+        this.selectedAgent = agent;
+        this.loadAgentAddresses(agent.uuid);
+        this.reconcileAssignment();
+        this.cdr.detectChanges();
+      },
+      error: () => this.cdr.detectChanges(),
     });
   }
 
@@ -310,19 +328,6 @@ export class QrGenerator implements OnInit {
 
   retryAgentAddresses(): void {
     if (this.selectedAgent) this.loadAgentAddresses(this.selectedAgent.uuid);
-  }
-
-  onAgentSearchFocus(): void {
-    if (!this.selectedTransportMethod) return;
-    this.showAgentDropdown = true;
-  }
-
-  onAgentSearchBlur(): void {
-    // Delay so click on dropdown item registers first
-    setTimeout(() => {
-      this.showAgentDropdown = false;
-      this.cdr.detectChanges();
-    }, 200);
   }
 
   // ── Category dropdown ───────────────────────────────────────────

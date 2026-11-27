@@ -55,10 +55,7 @@ export class MenuBar implements OnInit, OnDestroy {
       { label: 'Shipments', icon: 'fa-solid fa-box', route: '/account/shipping' }
     ];
 
-    if (!isAgent) {
-      items.push({ label: 'Search', icon: 'fa-solid fa-magnifying-glass', route: '/search' });
-    }
-
+    // No marketplace "Search" agent link: customers only work with the agents they follow.
     if (isAgent) {
       items.push({ label: 'Scan QR', icon: 'fa-solid fa-camera', route: '/scan-qr' });
     }

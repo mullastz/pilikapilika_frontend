@@ -378,9 +378,9 @@ export class Home implements OnInit {
   }
 
   get activities(): { icon: string; label: string; route: string }[] {
+    // No "Search Agent" shortcut: signed-in users only see the agents they follow.
     const base = [
       { icon: 'fa-solid fa-qrcode', label: 'Generate QRcode', route: '/qr-generator' },
-      { icon: 'fa-solid fa-magnifying-glass', label: 'Search Agent', route: '/search' },
       { icon: 'fa-solid fa-location-crosshairs', label: 'Track Shipping', route: '/account/shipping' }
     ];
     if (this.isAgent) {

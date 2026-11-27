@@ -37,8 +37,8 @@ export class AgentFollowService {
   followers(page = 1, query = '') {
     return this.api.get<{ data: AgencyFollowersData }>('agency/followers', { page: String(page), per_page: '20', q: query });
   }
-  list(page = 1) {
-    return this.api.get<{ data: { agents: Agent[]; pagination: { current_page: number; has_more: boolean; total: number } } }>(`following-agents?page=${page}&per_page=20`);
+  list(page = 1, perPage = 20) {
+    return this.api.get<{ data: { agents: Agent[]; pagination: { current_page: number; has_more: boolean; total: number } } }>(`following-agents?page=${page}&per_page=${perPage}`);
   }
   status(uuid: string) { return this.api.get<{ data: { following: boolean } }>(`following-agents/${encodeURIComponent(uuid)}`); }
   follow(uuid: string) { return this.api.post<{ data: { following: boolean } }>(`following-agents/${encodeURIComponent(uuid)}`, {}); }

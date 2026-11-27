@@ -422,67 +422,58 @@
             </p>
           </div>
 
-          <!-- Search input (never shown when the booking is fixed to one agent) -->
-          <div *ngIf="!selectedAgent && !isAgentLocked" class="relative">
-            <div class="relative">
-              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-              <input
-                type="text"
-                [(ngModel)]="agentSearchQuery"
-                (focus)="onAgentSearchFocus()"
-                (blur)="onAgentSearchBlur()"
-                [placeholder]="selectedTransportMethod ? 'Search agents by name or location...' : 'Choose a transport method first...'"
-                [disabled]="!selectedTransportMethod"
-                class="w-full pl-9 pr-3 py-2 rounded-lg text-sm dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
-                [ngClass]="{
-                  'bg-gray-100 dark:bg-[#111] cursor-not-allowed': !selectedTransportMethod,
-                  'bg-gray-100 dark:bg-[#111]': selectedTransportMethod && product.name.trim() === '',
-                  'bg-red-50 dark:bg-[#331111] ring-1 ring-red-300': selectedTransportMethod && product.name.trim() !== ''
-                }"
-              />
-              <span *ngIf="isLoadingAgents" class="absolute right-3 top-1/2 -translate-y-1/2">
-                <i class="fa-solid fa-circle-notch fa-spin text-orange-500 text-sm"></i>
-              </span>
-            </div>
+          <!-- Followed-agent picker: no search, customers only see the agents they follow (never shown when the booking is fixed to one agent) -->
+          <div *ngIf="!selectedAgent && !isAgentLocked">
+            <p *ngIf="isLoadingAgents" role="status" class="text-xs text-gray-500 dark:text-gray-400">
+              <i class="fa-solid fa-circle-notch fa-spin text-orange-500 mr-1" aria-hidden="true"></i>Loading the agents you follow...
+            </p>
+            <p *ngIf="agentsError" role="alert" class="text-xs text-red-500">
+              <i class="fa-solid fa-circle-exclamation mr-1" aria-hidden="true"></i>{{ agentsError }}
+              <button type="button" (click)="loadAgents()" class="ml-1 underline font-medium">Try again</button>
+            </p>
 
-            <!-- Dropdown -->
-            <div
-              *ngIf="showAgentDropdown && selectedTransportMethod"
-              class="absolute z-20 w-full mt-1 bg-white dark:bg-[#222] rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 max-h-56 overflow-y-auto"
-            >
-              <div *ngIf="filteredAgents.length === 0" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-                No verified agents found for {{ transportLabel(selectedTransportMethod!) }}
+            <ng-container *ngIf="!isLoadingAgents && !agentsError">
+              <p *ngIf="!selectedTransportMethod && agents.length > 0" class="text-xs text-gray-500 dark:text-gray-400">
+                <i class="fa-solid fa-arrow-up mr-1" aria-hidden="true"></i>Choose a transport method above to see your agents
+              </p>
+
+              <div *ngIf="selectedTransportMethod && filteredAgents.length > 0" role="list" aria-label="Agents you follow" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  *ngFor="let agent of filteredAgents"
+                  type="button"
+                  role="listitem"
+                  (click)="selectAgent(agent)"
+                  [disabled]="agent.availability_status !== 'available'"
+                  [attr.aria-label]="'Assign ' + agent.firstname + ' ' + agent.lastname + (agent.availability_status !== 'available' ? ' (currently unavailable)' : '')"
+                  class="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-[#222] transition text-left disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-[#111]"
+                >
+                  <div class="w-9 h-9 rounded-full bg-orange-500 flex items-center justify-center text-white shrink-0">
+                    <i class="fa-solid fa-user text-xs" aria-hidden="true"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium dark:text-white truncate">{{ agent.firstname }} {{ agent.lastname }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {{ getAgentLocation(agent) }}
+                      <ng-container *ngIf="agent.base_price">&middot; {{ agent.currency || 'TZS' }} {{ formatWithCommas(agent.base_price) }}</ng-container>
+                    </p>
+                    <p *ngIf="agent.availability_status !== 'available'" class="text-xs text-gray-500 dark:text-gray-400 capitalize">Currently {{ agent.availability_status || 'unavailable' }}</p>
+                  </div>
+                  <i class="fa-solid fa-circle-plus text-orange-500 shrink-0" aria-hidden="true"></i>
+                </button>
               </div>
-              <button
-                *ngFor="let agent of filteredAgents"
-                type="button"
-                (mousedown)="selectAgent(agent)"
-                class="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 dark:hover:bg-[#333] transition text-left"
-              >
-                <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white shrink-0">
-                  <i class="fa-solid fa-user text-xs"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium dark:text-white truncate">
-                    {{ agent.firstname }} {{ agent.lastname }}
-                  </p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {{ getAgentLocation(agent) }}
-                    <ng-container *ngIf="agent.base_price">
-                      · {{ agent.currency || 'TZS' }} {{ formatWithCommas(agent.base_price) }}
-                    </ng-container>
-                  </p>
-                </div>
-                <i class="fa-solid fa-check-circle text-green-500 text-xs shrink-0" title="Verified"></i>
-              </button>
-            </div>
 
-            <p *ngIf="!selectedTransportMethod" class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              <i class="fa-solid fa-arrow-up mr-1"></i>Choose a transport method above to see available agents
-            </p>
-            <p *ngIf="selectedTransportMethod && !selectedAgent && product.name.trim() !== ''" class="text-xs text-red-500 mt-2">
-              <i class="fa-solid fa-circle-exclamation mr-1"></i>Please select an agent to continue
-            </p>
+              <div *ngIf="agents.length === 0 || (selectedTransportMethod && filteredAgents.length === 0)" class="rounded-xl border border-dashed border-orange-200 dark:border-orange-900 p-4 text-center">
+                <i class="fa-solid fa-user-plus text-orange-500 text-lg" aria-hidden="true"></i>
+                <p class="text-sm font-medium dark:text-white mt-1">
+                  {{ agents.length === 0 ? 'You are not following any agents yet' : 'None of the agents you follow offer ' + transportLabel(selectedTransportMethod!) }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Open the link your agent shared with you and tap <strong>Follow</strong>, then come back to assign them.</p>
+              </div>
+
+              <p *ngIf="selectedTransportMethod && filteredAgents.length > 0 && product.name.trim() !== ''" class="text-xs text-red-500 mt-2">
+                <i class="fa-solid fa-circle-exclamation mr-1" aria-hidden="true"></i>Please select an agent to continue
+              </p>
+            </ng-container>
           </div>
         </div>
 
