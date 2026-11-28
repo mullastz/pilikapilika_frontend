@@ -312,8 +312,9 @@
           <!-- Agent address selection (shown when agent is selected) -->
           <div *ngIf="selectedAgent" class="mt-4">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Select Agent Address <span class="text-red-500">*</span>
+              Agent's Receiving Address Abroad <span class="text-red-500">*</span>
             </label>
+            <p class="text-xs text-gray-500 dark:text-gray-400 -mt-1 mb-2">Where your supplier sends the goods before they are shipped to Tanzania.</p>
 
             <!-- Selected address badge -->
             <div *ngIf="selectedAddress" class="flex items-center gap-3 bg-blue-50 dark:bg-[#111] border border-blue-200 dark:border-blue-800 rounded-xl p-3 mb-3">
@@ -325,6 +326,9 @@
                   <p class="text-sm text-gray-700 dark:text-gray-300 truncate">
                     {{ selectedAddress.address_line }}
                   </p>
+                  <span *ngIf="selectedAddress.country" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium shrink-0 bg-gray-100 dark:bg-[#222] text-gray-700 dark:text-gray-300">
+                    <span aria-hidden="true">{{ countryFlag(selectedAddress.country.iso2) }}</span>{{ selectedAddress.country.name }}
+                  </span>
                   <span
                     *ngIf="selectedAddress.transport_method"
                     class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium shrink-0"
@@ -376,8 +380,12 @@
                   <span *ngIf="isLoadingAddresses">Loading addresses...</span>
                   <span *ngIf="!isLoadingAddresses">No addresses found</span>
                 </div>
+                <ng-container *ngFor="let address of filteredAddresses; let i = index">
+                <p *ngIf="startsCountryGroup(i)" class="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  <ng-container *ngIf="address.country; else noCountry"><span aria-hidden="true">{{ countryFlag(address.country.iso2) }}</span> {{ address.country.name }}</ng-container>
+                  <ng-template #noCountry>Other abroad addresses</ng-template>
+                </p>
                 <button
-                  *ngFor="let address of filteredAddresses"
                   type="button"
                   (mousedown)="selectAddress(address)"
                   class="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 dark:hover:bg-[#333] transition text-left"
@@ -406,6 +414,7 @@
                     </p>
                   </div>
                 </button>
+                </ng-container>
               </div>
             </div>
 
@@ -417,7 +426,7 @@
               <button type="button" (click)="retryAgentAddresses()" class="ml-1 underline font-medium">Try again</button>
             </p>
             <p *ngIf="selectedAgent && !isLoadingAddresses && !addressesError && transportFilteredAddresses.length === 0 && !selectedAddress" class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              <ng-container *ngIf="selectedTransportMethod; else chooseTransport">No {{ transportLabel(selectedTransportMethod) }} addresses found for this agent.</ng-container>
+              <ng-container *ngIf="selectedTransportMethod; else chooseTransport">This agent has no {{ transportLabel(selectedTransportMethod) }} receiving address abroad yet. Ask them to add one on their profile.</ng-container>
               <ng-template #chooseTransport>Choose a transport method above to see this agent's addresses.</ng-template>
             </p>
           </div>

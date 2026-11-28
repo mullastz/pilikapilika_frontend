@@ -56,12 +56,13 @@ const agent: Agent = {
 describe('Agent profile receiving addresses', () => {
   let fixture: ComponentFixture<AgentDetails>;
   let component: AgentDetails;
-  let addressService: Record<'getAddresses' | 'createAddress', ReturnType<typeof vi.fn>>;
+  let addressService: Record<'getAddresses' | 'getCountries' | 'createAddress', ReturnType<typeof vi.fn>>;
   let agentService: Record<'getAgentProfile' | 'updateAgentProfile', ReturnType<typeof vi.fn>>;
 
   beforeEach(async () => {
     addressService = {
       getAddresses: vi.fn(() => of({ data: [], statusCode: 200, message: 'Loaded' })),
+      getCountries: vi.fn(() => of({ data: [] })),
       createAddress: vi.fn(),
     };
     agentService = {

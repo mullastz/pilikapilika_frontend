@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { AgentFollowService } from '../../core/services/agent-follow.service';
+import { AddressService } from '../../core/services/address.service';
 import { AgentService } from '../../core/services/agent.service';
 import { AuthService } from '../../core/services/auth.service';
 import { QrCodeService } from '../../core/services/qr-code.service';
@@ -32,6 +33,7 @@ function setup(options: { loggedIn: boolean; agents?: Agent[]; followed?: Agent[
       provideRouter([]),
       { provide: AgentService, useValue: { getAvailableAgents } },
       { provide: AgentFollowService, useValue: { list, follow, takePendingInvite } },
+      { provide: AddressService, useValue: { getAddresses: vi.fn(() => of({ data: [] })) } },
       { provide: AuthService, useValue: { getUser: () => user, isAuthenticated: () => options.loggedIn } },
       {
         provide: ShipmentService,

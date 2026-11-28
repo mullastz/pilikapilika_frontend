@@ -9,7 +9,7 @@ import { QrCodeService, QrCodeResponse } from '../../core/services/qr-code.servi
 import { AgentService } from '../../core/services/agent.service';
 import { AgentFollowService } from '../../core/services/agent-follow.service';
 import { AuthService } from '../../core/services/auth.service';
-import { AddressService, Address } from '../../core/services/address.service';
+import { AddressService, Address, countryFlag } from '../../core/services/address.service';
 import { transportLabel, transportIcon, TRANSPORT_CATALOG } from '../../core/utils/transport-methods.util';
 import { Agent, User } from '../../core/interfaces/auth.interface';
 import { UserService } from '../../core/services/user.service';
@@ -138,14 +138,23 @@ export class QrGenerator implements OnInit {
     return this.packageTypes.filter(p => p.toLowerCase().includes(q));
   }
 
+  /** Matching abroad addresses, sorted by country so the dropdown reads country by country. */
   get filteredAddresses(): Address[] {
-    const applicable = this.transportFilteredAddresses;
     const q = this.addressSearchQuery.toLowerCase().trim();
-    if (!q) return applicable;
-    return applicable.filter(a =>
+    const matches = !q ? this.transportFilteredAddresses : this.transportFilteredAddresses.filter(a =>
       (a.label || '').toLowerCase().includes(q) ||
-      (a.address_line || '').toLowerCase().includes(q),
+      (a.address_line || '').toLowerCase().includes(q) ||
+      (a.country?.name || '').toLowerCase().includes(q),
     );
+    return [...matches].sort((a, b) => (a.country?.name ?? '~').localeCompare(b.country?.name ?? '~'));
+  }
+
+  readonly countryFlag = countryFlag;
+
+  /** Shows a country heading before the first address of each country in the dropdown. */
+  startsCountryGroup(index: number): boolean {
+    const list = this.filteredAddresses;
+    return index === 0 || list[index].country?.id !== list[index - 1].country?.id;
   }
 
   get transportFilteredAddresses(): Address[] {
@@ -307,12 +316,13 @@ export class QrGenerator implements OnInit {
     this.isLoadingAddresses = true;
     this.addressesError = '';
     this.addresses = [];
-    this.addressRequest = this.addressService.getAddressesByUserUuid(agentUuid)
+    // Goods are received abroad and shipped to Tanzania, so only the agent's abroad addresses apply.
+    this.addressRequest = this.addressService.getAddressesByUserUuid(agentUuid, 'abroad')
       .pipe(retry({ count: 2, delay: 800 }))
       .subscribe({
         next: (response) => {
           if (this.selectedAgent?.uuid !== agentUuid) return;
-          this.addresses = response.data || [];
+          this.addresses = (response.data || []).filter(address => address.address_type === 'abroad');
           this.isLoadingAddresses = false;
           this.autoSelectSingleAddress();
           this.cdr.detectChanges();

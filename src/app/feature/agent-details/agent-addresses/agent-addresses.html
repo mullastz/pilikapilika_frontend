@@ -20,8 +20,22 @@
   </div>
 
   <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-    Agents must add at least one Local Address and one Abroad Address. Assign a category to any existing addresses below.
+    Agents must add at least one Local Address (in Tanzania) and one Abroad Address. Abroad addresses are where customers' goods are received before shipping to Tanzania; choose the country first, then add the address. Only abroad addresses are offered to customers when they create a parcel.
   </p>
+
+  <!-- Existing abroad addresses saved before countries were added -->
+  <div *ngIf="!isLoadingAddresses && addressesMissingCountry.length > 0" role="alert"
+    class="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+    <i class="fa-solid fa-earth-africa text-amber-600 text-xl shrink-0" aria-hidden="true"></i>
+    <div class="flex-1 text-sm text-amber-800 dark:text-amber-300">
+      <p class="font-semibold">Choose the country for {{ addressesMissingCountry.length }} abroad {{ addressesMissingCountry.length === 1 ? 'address' : 'addresses' }}</p>
+      <p class="mt-0.5">Customers see the country when they choose where to send their goods. It only takes a moment per address.</p>
+    </div>
+    <button type="button" (click)="selectCategory('abroad'); fixNextMissingCountry()" [disabled]="isSavingAddress || showAddressForm"
+      class="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium transition disabled:opacity-50">
+      <i class="fa-solid fa-pen" aria-hidden="true"></i>Set country
+    </button>
+  </div>
 
   <div class="flex gap-2 mb-4" role="group" aria-label="Address category">
     <button type="button" (click)="selectCategory('local')" [attr.aria-pressed]="selectedCategory === 'local'" [disabled]="isSavingAddress"
@@ -42,6 +56,80 @@
     <h3 id="agent-address-editor-heading" class="font-semibold dark:text-white mb-4">{{ isEditingAddress ? 'Edit receiving address' : 'Add receiving address' }}</h3>
     <div [formGroup]="addressForm">
       <div class="space-y-4">
+        <div>
+          <label class="text-sm text-gray-500 dark:text-gray-400" for="agent-address-type">Address Category *</label>
+          <select id="agent-address-type" formControlName="address_type" class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500">
+            <option value="local">Local Address (Tanzania)</option>
+            <option value="abroad">Abroad Address</option>
+          </select>
+        </div>
+
+        <!-- Country: chosen first for abroad addresses; local addresses are always Tanzania -->
+        <div>
+          <label class="text-sm text-gray-500 dark:text-gray-400" for="agent-address-country">Country *</label>
+          @if (isAbroadForm) {
+            <!-- Searchable country picker (combobox) -->
+            <div class="relative mt-1">
+              <span *ngIf="selectedCountry && !isCountryListOpen" class="absolute left-3 top-1/2 -translate-y-1/2 text-lg pointer-events-none" aria-hidden="true">{{ countryFlag(selectedCountry.iso2) }}</span>
+              <i *ngIf="!selectedCountry || isCountryListOpen" class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" aria-hidden="true"></i>
+              <input
+                id="agent-address-country"
+                type="text"
+                role="combobox"
+                autocomplete="off"
+                aria-autocomplete="list"
+                aria-controls="agent-country-options"
+                [attr.aria-expanded]="isCountryListOpen"
+                [attr.aria-activedescendant]="isCountryListOpen && countryOptions.length ? 'agent-country-option-' + activeCountryIndex : null"
+                [attr.aria-invalid]="countryControl.invalid && countryControl.touched"
+                [value]="isCountryListOpen ? countryQuery : (selectedCountry?.name || '')"
+                [placeholder]="selectedCountry ? selectedCountry.name : 'Search country, e.g. China'"
+                (focus)="openCountryList()"
+                (input)="onCountryQueryChange($any($event.target).value)"
+                (keydown)="onCountryKeydown($event)"
+                (blur)="onCountryBlur()"
+                class="w-full p-3 pl-10 pr-10 rounded-xl bg-gray-200 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500"
+                [class.ring-2]="countryControl.invalid && countryControl.touched"
+                [class.ring-red-500]="countryControl.invalid && countryControl.touched"
+              />
+              <button *ngIf="selectedCountry && !isCountryListOpen" type="button" (mousedown)="$event.preventDefault()" (click)="clearCountry()"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500" aria-label="Change country">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+              </button>
+              <i *ngIf="!selectedCountry || isCountryListOpen" class="fa-solid fa-chevron-down absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" aria-hidden="true"></i>
+
+              <ul *ngIf="isCountryListOpen" id="agent-country-options" role="listbox" aria-label="Countries"
+                class="absolute z-30 w-full mt-2 max-h-64 overflow-y-auto bg-white dark:bg-[#222] rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-1">
+                <ng-container *ngFor="let option of countryOptions; let i = index">
+                  <li *ngIf="option.heading" role="presentation" class="px-4 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">{{ option.heading }}</li>
+                  <li
+                    [id]="'agent-country-option-' + i"
+                    role="option"
+                    [attr.aria-selected]="option.country.id === countryControl.value"
+                    (mousedown)="$event.preventDefault(); chooseCountry(option.country)"
+                    (mouseenter)="activeCountryIndex = i"
+                    class="px-4 py-2.5 flex items-center gap-3 text-sm cursor-pointer text-gray-700 dark:text-gray-200"
+                    [ngClass]="i === activeCountryIndex ? 'bg-orange-50 dark:bg-[#333] text-orange-600 dark:text-orange-400' : ''"
+                  >
+                    <span class="text-lg leading-none" aria-hidden="true">{{ countryFlag(option.country.iso2) }}</span>
+                    <span class="flex-1 truncate">{{ option.country.name }}</span>
+                    <i *ngIf="option.country.id === countryControl.value" class="fa-solid fa-check text-orange-500" aria-hidden="true"></i>
+                  </li>
+                </ng-container>
+                <li *ngIf="countryOptions.length === 0" role="presentation" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                  No country matches "{{ countryQuery }}"
+                </li>
+              </ul>
+            </div>
+            <div *ngIf="countryControl.invalid && countryControl.touched" class="text-red-500 text-xs mt-1">Choose the country of this abroad address</div>
+            <p *ngIf="countriesError" role="alert" class="text-red-500 text-xs mt-1">
+              Couldn't load countries. <button type="button" (click)="loadCountries()" class="underline">Try again</button>
+            </p>
+          } @else {
+            <p id="agent-address-country" class="w-full mt-1 p-3 rounded-xl bg-gray-100 dark:bg-[#2a2a2a] dark:text-white text-sm">{{ countryFlag('TZ') }} Tanzania</p>
+          }
+        </div>
+
         <!-- Warehouse or receiving point name (optional) -->
         <div>
           <label for="agent-address-label" class="text-sm text-gray-500 dark:text-gray-400"
@@ -58,14 +146,6 @@
           <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
             If left empty, it will be auto-generated as "Address 1", "Address 2", etc.
           </p>
-        </div>
-
-        <div>
-          <label class="text-sm text-gray-500 dark:text-gray-400" for="agent-address-type">Address Category *</label>
-          <select id="agent-address-type" formControlName="address_type" class="w-full mt-1 p-3 rounded-xl bg-gray-200 dark:bg-[#333] dark:text-white outline-none focus:ring-2 focus:ring-orange-500">
-            <option value="local">Local Address</option>
-            <option value="abroad">Abroad Address</option>
-          </select>
         </div>
 
         <!-- Address Line -->
@@ -219,9 +299,32 @@
         <p *ngIf="addressesFor(category).length === 0" class="text-sm text-red-500 mb-3">At least one {{ category }} address is required.</p>
         <button *ngIf="category !== 'uncategorized' && !showAddressForm" type="button" (click)="showAddAddressForm(category === 'local' ? 'local' : 'abroad')" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium mb-3 transition">+ Add {{ category === 'local' ? 'Local' : 'Abroad' }} Address</button>
       </div>
+
+      <!-- Abroad addresses are grouped by country -->
+      <ng-container *ngIf="category === 'abroad'; else flatList">
+        <div *ngFor="let group of abroadGroups" class="space-y-3">
+          <h4 class="flex items-center gap-2 text-sm font-semibold pt-2"
+            [ngClass]="group.country ? 'text-gray-700 dark:text-gray-200' : 'text-amber-700 dark:text-amber-400'">
+            @if (group.country) {
+              <span aria-hidden="true">{{ countryFlag(group.country.iso2) }}</span>{{ group.country.name }}
+            } @else {
+              <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>Country not set
+            }
+            <span class="text-xs font-normal text-gray-400">({{ group.addresses.length }})</span>
+          </h4>
+          <ng-container *ngFor="let address of group.addresses" [ngTemplateOutlet]="addressCard" [ngTemplateOutletContext]="{ $implicit: address }"></ng-container>
+        </div>
+      </ng-container>
+      <ng-template #flatList>
+        <ng-container *ngFor="let address of addressesFor(category)" [ngTemplateOutlet]="addressCard" [ngTemplateOutletContext]="{ $implicit: address }"></ng-container>
+      </ng-template>
+    </ng-container>
+  </div>
+
+  <ng-template #addressCard let-address>
     <div
-      *ngFor="let address of addressesFor(category)"
       class="bg-white dark:bg-[#222] rounded-xl p-4 shadow border border-gray-200 dark:border-gray-700"
+      [class.border-amber-400]="address.address_type === 'abroad' && !address.country_id"
     >
       <div class="flex flex-col sm:flex-row items-start justify-between gap-3">
         <div class="flex-1 min-w-0 w-full">
@@ -244,6 +347,13 @@
               <i class="{{ transportIcon(address.transport_method) }}"></i>
               {{ transportLabel(address.transport_method) }}
             </span>
+            <span *ngIf="address.country" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-[#333] text-gray-700 dark:text-gray-300">
+              <span aria-hidden="true">{{ countryFlag(address.country.iso2) }}</span>{{ address.country.name }}
+            </span>
+            <button *ngIf="address.address_type === 'abroad' && !address.country_id" type="button" (click)="editAddress(address)" [disabled]="isSavingAddress"
+              class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 hover:bg-amber-200">
+              <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>Choose country
+            </button>
           </div>
           <p class="text-sm text-gray-700 dark:text-gray-300 break-words whitespace-pre-line">
             {{ address.address_line }}
@@ -281,8 +391,7 @@
         </div>
       </div>
     </div>
-    </ng-container>
-  </div>
+  </ng-template>
 
   <!-- Empty State -->
   <div

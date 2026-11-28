@@ -87,11 +87,24 @@ describe('QrGenerator agent booked from a profile', () => {
     component.selectedTransportMethod = 'sea';
     component.selectAgent(lockedAgent);
     component.selectAgent(otherAgent);
-    agentAddresses['agent-b'].next({ data: [{ id: 2, address_line: 'B warehouse', transport_method: 'sea' }] });
-    agentAddresses['agent-a'].next({ data: [{ id: 1, address_line: 'A warehouse', transport_method: 'sea' }] });
+    agentAddresses['agent-b'].next({ data: [{ id: 2, address_line: 'B warehouse', address_type: 'abroad', transport_method: 'sea' }] });
+    agentAddresses['agent-a'].next({ data: [{ id: 1, address_line: 'A warehouse', address_type: 'abroad', transport_method: 'sea' }] });
     expect(component.addresses.map(address => address.id)).toEqual([2]);
     expect(component.selectedAddress?.id).toBe(2);
     expect(component.isLoadingAddresses).toBe(false);
+  });
+
+  it('asks only for abroad addresses and never offers a local (Tanzania) address', () => {
+    const { component, addressService, agentAddresses } = setup({});
+    component.selectedTransportMethod = 'sea';
+    component.selectAgent(lockedAgent);
+    expect(addressService.getAddressesByUserUuid).toHaveBeenCalledWith('agent-a', 'abroad');
+    agentAddresses['agent-a'].next({ data: [
+      { id: 1, address_line: 'Kariakoo store', address_type: 'local', transport_method: 'sea' },
+      { id: 3, address_line: 'Yiwu market', address_type: 'abroad', transport_method: 'sea', country: { id: 9, name: 'China', iso2: 'CN' } },
+    ] });
+    expect(component.filteredAddresses.map(address => address.id)).toEqual([3]);
+    expect(component.selectedAddress?.id).toBe(3);
   });
 });
 

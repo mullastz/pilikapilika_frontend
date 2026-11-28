@@ -1,5 +1,6 @@
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AgentFollowService } from '../../core/services/agent-follow.service';
+import { AddressService, abroadAddressesMissingCountry } from '../../core/services/address.service';
 import { Component, OnInit, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
@@ -54,7 +55,19 @@ export class Home implements OnInit {
   protected toastService: ToastService;
 
   private readonly followService = inject(AgentFollowService);
+  private readonly addressService = inject(AddressService);
   private readonly destroyRef = inject(DestroyRef);
+
+  /** Agents' abroad addresses saved before countries existed; prompts them to finish setup. */
+  addressesNeedingCountry = 0;
+
+  private checkAgentAddressCountries(): void {
+    if (!this.isLoggedIn || !this.isAgent) return;
+    this.addressService.getAddresses().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: response => { this.addressesNeedingCountry = abroadAddressesMissingCountry(response.data || []).length; this.cdr.detectChanges(); },
+      error: () => { /* the reminder is optional; Manage Agent Profile shows it too */ },
+    });
+  }
   followedAgents: Agent[] = [];
   followedLoading = false;
   followedLoadingMore = false;
@@ -137,6 +150,7 @@ export class Home implements OnInit {
       // agent's invite link), so the marketplace-wide agent lists are never fetched.
       this.isLoadingAgents = false;
       this.followPendingInviteThenLoad();
+      this.checkAgentAddressCountries();
     } else {
       this.loadAgents();
     }

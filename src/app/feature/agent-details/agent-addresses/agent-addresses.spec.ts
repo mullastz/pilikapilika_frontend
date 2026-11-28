@@ -19,14 +19,20 @@ describe('Agent receiving addresses', () => {
   let fixture: ComponentFixture<AgentAddresses>;
   let component: AgentAddresses;
   let addresses: Record<
-    'getAddresses' | 'createAddress' | 'updateAddress' | 'deleteAddress' | 'setDefaultAddress',
+    'getAddresses' | 'getCountries' | 'createAddress' | 'updateAddress' | 'deleteAddress' | 'setDefaultAddress',
     ReturnType<typeof vi.fn>
   >;
   let toast: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
+    // jsdom has no layout APIs; the form scrolls itself into view when opened.
+    Element.prototype.scrollIntoView = vi.fn();
     addresses = {
       getAddresses: vi.fn(() => of({ data: [warehouse], statusCode: 200, message: 'Loaded' })),
+      getCountries: vi.fn(() => of({ data: [
+        { id: 1, name: 'China', iso2: 'CN', priority: 1 },
+        { id: 2, name: 'Kenya', iso2: 'KE', priority: 0 },
+      ] })),
       createAddress: vi.fn(() => of({ data: warehouse, statusCode: 201, message: 'Created' })),
       updateAddress: vi.fn(() => of({ data: warehouse, statusCode: 200, message: 'Updated' })),
       deleteAddress: vi.fn(() => of({ statusCode: 200, message: 'Deleted' })),
@@ -64,6 +70,7 @@ describe('Agent receiving addresses', () => {
     component.addressForm.setValue({
       label: ' Air receiving point ',
       address_type: 'abroad',
+      country_id: 1,
       address_line: ' Warehouse 20 ',
       transport_method: 'air',
       is_default: true,
@@ -81,6 +88,58 @@ describe('Agent receiving addresses', () => {
     expect(addresses.getAddresses).toHaveBeenCalledTimes(2);
     expect(component.showAddressForm).toBe(false);
     expect(component.isSavingAddress).toBe(false);
+  });
+
+  it('loads origin countries (never Tanzania) with common source countries first', () => {
+    expect(addresses.getCountries).toHaveBeenCalledWith('origin');
+    expect(component.commonCountries.map(country => country.name)).toEqual(['China']);
+    expect(component.otherCountries.map(country => country.name)).toEqual(['Kenya']);
+  });
+
+  it('searches countries by name (ignoring accents) or ISO code and picks with the keyboard', () => {
+    component.countries = [
+      { id: 1, name: 'China', iso2: 'CN', priority: 1 },
+      { id: 2, name: 'Kenya', iso2: 'KE', priority: 0 },
+      { id: 3, name: "Côte d'Ivoire", iso2: 'CI', priority: 0 },
+      { id: 4, name: 'South Korea', iso2: 'KR', priority: 1 },
+    ];
+    expect(component.countryOptions.map(option => option.heading).filter(Boolean)).toEqual(['Common source countries', 'All countries']);
+    component.onCountryQueryChange('cote');
+    expect(component.countryOptions.map(option => option.country.name)).toEqual(["Côte d'Ivoire"]);
+    component.onCountryQueryChange('ke');
+    expect(component.countryOptions.map(option => option.country.name)).toEqual(['Kenya']);
+    component.onCountryQueryChange('k');
+    expect(component.countryOptions[0].country.name).toBe('Kenya');
+    component.onCountryKeydown(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+    component.onCountryKeydown(new KeyboardEvent('keydown', { key: 'Enter' }));
+    expect(component.countryControl.value).toBe(4);
+    expect(component.isCountryListOpen).toBe(false);
+  });
+
+  it('requires a country before saving an abroad address', () => {
+    component.showAddAddressForm('abroad');
+    component.addressForm.patchValue({ address_line: 'Room 4, Yiwu market', transport_method: 'sea' });
+    component.saveAddress();
+    expect(addresses.createAddress).not.toHaveBeenCalled();
+    expect(component.countryControl.hasError('required')).toBe(true);
+    component.addressForm.patchValue({ country_id: 1 });
+    component.saveAddress();
+    expect(addresses.createAddress).toHaveBeenCalledWith(expect.objectContaining({ address_type: 'abroad', country_id: 1 }));
+  });
+
+  it('never sends a country for local addresses (the API fixes them to Tanzania)', () => {
+    component.showAddAddressForm('local');
+    component.addressForm.patchValue({ address_line: 'Plot 22, Kariakoo', transport_method: 'sea', country_id: 1 });
+    component.saveAddress();
+    expect(addresses.createAddress).toHaveBeenCalledWith(expect.objectContaining({ address_type: 'local', country_id: null }));
+  });
+
+  it('flags existing abroad addresses without a country and opens the first one to fix', () => {
+    component.addresses = [{ ...warehouse, address_type: 'abroad', country_id: null }];
+    expect(component.addressesMissingCountry).toHaveLength(1);
+    component.fixNextMissingCountry();
+    expect(component.editingAddressId).toBe(warehouse.id);
+    expect(component.isAbroadForm).toBe(true);
   });
 
   it('edits the original record instead of creating a replacement', () => {
